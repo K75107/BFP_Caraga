@@ -10,7 +10,7 @@ export default function Login() {
       event.preventDefault(); // Prevent the default form submission
       
       // Navigate to the /Dashboard route
-      navigate('/Dashboard');
+      navigate('/Main/Dashboard');
     };
  
  

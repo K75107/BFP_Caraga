@@ -3,10 +3,11 @@ import ReactDOM from 'react-dom/client';
 import {
   createBrowserRouter,
   RouterProvider,
-} from "react-router-dom";
+} from 'react-router-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
-import Login from "./routes/login";
+import Login from './routes/login';
+import Main from './routes/main';
 import Dashboard from './routes/dashboard';
 import Users from './routes/users';
 import IncomeStatement from './routes/incomeStatement';
@@ -17,66 +18,67 @@ import GeneralLedger from './routes/generalLedger';
 import TrialBalance from './routes/trialBalance';
 import Deposits from './routes/deposits';
 import Collections from './routes/collections';
+import { Provider } from 'react-redux';
+import store from './store';
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Login />,
   },
   {
-    path:"/Dashboard",
-    element:<Dashboard/>,
+    path: '/main',
+    element: <Main />,
+    children: [
+      {
+        path: 'dashboard',
+        element: <Dashboard />,
+      },
+      {
+        path: 'users',
+        element: <Users />,
+      },
+      {
+        path: 'incomeStatement',
+        element: <IncomeStatement />,
+      },
+      {
+        path: 'balanceSheet',
+        element: <BalanceSheet />,
+      },
+      {
+        path: 'cashflowStatement',
+        element: <CashflowStatement />,
+      },
+      {
+        path: 'changesInEquity',
+        element: <ChangesInEquity />,
+      },
+      {
+        path: 'generalLedger',
+        element: <GeneralLedger />,
+      },
+      {
+        path: 'trialBalance',
+        element: <TrialBalance />,
+      },
+      {
+        path: 'deposits',
+        element: <Deposits />,
+      },
+      {
+        path: 'collections',
+        element: <Collections />,
+      },
+    ],
   },
-  {
-    path:"/Users",
-    element:<Users/>,
-  },
-  {
-    path:"/IncomeStatement",
-    element:<IncomeStatement/>,
-  },
-  {
-    path:"/BalanceSheet",
-    element:<BalanceSheet/>,
-  },
-  {
-    path:"/CashflowStatement",
-    element:<CashflowStatement/>,
-  },
-  {
-    path:"/ChangesInEquity",
-    element:<ChangesInEquity/>,
-  },
-  {
-    path:"/GeneralLedger",
-    element:<GeneralLedger/>,
-  },
-  {
-    path:"/TrialBalance",
-    element:<TrialBalance/>,
-  },
-  {
-    path:"/Deposits",
-    element:<Deposits/>,
-  },
-  {
-    path:"/Collections",
-    element:<Collections/>,
-  },
-
-
-
-
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-   <RouterProvider router={router} />
-  </React.StrictMode>
+  <Provider store={store}>
+    <RouterProvider router={router} />
+  </Provider>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
