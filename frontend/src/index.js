@@ -17,6 +17,8 @@ import GeneralLedger from './routes/generalLedger';
 import TrialBalance from './routes/trialBalance';
 import Deposits from './routes/deposits';
 import Collections from './routes/collections';
+import store from '../src/state/store';
+import { Provider } from 'react-redux';
 
 const router = createBrowserRouter([
   {
@@ -72,7 +74,9 @@ const router = createBrowserRouter([
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-   <RouterProvider router={router} />
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   </React.StrictMode>
 );
 
