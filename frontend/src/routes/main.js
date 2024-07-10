@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './sidebar';
+import Sidebar from '../components/sidebar';
 import { LuUserCircle } from "react-icons/lu";
 import { TbSettings2 } from "react-icons/tb";
 
