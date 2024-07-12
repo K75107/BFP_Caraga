@@ -6,9 +6,9 @@ import { TbSettings2 } from "react-icons/tb";
 
 const Main = () => {
   return (
-    <div className="bg-color-lighter-gray min-h-screen flex">
+    <div className="bg-color-lighter-gray flex h-screen">
       <Sidebar />
-      <div className="flex-1 bg-gray-100">
+      <div className="flex-1 flex flex-col bg-gray-100 overflow-hidden">
         <header className="bg-white p-3 shadow-sm flex items-center justify-between">
           {/* Placeholder for logo or other content */}
           <div></div>
@@ -17,7 +17,7 @@ const Main = () => {
             <LuUserCircle className="text-2xl text-gray-700 hover:text-gray-900 cursor-pointer"/>
           </div>
         </header>
-        <div className="p-4">
+        <div className="p-4 flex-1 overflow-auto">
           <Outlet /> {/* Renders nested routes */}
         </div>
       </div>

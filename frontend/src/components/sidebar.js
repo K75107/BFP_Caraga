@@ -19,7 +19,7 @@ const Sidebar = () => {
   return (
     
       <div className="w-64 h-screen bg-color-white text-black font-body flex flex-col text-sm border-s ">
-        <div className="flex items-center p-2 border-s">
+        <div className="flex items-center p-2 border-s w-">
           <img src={logo} alt="BFP Logo" className="h-10 w-10 mr-2 ml-5"/>
           <h1 className='font-bold text-2xl'>BFP CARAGA</h1>
           
@@ -89,9 +89,6 @@ const Sidebar = () => {
             </li>
           </ul>
         </nav>
-        <div className="p-4">
-          {/* Footer or additional content here */}
-        </div>
       </div>
       
 
