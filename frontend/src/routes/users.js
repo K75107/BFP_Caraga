@@ -29,20 +29,26 @@ export default function Users(){
         {
           rowId: 1,
           cells: [
-            { type: "text", text: "Thomas" },
-            { type: "text", text: "Goldman" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
           ],
         },
         {
           rowId: 2,
           cells: [
-            { type: "text", text: "Susie" },
-            { type: "text", text: "Spencer" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
+            { type: "text", text: "" },
           ],
         },
         {
           rowId: 3,
           cells: [
+            { type: "text", text: "" },
+            { type: "text", text: "" },
             { type: "text", text: "" },
             { type: "text", text: "" },
           ],
