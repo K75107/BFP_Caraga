@@ -34,88 +34,97 @@ const Sidebar = () => {
           <>
             <h1 className='font-bold text-xl flex-1'>BFP CARAGA</h1>
             <button onClick={toggleSidebar} className="ml-2">
-              <AiOutlineClose size={22} />
+              <AiOutlineClose size={18} />
             </button>
           </>
         )}
       </div>
       <nav className="px-2 py-3 flex-grow">
         <ul className="space-y-1">
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/dashboard') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/dashboard') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/dashboard" className="flex items-center">
-              <RxDashboard size={22} className="mr-3" />
+              <RxDashboard size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>Dashboard</span>
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/users') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/users') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/users" className="flex items-center">
-              <HiOutlineUsers size={22} className="mr-3" />
+              <HiOutlineUsers size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>Users</span>
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/incomeStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/incomeStatement" className="flex items-center">
-              <SlNotebook size={22} className="mr-3" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Income Statement</span>
-              </div>
-            </Link>
+          <li>
+            <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5` }>
+              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Ledger</h1>
+            </div>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/balanceSheet') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/balanceSheet" className="flex items-center">
-              <VscNotebookTemplate size={22} className="mr-3" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Balance Sheet</span>
-              </div>
-            </Link>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/cashflowStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/cashflowStatement" className="flex items-center">
-              <LiaMoneyBillWaveAltSolid size={22} className="mr-3" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Cashflow Statement</span>
-              </div>
-            </Link>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/changesInEquity') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/changesInEquity" className="flex items-center">
-              <AiOutlineBarChart size={22} className="mr-3" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Changes In Equity</span>
-              </div>
-            </Link>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/generalLedger') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/generalLedger') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/generalLedger" className="flex items-center">
-              <VscNotebook size={22} className="mr-3" />
+              <VscNotebook size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>General Ledger</span>
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/trialBalance') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li>
+            <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
+              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Income Statement</h1>
+            </div>
+          </li>
+
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/balanceSheet') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+            <Link to="/main/balanceSheet" className="flex items-center">
+              <VscNotebookTemplate size={18} className="mr-4" />
+              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
+                <span>Balance Sheet</span>
+              </div>
+            </Link>
+          </li>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/cashflowStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+            <Link to="/main/cashflowStatement" className="flex items-center">
+              <LiaMoneyBillWaveAltSolid size={18} className="mr-4" />
+              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
+                <span>Cashflow Statement</span>
+              </div>
+            </Link>
+          </li>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/changesInEquity') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+            <Link to="/main/changesInEquity" className="flex items-center">
+              <AiOutlineBarChart size={18} className="mr-4" />
+              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
+                <span>Changes In Equity</span>
+              </div>
+            </Link>
+          </li>
+          
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/trialBalance') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/trialBalance" className="flex items-center">
-              <CiViewTable size={22} className="mr-3" />
+              <CiViewTable size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>Trial Balance</span>
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/deposits') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li>
+            <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
+              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Reports</h1>
+            </div>
+          </li>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/deposits') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/deposits" className="flex items-center">
-              <PiHandDeposit size={22} className="mr-3" />
+              <PiHandDeposit size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>Deposits</span>
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-semibold ${isActive('/main/collections') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/collections') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/collections" className="flex items-center">
-              <BiCollection size={22} className="mr-3" />
+              <BiCollection size={18} className="mr-4" />
               <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
                 <span>Collections</span>
               </div>
