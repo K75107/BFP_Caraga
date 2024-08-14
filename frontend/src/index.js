@@ -14,7 +14,7 @@ import IncomeStatement from './routes/Accounting/incomeStatement';
 import BalanceSheet from './routes/Accounting/balanceSheet';
 import CashflowStatement from './routes/Accounting/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/changesInEquity';
-import GeneralLedger from './routes/Accounting/generalLedger';
+import GeneralLedger from './routes/Accounting/GeneralLedger/generalLedger';
 import TrialBalance from './routes/Accounting/trialBalance';
 import Deposits from './routes/Accounting/deposits';
 import Collections from './routes/Accounting/collections';
