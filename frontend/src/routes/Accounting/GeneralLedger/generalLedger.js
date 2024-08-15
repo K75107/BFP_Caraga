@@ -64,7 +64,7 @@ export default function GeneralLedger(){
 
             <div className="flex justify-between">
                     <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-                    Select a Ledger
+                    Add New Ledger
                     </h1>
                     <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
                     x
