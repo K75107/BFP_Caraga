@@ -1,5 +1,5 @@
 import React, { Fragment, useState } from "react";
-import GeneralLedgerModal from "../../../components/Modals/GeneralLedgerModal";
+import Modal from "../../../components/Modal";
 
 export default function GeneralLedger(){
     const [showModal, setShowModal] = useState(false);
@@ -60,39 +60,39 @@ export default function GeneralLedger(){
 
 
             {/*MODAL*/}
-            <GeneralLedgerModal isVisible={showModal}>
-
-            <div className="flex justify-between">
-                    <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-                    Add New Ledger
-                    </h1>
-                    <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-                    x
-                    </button>
-            </div>
-
-            <hr className="border-t border-[#7694D4] my-3" />
-
-            {/*LABEL*/}
-            <div className="flex flex-row p-2.5">
-                {/*LEDGER DESCRIPTION*/}
-                <div class="relative">
-                <input type="text" id="default_outlined1" class="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
-                <label for="default_outlined1" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Ledger Description</label>
+            <Modal isVisible={showModal}>
+            <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                <div className="flex justify-between">
+                        <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
+                        Add New Ledger
+                        </h1>
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+                        x
+                        </button>
                 </div>
 
-                {/*YEAR*/}
-                <div class="relative ml-auto">
-                <input type="text" id="default_outlined2" class="block px-2.5 pb-2.5 pt-4 w-20 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
-                <label for="default_outlined2" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Year</label>
+                <hr className="border-t border-[#7694D4] my-3" />
+
+                {/*LABEL*/}
+                <div className="flex flex-row p-2.5">
+                    {/*LEDGER DESCRIPTION*/}
+                    <div class="relative">
+                    <input type="text" id="default_outlined1" class="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
+                    <label for="default_outlined1" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Ledger Description</label>
+                    </div>
+
+                    {/*YEAR*/}
+                    <div class="relative ml-auto">
+                    <input type="text" id="default_outlined2" class="block px-2.5 pb-2.5 pt-4 w-20 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
+                    <label for="default_outlined2" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Year</label>
+                    </div>
+                </div>
+
+                <div className="flex justify-end py-3 px-4">
+                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">ADD</button>
                 </div>
             </div>
-
-            <div className="flex justify-end py-3 px-4">
-            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">ADD</button>
-            </div>
-
-            </GeneralLedgerModal>
+            </Modal>
         </Fragment>
     );
 }
