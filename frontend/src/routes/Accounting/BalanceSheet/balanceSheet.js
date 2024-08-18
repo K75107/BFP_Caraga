@@ -161,9 +161,9 @@ export default function BalanceSheet(){
                     </div>
 
 
-                {/*ADD BUTTON*/}
+                {/*GENERATE BUTTON*/}
                 <div className="flex justify-end py-3 px-4">
-                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">ADD</button>
+                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">GENERATE</button>
                 </div>
 
                 </div>
