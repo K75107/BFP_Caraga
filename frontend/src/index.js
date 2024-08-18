@@ -10,7 +10,7 @@ import Login from './routes/Authentication/login';
 import Main from './routes/main';
 import Dashboard from './routes/dashboard';
 import Users from './routes/users';
-import IncomeStatement from './routes/Accounting/incomeStatement';
+import IncomeStatement from './routes/Accounting/IncomeStatement/incomeStatement';
 import BalanceSheet from './routes/Accounting/BalanceSheet/balanceSheet';
 import CashflowStatement from './routes/Accounting/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/ChangesInEquity/changesInEquity';
