@@ -86,6 +86,15 @@ const Sidebar = () => {
             </div>
           </li>
 
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/incomeStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+            <Link to="/main/incomeStatement" className="flex items-center">
+              <VscNotebookTemplate size={18} className="mr-4" />
+              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
+                <span>Income Statement</span>
+              </div>
+            </Link>
+          </li>
+
           <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/balanceSheet') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/balanceSheet" className="flex items-center">
               <VscNotebookTemplate size={18} className="mr-4" />
