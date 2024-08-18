@@ -70,9 +70,19 @@ const Sidebar = () => {
               </div>
             </Link>
           </li>
+
+          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/trialBalance') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+            <Link to="/main/trialBalance" className="flex items-center">
+              <CiViewTable size={18} className="mr-4" />
+              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
+                <span>Trial Balance</span>
+              </div>
+            </Link>
+          </li>
+
           <li>
             <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
-              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Income Statement</h1>
+              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Financial Statements</h1>
             </div>
           </li>
 
@@ -101,14 +111,6 @@ const Sidebar = () => {
             </Link>
           </li>
           
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/trialBalance') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/trialBalance" className="flex items-center">
-              <CiViewTable size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Trial Balance</span>
-              </div>
-            </Link>
-          </li>
           <li>
             <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
               <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Reports</h1>
