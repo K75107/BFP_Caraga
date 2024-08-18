@@ -12,13 +12,49 @@ import { BiCollection } from "react-icons/bi";
 import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
 import logo from '../assets/logo.png'; // Update the path to your logo image
 
+// Redux
+import { useSelector } from 'react-redux';
+
 const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const isActive = (path) => location.pathname === path;
+  const user = useSelector((state) => state.user);
 
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+  const isActive = (path) => location.pathname === path;
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+  const renderRoleBasedMenuItems = () => {
+    if (!user) return null;
+
+    switch (user.role) {
+      case 'Admin':
+        return (
+          <>
+            <li className={`... ${isActive('/main/dashboard') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+              <Link to="/main/dashboard" className="flex items-center">
+                <HiOutlineUsers size={18} className="mr-4" />
+                <span className={`${isCollapsed ? 'hidden' : 'block'}`}>Users</span>
+              </Link>
+            </li>
+            {/* Other Admin-specific items */}
+          </>
+        );
+      case 'Fire Station':
+        return (
+          <>
+            <li className={`... ${isActive('/main/dashboard') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
+              <Link to="/main/dashboard" className="flex items-center">
+                <VscNotebook size={18} className="mr-4" />
+                <span className={`${isCollapsed ? 'hidden' : 'block'}`}>General Ledger</span>
+              </Link>
+            </li>
+            {/* Other Regional Accountant-specific items */}
+          </>
+        );
+      // Add more cases for other roles...
+      default:
+        return null;
+    }
   };
 
   return (
@@ -41,6 +77,7 @@ const Sidebar = () => {
       </div>
       <nav className="px-2 py-3 flex-grow">
         <ul className="space-y-1">
+          {/* Dashboard (Visible to all roles) */}
           <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/dashboard') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
             <Link to="/main/dashboard" className="flex items-center">
               <RxDashboard size={18} className="mr-4" />
@@ -49,77 +86,11 @@ const Sidebar = () => {
               </div>
             </Link>
           </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/users') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/users" className="flex items-center">
-              <HiOutlineUsers size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Users</span>
-              </div>
-            </Link>
-          </li>
-          <li>
-            <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5` }>
-              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Ledger</h1>
-            </div>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/generalLedger') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/generalLedger" className="flex items-center">
-              <VscNotebook size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>General Ledger</span>
-              </div>
-            </Link>
-          </li>
 
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/trialBalance') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/trialBalance" className="flex items-center">
-              <CiViewTable size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Trial Balance</span>
-              </div>
-            </Link>
-          </li>
+          {/* Role-based menu items */}
+          {renderRoleBasedMenuItems()}
 
-          <li>
-            <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
-              <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Financial Statements</h1>
-            </div>
-          </li>
-
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/incomeStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/incomeStatement" className="flex items-center">
-              <VscNotebookTemplate size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Income Statement</span>
-              </div>
-            </Link>
-          </li>
-
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/balanceSheet') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/balanceSheet" className="flex items-center">
-              <VscNotebookTemplate size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Balance Sheet</span>
-              </div>
-            </Link>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/cashflowStatement') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/cashflowStatement" className="flex items-center">
-              <LiaMoneyBillWaveAltSolid size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Cashflow Statement</span>
-              </div>
-            </Link>
-          </li>
-          <li className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-sm font-normal ${isActive('/main/changesInEquity') ? 'bg-color-dark-red text-white' : 'hover:bg-color-light-red'}`}>
-            <Link to="/main/changesInEquity" className="flex items-center">
-              <AiOutlineBarChart size={18} className="mr-4" />
-              <div className={`${isCollapsed ? 'hidden' : 'block'}`}>
-                <span>Changes In Equity</span>
-              </div>
-            </Link>
-          </li>
-          
+          {/* Reports Section (Visible to all roles) */}
           <li>
             <div className={`${isCollapsed ? 'hidden' : 'block'} mt-5`}>
               <h1 className='font-bold text-sm ml-2 whitespace-nowrap'>Reports</h1>
