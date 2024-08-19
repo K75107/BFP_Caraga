@@ -1,5 +1,5 @@
 import React, { Fragment, useState } from "react";
-import Modal from "../../../components/Modal";
+import Modal from "../../../../components/Modal";
 
 export default function GeneralLedger(){
     const [showModal, setShowModal] = useState(false);

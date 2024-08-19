@@ -1,10 +1,9 @@
 import React, { Fragment, useState } from "react";
-import Modal from "../../../components/Modal";
+import Modal from "../../../../components/Modal";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-export default function BalanceSheet(){
-
+export default function IncomeStatement(){
     const [currentModal, setCurrentMOdal] = useState(1);
     const [showModal, setShowModal] = useState(false);
 
@@ -16,7 +15,7 @@ export default function BalanceSheet(){
             <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ GENERATE BALANCE SHEET</button>
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ GENERATE INCOME STATEMENT</button>
                 </div>
 
                 <hr className="border-t border-[#7694D4] my-4" />
@@ -113,7 +112,7 @@ export default function BalanceSheet(){
                     {/*HEADER*/}
                     <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-                            Generate Balance Sheet
+                            Generate Income Statement
                             </h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentMOdal(1) & setShowModal(false) & setStartDate(null) & setEndDate(null)}>
                             ×
@@ -162,9 +161,8 @@ export default function BalanceSheet(){
 
 
                 {/*GENERATE BUTTON*/}
-                <div className="flex justify-end py-3 px-4 flex-row">
-                        <button className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-md py-2.5 px-7 mt-4" onClick={() => setCurrentMOdal(1) & setStartDate(null) & setEndDate(null)}>BACK</button>
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-5">GENERATE</button>
+                <div className="flex justify-end py-3 px-4">
+                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">GENERATE</button>
                 </div>
 
                 </div>
