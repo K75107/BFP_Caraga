@@ -14,7 +14,7 @@ export default function IncomeStatement(){
         <Fragment>
             <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
+                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Income Statement</h1>
                     <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ GENERATE INCOME STATEMENT</button>
                 </div>
 
@@ -80,7 +80,7 @@ export default function IncomeStatement(){
                         Select a Ledger
                         </h1>
                         <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-                        x
+                        ×
                         </button>
                 </div>
 
@@ -115,7 +115,7 @@ export default function IncomeStatement(){
                             Generate Income Statement
                             </h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentMOdal(1) & setShowModal(false) & setStartDate(null) & setEndDate(null)}>
-                            x
+                            ×
                             </button>
                     </div>
 
@@ -125,7 +125,7 @@ export default function IncomeStatement(){
                     <div className="flex p-2.5">
                         <div class="relative">
                         <input type="text" id="default_outlined1" class="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
-                        <label for="default_outlined1" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Balance Sheet Description</label>
+                        <label for="default_outlined1" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Income Statement Description</label>
                         </div>
                     </div>
 
@@ -160,9 +160,10 @@ export default function IncomeStatement(){
                     </div>
 
 
-                {/*GENERATE BUTTON*/}
-                <div className="flex justify-end py-3 px-4">
-                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">GENERATE</button>
+                {/*BUTTONS*/}
+                <div className="flex justify-end py-3 px-4 flex-row">
+                        <button className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-md py-2.5 px-7 mt-4" onClick={() => setCurrentMOdal(1) & setStartDate(null) & setEndDate(null)}>BACK</button>
+                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-5">GENERATE</button>
                 </div>
 
                 </div>
