@@ -161,7 +161,7 @@ export default function BalanceSheet(){
                     </div>
 
 
-                {/*GENERATE BUTTON*/}
+                {/*BUTTONS*/}
                 <div className="flex justify-end py-3 px-4 flex-row">
                         <button className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-md py-2.5 px-7 mt-4" onClick={() => setCurrentMOdal(1) & setStartDate(null) & setEndDate(null)}>BACK</button>
                         <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-5">GENERATE</button>
