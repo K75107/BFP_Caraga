@@ -56,6 +56,46 @@ const Sidebar = () => {
       { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
     ],
+    "Bookkeeper":[
+      { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/users', icon: <HiOutlineUsers size={18} />, label: 'Users' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: <VscNotebook size={18} />, label: 'General Ledger' },
+      { path: '/main/trialBalance', icon: <CiViewTable size={18} />, label: 'Trial Balance' },
+    ],
+    "Reconciliation and Revenue":[
+      { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/users', icon: <HiOutlineUsers size={18} />, label: 'Users' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: <VscNotebook size={18} />, label: 'General Ledger' },
+      { path: '/main/trialBalance', icon: <CiViewTable size={18} />, label: 'Trial Balance' },
+    ],
+    "Regional Accountant":[
+      { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/users', icon: <HiOutlineUsers size={18} />, label: 'Users' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: <VscNotebook size={18} />, label: 'General Ledger' },
+      { path: '/main/trialBalance', icon: <CiViewTable size={18} />, label: 'Trial Balance' },
+      { section: 'Financial Statements' },
+      { path: '/main/incomeStatement', icon: <VscNotebookTemplate size={18} />, label: 'Income Statement' },
+      { path: '/main/balanceSheet', icon: <VscNotebookTemplate size={18} />, label: 'Balance Sheet' },
+      { path: '/main/cashflowStatement', icon: <LiaMoneyBillWaveAltSolid size={18} />, label: 'Cashflow Statement' },
+      { path: '/main/changesInEquity', icon: <AiOutlineBarChart size={18} />, label: 'Changes In Equity' },
+      { section: 'Reports' },
+      { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
+      { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
+    ],
+    "Chief FMD":[
+      { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/users', icon: <HiOutlineUsers size={18} />, label: 'Users' },
+    ],
+    "Firecode Monitoring":[
+      { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/users', icon: <HiOutlineUsers size={18} />, label: 'Users' },
+      { section: 'Reports' },
+      { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
+      { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
+    ],
     // Add other user usertypes here 
   };
 
