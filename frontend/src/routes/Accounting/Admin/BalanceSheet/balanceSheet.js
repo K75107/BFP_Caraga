@@ -1,5 +1,5 @@
 import React, { Fragment, useState } from "react";
-import Modal from "../../../components/Modal";
+import Modal from "../../../../components/Modal";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 

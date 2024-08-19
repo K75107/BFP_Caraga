@@ -9,6 +9,7 @@ import { CiViewTable } from "react-icons/ci";
 import { PiHandDeposit } from "react-icons/pi";
 import { BiCollection } from "react-icons/bi";
 import { AiOutlineClose } from "react-icons/ai";
+import { FaCircleChevronLeft } from "react-icons/fa6";
 import logo from '../assets/logo.png'; // Update the path to your logo image
 
 // Redux
@@ -28,10 +29,10 @@ const Sidebar = () => {
   const user = useSelector((state) => state.auth.user);
 
 
-  // Hard-coded role for testing
-  const userRole = user ? user.role : 'Guest';
+  // Hard-coded usertype for testing
+  const useType = user ? user.usertype : 'Guest';
 
-  // Define the visibility of each menu item based on user roles
+  // Define the visibility of each menu item based on user usertypes
   const menuItems = {
     "Admin": [
       { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
@@ -55,15 +56,15 @@ const Sidebar = () => {
       { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
     ],
-    // Add other user roles here 
+    // Add other user usertypes here 
   };
 
   // Get the current user's menu items
-  const currentMenuItems = menuItems[userRole] || [];
+  const currentMenuItems = menuItems[useType] || [];
 
   return (
-    <div className={`flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300`}>
-      <div className="flex items-center p-2 border-b whitespace-nowrap">
+    <div className={` flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-0' : 'px-2'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300 py-2 `}>
+      <div className="flex items-center px-2 py-3 whitespace-nowrap ">
         <img 
           src={logo} 
           alt="BFP Logo" 
@@ -72,9 +73,9 @@ const Sidebar = () => {
         />
         {!isCollapsed && (
           <>
-            <h1 className='font-bold text-xl flex-1'>BFP CARAGA</h1>
-            <button onClick={toggleSidebar} className="ml-2">
-              <AiOutlineClose size={18} />
+            <h1 className='font-bold text-2xl flex-1'>BFP CARAGA</h1>
+            <button onClick={toggleSidebar} className="ml-8 z-10 ">
+              <FaCircleChevronLeft size={26} color='#991b1b'/>
             </button>
           </>
         )}
