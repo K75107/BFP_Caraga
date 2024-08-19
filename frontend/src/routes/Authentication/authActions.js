@@ -12,3 +12,8 @@ export const login = (username, password) => (dispatch) => {
     dispatch({ type: "LOGIN_FAILURE", payload: "Invalid username or password" });
   }
 };
+
+
+export const logout = () => ({
+  type: 'LOGOUT',
+});

@@ -3,13 +3,29 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/sidebar';
 import { TbSettings2 } from "react-icons/tb";
 import {TransparentModal} from '../components/Modal';
+import { AiOutlineSetting } from "react-icons/ai";
+import { MdArrowForwardIos, MdOutlineHelpOutline, MdLogout } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 // Redux
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import {logout} from './Authentication/authActions'
 
 const Main = () => {
+  
   // Redux
   const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
+
+  const navigate = useNavigate();
+
+  //Logout
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/');
+    
+  };
 
   const [showUserModal, setShowUserModal] = useState(false);
 
@@ -53,16 +69,7 @@ const Main = () => {
             onClick={closeModalOnOutsideClick}
           >
             <div className="bg-white w-[300px] rounded-lg shadow-lg p-4 fixed right-1 top-16">
-              {/* HEADER */}
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">User Profile</h2>
-                <button
-                  className="text-gray-700 text-2xl"
-                  onClick={() => setShowUserModal(false)}
-                >
-                  &times;
-                </button>
-              </div>
+              
               {/* USER DETAILS */}
               <div className="text-center">
                 <img
@@ -74,14 +81,42 @@ const Main = () => {
                 <p className="text-gray-600">{user.email}</p>
               </div>
               {/* BUTTON */}
-              <div className="mt-4 flex justify-end">
-                <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                  onClick={() => setShowUserModal(false)}
+               {/* Account Settings */}
+               <label className="mt-2 inline-flex items-center justify-between w-full p-2 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-3 mr-3">
+                    <AiOutlineSetting className="text-gray-700" />
+                  </div>
+                  <span className="text-md font-semibold">Account Settings</span>
+                </div>
+                <MdArrowForwardIos />
+              </label>
+
+              {/* Help & Support */}
+              <label className="mt-2 inline-flex items-center justify-between w-full p-2 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-3 mr-3">
+                    <MdOutlineHelpOutline className="text-gray-700" />
+                  </div>
+                  <span className="text-md font-semibold">Help & Support</span>
+                </div>
+                <MdArrowForwardIos />
+              </label>
+
+              {/* Help & Support */}
+              <button 
+                className="mt-2 inline-flex items-center justify-between w-full p-2 text-gray-900 bg-white cursor-pointer hover:bg-gray-100"
+                onClick={handleLogout}
                 >
-                  Close
-                </button>
-              </div>
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-3 mr-3">
+                    <MdLogout className="text-gray-700" />
+                  </div>
+                  <span className="text-md font-semibold">Logout</span>
+                </div>
+
+              </button>
+
             </div>
           </div>
         </TransparentModal>

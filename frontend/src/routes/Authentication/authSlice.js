@@ -1,6 +1,6 @@
 const initialState = {
   isAuthenticated: false,
-  user: null, // Store the user details including role here
+  user: null,
   error: null,
 };
 
@@ -10,7 +10,7 @@ export const userReducer = (state = initialState, action) => {
       return {
         ...state,
         isAuthenticated: true,
-        user: action.payload, // payload should include role info
+        user: action.payload,
         error: null,
       };
     case 'LOGIN_FAILURE':
@@ -20,7 +20,7 @@ export const userReducer = (state = initialState, action) => {
         error: action.payload,
       };
     case 'LOGOUT':
-      return initialState;
+      return initialState; // Resets to initial state on logout
     default:
       return state;
   }
