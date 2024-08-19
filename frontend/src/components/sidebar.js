@@ -55,7 +55,7 @@ const Sidebar = () => {
       { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
     ],
-    // Add other user roles here if needed
+    // Add other user roles here 
   };
 
   // Get the current user's menu items
