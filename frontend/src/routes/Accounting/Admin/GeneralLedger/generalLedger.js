@@ -1,8 +1,24 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import Modal from "../../../../components/Modal";
 
 export default function GeneralLedger(){
     const [showModal, setShowModal] = useState(false);
+
+        //UPDATED YEAR
+        const [years, setYears] = useState([]);
+
+        useEffect(() => {
+            const currentYear = new Date().getFullYear();
+            const startYear = 2020;
+            const yearList = [];
+        
+            for (let year = currentYear; year >= startYear; year--) {
+              yearList.push(year);
+            }
+        
+            setYears(yearList);
+          }, []);
+    
     return(
         <Fragment>
             <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
@@ -74,7 +90,8 @@ export default function GeneralLedger(){
                 <hr className="border-t border-[#7694D4] my-3" />
 
                 {/*LABEL*/}
-                <div className="flex flex-row p-2.5">
+                <div className="flex flex-row p-2.5 justify-between">
+
                     {/*LEDGER DESCRIPTION*/}
                     <div class="relative">
                     <input type="text" id="default_outlined1" class="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
@@ -82,10 +99,25 @@ export default function GeneralLedger(){
                     </div>
 
                     {/*YEAR*/}
-                    <div class="relative ml-auto">
-                    <input type="text" id="default_outlined2" class="block px-2.5 pb-2.5 pt-4 w-20 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " />
-                    <label for="default_outlined2" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto">Year</label>
+                    <div className="relative w-40">
+                    <select
+                        id="year-dropdown"
+                        className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                    >
+                        {years.map((year) => (
+                        <option key={year} value={year}>
+                            {year}
+                        </option>
+                        ))}
+                    </select>
+                    <label
+                        htmlFor="year-dropdown"
+                        className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                    >
+                        Year
+                    </label>
                     </div>
+
                 </div>
 
                 <div className="flex justify-end py-3 px-4">
