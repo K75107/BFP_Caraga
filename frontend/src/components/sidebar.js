@@ -28,10 +28,10 @@ const Sidebar = () => {
   const user = useSelector((state) => state.auth.user);
 
 
-  // Hard-coded role for testing
-  const userRole = user ? user.role : 'Guest';
+  // Hard-coded usertype for testing
+  const useType = user ? user.usertype : 'Guest';
 
-  // Define the visibility of each menu item based on user roles
+  // Define the visibility of each menu item based on user usertypes
   const menuItems = {
     "Admin": [
       { path: '/main/dashboard', icon: <RxDashboard size={18} />, label: 'Dashboard' },
@@ -55,11 +55,11 @@ const Sidebar = () => {
       { path: '/main/deposits', icon: <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/collections', icon: <BiCollection size={18} />, label: 'Collections' },
     ],
-    // Add other user roles here 
+    // Add other user usertypes here 
   };
 
   // Get the current user's menu items
-  const currentMenuItems = menuItems[userRole] || [];
+  const currentMenuItems = menuItems[useType] || [];
 
   return (
     <div className={`flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300`}>
