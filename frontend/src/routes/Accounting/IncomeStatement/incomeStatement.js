@@ -80,7 +80,7 @@ export default function IncomeStatement(){
                         Select a Ledger
                         </h1>
                         <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-                        x
+                        ×
                         </button>
                 </div>
 
@@ -115,7 +115,7 @@ export default function IncomeStatement(){
                             Generate Income Statement
                             </h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentMOdal(1) & setShowModal(false) & setStartDate(null) & setEndDate(null)}>
-                            x
+                            ×
                             </button>
                     </div>
 
