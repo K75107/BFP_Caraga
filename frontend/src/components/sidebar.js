@@ -106,21 +106,21 @@ const Sidebar = () => {
 
   return (
     <div className={` flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-0' : 'px-2'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300 py-2 `}>
-      <div className="flex items-center px-2 py-3 whitespace-nowrap ">
+      <div className="flex items-center px-2 py-3 whitespace-nowrap">
         <img 
           src={logo} 
           alt="BFP Logo" 
-          className={`h-8 w-8 mr-2 ml-2 ${isCollapsed ? 'cursor-pointer' : ''}`} 
+          className={`h-8 w-8 mr-2 ml-2 ${isCollapsed ? 'cursor-pointer rotate-[360deg] duration-300' : 'rotate-360 duration-300'}`} 
           onClick={isCollapsed ? toggleSidebar : null}
         />
         {!isCollapsed && (
           <>
             <h1 className='font-bold text-2xl flex-1'>BFP CARAGA</h1>
-            <button onClick={toggleSidebar} className="ml-8 z-10 ">
-              <FaCircleChevronLeft size={26} color='#b91c1c'/>
-            </button>
           </>
         )}
+            <button onClick={toggleSidebar} className={` ${isCollapsed ? 'ml-15 z-10 rotate-180 duration-300' : 'ml-8 z-10 ml-15 z-10 rotate-360 duration-300'} `}>
+              <FaCircleChevronLeft size={26} color='#b91c1c'/>
+            </button>
       </div>
       <nav className="px-2 py-3 flex-grow">
         <ul className="space-y-1">
