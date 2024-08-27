@@ -85,7 +85,7 @@ export default function ChangesInEquity(){
                         Add Changes in Equity
                         </h1>
                         <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-                        x
+                        ×
                         </button>
                 </div>
 

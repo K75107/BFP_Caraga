@@ -25,9 +25,9 @@ const testDatabase = {
         profilePicture: 'https://randomuser.me/api/portraits/men/3.jpg'
       },
       {
-        username: 'bookeper',
-        password: 'bookeper',
-        usertype: 'Bookeper',
+        username: 'bookkeeper',
+        password: 'bookkeeper',
+        usertype: 'Bookkeeper',
         profilePicture: 'https://randomuser.me/api/portraits/women/2.jpg'
       },
       {
