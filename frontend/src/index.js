@@ -15,6 +15,7 @@ import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
 import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
+import GeneralLedgerTable from './routes/Accounting/Admin/GeneralLedger/generalLedgerTable';
 import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
       {
         path: 'generalLedger',
         element: <GeneralLedger />,
+      },
+      {
+        path: 'generalLedgerTable',
+        element: <GeneralLedgerTable />
       },
       {
         path: 'trialBalance',

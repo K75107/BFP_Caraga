@@ -22,7 +22,13 @@ import { useSelector } from 'react-redux';
 const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    const currentPath = location.pathname;
+    if (path === '/main/generalLedger' && (currentPath === '/main/generalLedger' || currentPath === '/main/generalLedgerTable')) {
+      return true;
+    }
+    return currentPath === path;
+  };
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);

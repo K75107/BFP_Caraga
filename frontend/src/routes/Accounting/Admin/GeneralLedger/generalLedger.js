@@ -1,4 +1,5 @@
 import React, { Fragment, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Modal from "../../../../components/Modal";
 
 export default function GeneralLedger(){
@@ -18,6 +19,8 @@ export default function GeneralLedger(){
         
             setYears(yearList);
           }, []);
+
+          const navigate = useNavigate();
     
     return(
         <Fragment>
@@ -121,7 +124,7 @@ export default function GeneralLedger(){
                 </div>
 
                 <div className="flex justify-end py-3 px-4">
-                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4">ADD</button>
+                <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"  onClick={() => navigate('/main/generalLedgerTable')}>ADD</button>
                 </div>
             </div>
             </Modal>
