@@ -3,32 +3,31 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faLock, faEnvelope } from '@fortawesome/free-solid-svg-icons';
-import { useDispatch, useSelector } from 'react-redux';
-import { login } from './authActions'; // Update this import path if needed
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const auth = getAuth();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-
-  const { isAuthenticated, user, error } = useSelector((state) => state.auth);
+  const [error, setError] = useState(null);
 
   const handlePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    dispatch(login(username, password));
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Redirect based on user role
-      switch (user.role) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      // Redirect based on user role (assuming role is stored in user metadata or database)
+      // Example: const role = user.role; // Retrieve role from user object or database
+      // Here, we'll assume you have a way to fetch the role
+      const role = "Admin"; // Replace with actual role fetching logic
+      switch (role) {
         case 'Admin':
           navigate('/main/dashboard');
           break;
@@ -39,8 +38,10 @@ export default function Login() {
         default:
           navigate('/main/dashboard');
       }
+    } catch (error) {
+      setError("Invalid email or password. Please try again.");
     }
-  }, [isAuthenticated, user, navigate]);
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/bfpbackground.png)' }}>
@@ -49,12 +50,12 @@ export default function Login() {
         <form onSubmit={handleLogin}>
           <div className="relative mb-4">
             <input
-              type="text"
-              id="username"
-              placeholder="Username"
-              name="username"
+              type="email"
+              id="email"
+              placeholder="Email"
+              name="email"
               className="w-full p-2.5 pl-10 border rounded-md border-gray-300"
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
             <FontAwesomeIcon icon={faEnvelope} className="absolute left-3 top-3.5 text-gray-400" />
