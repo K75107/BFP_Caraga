@@ -15,12 +15,16 @@ import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
 import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
-import GeneralLedgerTable from './routes/Accounting/Admin/GeneralLedger/generalLedgerTable';
+
+import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
+import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
+
 import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
 import { Provider } from 'react-redux';
 import store from './store';
+import { Navigate } from 'react-router-dom';
 
 const router = createBrowserRouter([
   {
@@ -58,11 +62,23 @@ const router = createBrowserRouter([
       {
         path: 'generalLedger',
         element: <GeneralLedger />,
+        children: [
+          {
+            path: '/main/generalLedger/ledgerDetails/:ledgerId',
+            element: <LedgerDetails />,
+          },
+          {
+            path: 'ledgerList',
+            element: <LedgerList />,
+          },
+          // Redirect to 'ledgerDetails' by default
+          {
+            index: true,
+            element: <Navigate to="ledgerList" />,
+          },
+        ],
       },
-      {
-        path: 'generalLedgerTable',
-        element: <GeneralLedgerTable />
-      },
+
       {
         path: 'trialBalance',
         element: <TrialBalance />,

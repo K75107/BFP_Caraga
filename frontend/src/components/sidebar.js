@@ -25,11 +25,14 @@ const Sidebar = () => {
 
   const isActive = (path) => {
     const currentPath = location.pathname;
-    if (path === '/main/generalLedger' && (currentPath === '/main/generalLedger' || currentPath === '/main/generalLedgerTable')) {
+    // Consider the General Ledger path as active if the current path starts with `/main/generalLedger`
+    if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger')) {
       return true;
     }
     return currentPath === path;
   };
+  
+  
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
