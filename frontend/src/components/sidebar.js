@@ -15,13 +15,13 @@ import { PiHandDeposit, PiHandDepositFill } from "react-icons/pi";
 import { PiStack, PiStackFill } from "react-icons/pi";
 
 // Firebase
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [userType, setUserType] = useState('Guest');
+  const [userType, setUserType] = useState('');
 
   const isActive = (path) => {
     const currentPath = location.pathname;
@@ -31,36 +31,43 @@ const Sidebar = () => {
     }
     return currentPath === path;
   };
-  
-  
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
   useEffect(() => {
-    const fetchUserType = async () => {
+    const auth = getAuth();
+    const fetchUserType = async (user) => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const db = getFirestore();
+        const userDoc = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDoc);
 
-        if (user) {
-          const db = getFirestore();
-          const userDoc = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(userDoc);
-
-          if (docSnap.exists()) {
-            setUserType(docSnap.data().usertype || 'Guest');
+        if (docSnap.exists()) {
+          const userTypeFromFirestore = docSnap.data().usertype;
+          if (userTypeFromFirestore) {
+            setUserType(userTypeFromFirestore);
           } else {
-            console.log('No such document!');
+            console.error("User type not found in Firestore document");
           }
+        } else {
+          console.error("No such document!");
         }
       } catch (error) {
         console.error("Error fetching user data: ", error);
       }
     };
 
-    fetchUserType();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchUserType(user);
+      } else {
+        console.error("No authenticated user found");
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup the listener on component unmount
   }, []);
 
   // Define the visibility of each menu item based on user types
