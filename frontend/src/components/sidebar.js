@@ -78,7 +78,7 @@ const Sidebar = () => {
       { path: '/main/users', icon: isActive('/main/users') ? <HiUsers size={18} />: <HiOutlineUsers size={18}/>, label: 'Users' },
       { section: 'Ledger' },
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
-      { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Ledger Accounts' },
+      { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
       { path: '/main/trialBalance', icon: isActive('/main/trialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
       { section: 'Financial Statements' },
       { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },

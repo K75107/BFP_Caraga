@@ -1,6 +1,6 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../../../../config/firebase-config'; // Import your Firestore configuration
+import { db } from '../../../../config/firebase-config'; // Firestore configuration
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
 
@@ -13,7 +13,7 @@ export default function LedgerDetails() {
     const [selectedAccountTitle, setSelectedAccountTitle] = useState('');
     const [accountCode, setAccountCode] = useState('');
     const [accountType, setAccountType] = useState('');
-    const [editingCell, setEditingCell] = useState(null);
+    const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
     const [editValue, setEditValue] = useState('');
 
     useEffect(() => {
@@ -27,16 +27,35 @@ export default function LedgerDetails() {
                     const accountsSnapshot = await getDocs(accountsCollectionRef);
                     const accountsData = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                    // Group by accountTitle
+                    // Group by accountTitle and calculate balances
                     const groupedData = accountsData.reduce((acc, entry) => {
                         if (!acc[entry.accountTitle]) {
                             acc[entry.accountTitle] = {
                                 title: entry.accountTitle,
                                 code: entry.accountCode,
-                                accounts: []
+                                type: entry.accountType,
+                                accounts: [],
+                                runningBalance: 0 // Initialize running balance for this account
                             };
                         }
+
+                        // Calculate running balance
+                        const balance = calculateBalance(
+                            acc[entry.accountTitle].type,
+                            parseFloat(entry.debit || 0),
+                            parseFloat(entry.credit || 0),
+                            acc[entry.accountTitle].runningBalance
+                        );
+
+                        // Set the balance for this entry
+                        entry.balance = balance;
+
+                        // Update running balance in the group
+                        acc[entry.accountTitle].runningBalance = balance;
+
+                        // Add the entry to the group's accounts
                         acc[entry.accountTitle].accounts.push(entry);
+
                         return acc;
                     }, {});
 
@@ -65,11 +84,31 @@ export default function LedgerDetails() {
         setLoading(false);
     }, [ledgerId]);
 
+    const calculateBalance = (type, debit, credit, previousBalance) => {
+        let balance = previousBalance || 0;
+
+        switch (type) {
+            case 'Assets':
+            case 'Expenses':
+                balance += debit - credit;
+                break;
+            case 'Liabilities':
+            case 'Equity':
+            case 'Revenue':
+            case 'Contra Assets':
+                balance += credit - debit;
+                break;
+            default:
+                balance += debit - credit;
+        }
+        return balance;
+    };
+
     const handleAddAccount = async () => {
         try {
-            const ledgerDocRef = doc(db, 'ledger', ledgerId); // Reference to the specific ledger
-            const accountsCollectionRef = collection(ledgerDocRef, 'accounts'); // Create the 'accounts' collection inside the selected ledger
-            
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountsCollectionRef = collection(ledgerDocRef, 'accounts');
+
             await addDoc(accountsCollectionRef, {
                 accountTitle: selectedAccountTitle || null,
                 accountCode: accountCode || null,
@@ -82,7 +121,7 @@ export default function LedgerDetails() {
             });
 
             console.log('New account added to Firestore');
-            setShowModal(false); // Close the modal after adding the account
+            setShowModal(false);
         } catch (error) {
             console.error('Error adding account to Firestore:', error);
         }
@@ -95,18 +134,51 @@ export default function LedgerDetails() {
 
             await updateDoc(accountsDocRef, { [field]: value });
 
-            // Update local state
-            setLedgerData(prevData => prevData.map(group => ({
-                ...group,
-                accounts: group.accounts.map(entry =>
-                    entry.id === id ? { ...entry, [field]: value } : entry
-                )
-            })));
+            setLedgerData(prevData => {
+                // Recalculate balances for the entire dataset after any cell change
+                return prevData.map(group => {
+                    let runningBalance = 0;
+                    return {
+                        ...group,
+                        accounts: group.accounts.map(entry => {
+                            if (entry.id === id) {
+                                const updatedEntry = { ...entry, [field]: value };
+
+                                // Recalculate balance for the updated entry
+                                runningBalance = calculateBalance(
+                                    updatedEntry.accountType,
+                                    parseFloat(updatedEntry.debit || 0),
+                                    parseFloat(updatedEntry.credit || 0),
+                                    runningBalance
+                                );
+                                updatedEntry.balance = runningBalance;
+                                return updatedEntry;
+                            }
+
+                            // Calculate balance for the rest of the entries in the group
+                            runningBalance = calculateBalance(
+                                entry.accountType,
+                                parseFloat(entry.debit || 0),
+                                parseFloat(entry.credit || 0),
+                                runningBalance
+                            );
+                            entry.balance = runningBalance;
+                            return entry;
+                        })
+                    };
+                });
+            });
 
             setEditingCell(null);
         } catch (error) {
             console.error(`Error updating ${field}:`, error);
         }
+    };
+
+    const formatBalance = (balance) => {
+        return balance !== null && balance !== undefined && !isNaN(balance)
+            ? balance.toFixed(2)
+            : '0.00';
     };
 
     if (loading) return <p>Loading...</p>;
@@ -153,113 +225,84 @@ export default function LedgerDetails() {
                                         <td className="table-cell px-6 py-4">
                                             {editingCell?.field === 'date' && editingCell.id === entry.id ? (
                                                 <input
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                                                     type="date"
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
                                                     onBlur={() => handleCellChange(entry.id, 'date', editValue)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCellChange(entry.id, 'date', editValue);
+                                                        if (e.key === 'Enter') {
+                                                            handleCellChange(entry.id, 'date', editValue);
+                                                        }
                                                     }}
-                                                    autoFocus
-                                                    className="table-cell"
                                                 />
                                             ) : (
-                                                <span onClick={() => {
-                                                    setEditingCell({ id: entry.id, field: 'date' });
-                                                    setEditValue(entry.date || '');
-                                                }}>
-                                                    {entry.date || "N/A"}
+                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'date' }); setEditValue(entry.date || ''); }}>
+                                                    {entry.date || '-'}
                                                 </span>
                                             )}
                                         </td>
                                         <td className="table-cell px-6 py-4">
                                             {editingCell?.field === 'particulars' && editingCell.id === entry.id ? (
                                                 <input
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                                                     type="text"
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
                                                     onBlur={() => handleCellChange(entry.id, 'particulars', editValue)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCellChange(entry.id, 'particulars', editValue);
+                                                        if (e.key === 'Enter') {
+                                                            handleCellChange(entry.id, 'particulars', editValue);
+                                                        }
                                                     }}
-                                                    autoFocus
-                                                    className="table-cell"
                                                 />
                                             ) : (
-                                                <span onClick={() => {
-                                                    setEditingCell({ id: entry.id, field: 'particulars' });
-                                                    setEditValue(entry.particulars || '');
-                                                }}>
-                                                    {entry.particulars || "N/A"}
+                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'particulars' }); setEditValue(entry.particulars || ''); }}>
+                                                    {entry.particulars || '-'}
                                                 </span>
                                             )}
                                         </td>
                                         <td className="table-cell px-6 py-4">
                                             {editingCell?.field === 'debit' && editingCell.id === entry.id ? (
                                                 <input
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                                                     type="number"
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'debit', parseFloat(editValue))}
+                                                    onBlur={() => handleCellChange(entry.id, 'debit', editValue)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCellChange(entry.id, 'debit', parseFloat(editValue));
+                                                        if (e.key === 'Enter') {
+                                                            handleCellChange(entry.id, 'debit', editValue);
+                                                        }
                                                     }}
-                                                    autoFocus
-                                                    className="table-cell"
                                                 />
                                             ) : (
-                                                <span onClick={() => {
-                                                    setEditingCell({ id: entry.id, field: 'debit' });
-                                                    setEditValue(entry.debit || 0);
-                                                }}>
-                                                    {entry.debit || "0"}
+                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'debit' }); setEditValue(entry.debit || ''); }}>
+                                                    {entry.debit || '-'}
                                                 </span>
                                             )}
                                         </td>
                                         <td className="table-cell px-6 py-4">
                                             {editingCell?.field === 'credit' && editingCell.id === entry.id ? (
                                                 <input
+                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                                                     type="number"
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'credit', parseFloat(editValue))}
+                                                    onBlur={() => handleCellChange(entry.id, 'credit', editValue)}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCellChange(entry.id, 'credit', parseFloat(editValue));
+                                                        if (e.key === 'Enter') {
+                                                            handleCellChange(entry.id, 'credit', editValue);
+                                                        }
                                                     }}
-                                                    autoFocus
-                                                    className="table-cell"
                                                 />
                                             ) : (
-                                                <span onClick={() => {
-                                                    setEditingCell({ id: entry.id, field: 'credit' });
-                                                    setEditValue(entry.credit || 0);
-                                                }}>
-                                                    {entry.credit || "0"}
+                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'credit' }); setEditValue(entry.credit || ''); }}>
+                                                    {entry.credit || '-'}
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="table-cell px-6 py-4">
-                                            {editingCell?.field === 'balance' && editingCell.id === entry.id ? (
-                                                <input
-                                                    type="number"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'balance', parseFloat(editValue))}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCellChange(entry.id, 'balance', parseFloat(editValue));
-                                                    }}
-                                                    autoFocus
-                                                    className="table-cell"
-                                                />
-                                            ) : (
-                                                <span onClick={() => {
-                                                    setEditingCell({ id: entry.id, field: 'balance' });
-                                                    setEditValue(entry.balance || 0);
-                                                }}>
-                                                    {entry.balance || "0"}
-                                                </span>
-                                            )}
-                                        </td>
+                                        <td className="table-cell px-6 py-4">{formatBalance(entry.balance)}</td>
                                     </tr>
                                 ))}
                             </Fragment>
@@ -344,4 +387,3 @@ export default function LedgerDetails() {
         </Fragment>
     );
 }
-

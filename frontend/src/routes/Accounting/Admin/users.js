@@ -70,7 +70,6 @@ export default function Users() {
         isActive: true, // Assuming new users are active by default
       });
       
-
       console.log("User added successfully!");
     } catch (err) {
       console.error("Error adding user: ", err);
