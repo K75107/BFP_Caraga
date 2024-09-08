@@ -175,10 +175,16 @@ export default function LedgerDetails() {
         }
     };
 
+    // Function to format numbers with commas and handle empty/null cases
+    const formatNumber = (num) => {
+        if (num === null || num === undefined || isNaN(num) || num === '') {
+            return '-'; // Return '-' if no value
+        }
+        return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
     const formatBalance = (balance) => {
-        return balance !== null && balance !== undefined && !isNaN(balance)
-            ? balance.toFixed(2)
-            : '0.00';
+        return formatNumber(balance);
     };
 
     if (loading) return <p>Loading...</p>;
@@ -207,110 +213,108 @@ export default function LedgerDetails() {
                         </tr>
                     </thead>
                     <tbody>
-                        {ledgerData.map((group, index) => (
-                            <Fragment key={index}>
-                                <tr className="bg-gray-100 font-bold">
-                                    <td className="table-cell px-6 py-4">{group.title}</td>
-                                    <td className="table-cell px-6 py-4">{group.code}</td>
-                                    <td className="table-cell px-6 py-4"></td>
-                                    <td className="table-cell px-6 py-4"></td>
-                                    <td className="table-cell px-6 py-4"></td>
-                                    <td className="table-cell px-6 py-4"></td>
-                                    <td className="table-cell px-6 py-4"></td>
-                                </tr>
-                                {group.accounts.map((entry) => (
-                                    <tr key={entry.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                        <td className="table-cell px-6 py-4"></td>
-                                        <td className="table-cell px-6 py-4"></td>
-                                        <td className="table-cell px-6 py-4">
-                                            {editingCell?.field === 'date' && editingCell.id === entry.id ? (
-                                                <input
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    type="date"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'date', editValue)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            handleCellChange(entry.id, 'date', editValue);
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'date' }); setEditValue(entry.date || ''); }}>
-                                                    {entry.date || '-'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="table-cell px-6 py-4">
-                                            {editingCell?.field === 'particulars' && editingCell.id === entry.id ? (
-                                                <input
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    type="text"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'particulars', editValue)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            handleCellChange(entry.id, 'particulars', editValue);
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'particulars' }); setEditValue(entry.particulars || ''); }}>
-                                                    {entry.particulars || '-'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="table-cell px-6 py-4">
-                                            {editingCell?.field === 'debit' && editingCell.id === entry.id ? (
-                                                <input
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    type="number"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'debit', editValue)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            handleCellChange(entry.id, 'debit', editValue);
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'debit' }); setEditValue(entry.debit || ''); }}>
-                                                    {entry.debit || '-'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="table-cell px-6 py-4">
-                                            {editingCell?.field === 'credit' && editingCell.id === entry.id ? (
-                                                <input
-                                                    className="w-full bg-white border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    type="number"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onBlur={() => handleCellChange(entry.id, 'credit', editValue)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            handleCellChange(entry.id, 'credit', editValue);
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span onClick={() => { setEditingCell({ id: entry.id, field: 'credit' }); setEditValue(entry.credit || ''); }}>
-                                                    {entry.credit || '-'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="table-cell px-6 py-4">{formatBalance(entry.balance)}</td>
-                                    </tr>
-                                ))}
-                            </Fragment>
-                        ))}
-                    </tbody>
+    {ledgerData.map((group, index) => (
+        <Fragment key={index}>
+            {/* Main account title row */}
+            <tr className="bg-gray-100 font-bold">
+                <td className="table-cell px-6 py-4">{group.title}</td>
+                <td className="table-cell px-6 py-4">{group.code}</td>
+                <td className="table-cell px-6 py-4"></td>
+                <td className="table-cell px-6 py-4"></td>
+                <td className="table-cell px-6 py-4"></td>
+                <td className="table-cell px-6 py-4"></td>
+                <td className="table-cell px-6 py-4">{formatBalance(group.runningBalance)}</td>
+            </tr>
+
+            {/* Detail rows */}
+            {group.accounts.map(account => (
+                <tr key={account.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <td className="px-6 py-4"></td>
+                    <td className="px-6 py-4"></td>
+                    <td className="px-6 py-4">
+                        {editingCell === account.id && editValue.field === 'date' ? (
+                            <input
+                                type="text"
+                                className="border-b border-gray-400 focus:outline-none w-full h-full px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
+                                onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
+                            />
+                        ) : (
+                            <span
+                                onDoubleClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
+                                className="block w-full h-full px-2 py-1"
+                            >
+                                {account.date || '-'}
+                            </span>
+                        )}
+                    </td>
+                    <td className="px-6 py-4">
+                        {editingCell === account.id && editValue.field === 'particulars' ? (
+                            <input
+                                type="text"
+                                className="border-b border-gray-400 focus:outline-none w-full h-full px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
+                            />
+                        ) : (
+                            <span
+                                onDoubleClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
+                                className="block w-full h-full px-2 py-1"
+                            >
+                                {account.particulars || '-'}
+                            </span>
+                        )}
+                    </td>
+                    <td className="px-6 py-4">
+                        {editingCell === account.id && editValue.field === 'debit' ? (
+                            <input
+                                type="text"
+                                className="border-b border-gray-400 focus:outline-none w-full h-full px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
+                                onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
+                            />
+                        ) : (
+                            <span
+                                onDoubleClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
+                                className="block w-full h-full px-2 py-1"
+                            >
+                                {formatNumber(account.debit) || '-'}
+                            </span>
+                        )}
+                    </td>
+                    <td className="px-6 py-4">
+                        {editingCell === account.id && editValue.field === 'credit' ? (
+                            <input
+                                type="text"
+                                className="border-b border-gray-400 focus:outline-none w-full h-full px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
+                                onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
+                            />
+                        ) : (
+                            <span
+                                onDoubleClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
+                                className="block w-full h-full px-2 py-1"
+                            >
+                                {formatNumber(account.credit) || '-'}
+                            </span>
+                        )}
+                    </td>
+                    <td className="px-6 py-4">
+                        {formatBalance(account.balance) || '-'}
+                    </td>
+                </tr>
+            ))}
+        </Fragment>
+    ))}
+</tbody>
                 </table>
             </div>
 
+            
              {/*MODAL*/}
              <Modal isVisible={showModal}>
                 <div className="bg-white w-[600px] h-[420px] rounded py-2 px-4">
