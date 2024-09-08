@@ -1,8 +1,9 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
-import { doc, getDoc, collection, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import { doc, collection, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
+import { TransparentModal } from '../../../../components/Modal';
 
 export default function LedgerDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -16,73 +17,103 @@ export default function LedgerDetails() {
     const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
     const [editValue, setEditValue] = useState('');
 
+    //Right click Modal
+    const [showRightClickModal, setShowRightClickModal] = useState(false); 
+    const [selectedRowData, setSelectedRowData] = useState(null);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    
+
     useEffect(() => {
-        const fetchLedgerData = async () => {
-            try {
-                const ledgerDocRef = doc(db, 'ledger', ledgerId);
-                const ledgerDoc = await getDoc(ledgerDocRef);
+        // Fetch ledger data with onSnapshot for real-time updates
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountsCollectionRef = collection(ledgerDocRef, 'accounts');
 
-                if (ledgerDoc.exists()) {
-                    const accountsCollectionRef = collection(ledgerDocRef, 'accounts');
-                    const accountsSnapshot = await getDocs(accountsCollectionRef);
-                    const accountsData = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const unsubscribeLedger = onSnapshot(accountsCollectionRef, (snapshot) => {
+            const accountsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                    // Group by accountTitle and calculate balances
-                    const groupedData = accountsData.reduce((acc, entry) => {
-                        if (!acc[entry.accountTitle]) {
-                            acc[entry.accountTitle] = {
-                                title: entry.accountTitle,
-                                code: entry.accountCode,
-                                type: entry.accountType,
-                                accounts: [],
-                                runningBalance: 0 // Initialize running balance for this account
-                            };
-                        }
-
-                        // Calculate running balance
-                        const balance = calculateBalance(
-                            acc[entry.accountTitle].type,
-                            parseFloat(entry.debit || 0),
-                            parseFloat(entry.credit || 0),
-                            acc[entry.accountTitle].runningBalance
-                        );
-
-                        // Set the balance for this entry
-                        entry.balance = balance;
-
-                        // Update running balance in the group
-                        acc[entry.accountTitle].runningBalance = balance;
-
-                        // Add the entry to the group's accounts
-                        acc[entry.accountTitle].accounts.push(entry);
-
-                        return acc;
-                    }, {});
-
-                    setLedgerData(Object.values(groupedData));
-                } else {
-                    console.log('No such document!');
+            // Group by accountTitle and calculate balances
+            const groupedData = accountsData.reduce((acc, entry) => {
+                if (!acc[entry.accountTitle]) {
+                    acc[entry.accountTitle] = {
+                        title: entry.accountTitle,
+                        code: entry.accountCode,
+                        type: entry.accountType,
+                        accounts: [],
+                        runningBalance: 0 // Initialize running balance for this account
+                    };
                 }
-            } catch (error) {
-                console.error('Error fetching ledger data:', error);
-            }
-        };
 
-        const fetchAccountTitles = async () => {
-            try {
-                const accountTitleCollectionRef = collection(db, 'accountTitle');
-                const accountTitleSnapshot = await getDocs(accountTitleCollectionRef);
-                const titles = accountTitleSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setAccountTitles(titles);
-            } catch (error) {
-                console.error('Error fetching account titles:', error);
-            }
-        };
+                // Calculate running balance
+                const balance = calculateBalance(
+                    acc[entry.accountTitle].type,
+                    parseFloat(entry.debit || 0),
+                    parseFloat(entry.credit || 0),
+                    acc[entry.accountTitle].runningBalance
+                );
 
-        fetchLedgerData();
-        fetchAccountTitles();
-        setLoading(false);
+                // Set the balance for this entry
+                entry.balance = balance;
+
+                // Update running balance in the group
+                acc[entry.accountTitle].runningBalance = balance;
+
+                // Add the entry to the group's accounts
+                acc[entry.accountTitle].accounts.push(entry);
+
+                return acc;
+            }, {});
+
+            setLedgerData(Object.values(groupedData));
+            setLoading(false);
+        }, (error) => {
+            console.error('Error fetching ledger data:', error);
+        });
+
+        // Fetch account titles with onSnapshot
+        const accountTitleCollectionRef = collection(db, 'accountTitle');
+        const unsubscribeAccountTitles = onSnapshot(accountTitleCollectionRef, (snapshot) => {
+            const titles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAccountTitles(titles);
+        }, (error) => {
+            console.error('Error fetching account titles:', error);
+        });
+
+        // Clean up the snapshot listeners
+        return () => {
+            unsubscribeLedger();
+            unsubscribeAccountTitles();
+        };
     }, [ledgerId]);
+
+
+    //Right Click Functions
+
+    const handleRightClick = (event, rowData) => {
+        event.preventDefault(); // Prevent the browser's default right-click menu
+        setSelectedRowData(rowData); // Set the row's data
+    
+        // Set the modal position based on the mouse position
+        setModalPosition({ x: event.clientX, y: event.clientY });
+    
+        setShowRightClickModal(true); // Open the modal
+      };
+
+      const closeModalOnOutsideClick = (e) => {
+        if (e.target.id === "user-modal-overlay") {
+            setShowRightClickModal(false);
+        }
+      };
+
+      const closeModalonRightClickOutside = (event) =>{
+        
+        if (event.target.id === "user-modal-overlay") {
+            event.preventDefault();
+            setShowRightClickModal(false);
+        }
+
+
+      }
+
 
     const calculateBalance = (type, debit, credit, previousBalance) => {
         let balance = previousBalance || 0;
@@ -228,7 +259,7 @@ export default function LedgerDetails() {
 
             {/* Detail rows */}
             {group.accounts.map(account => (
-                <tr key={account.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                <tr key={account.id} onContextMenu={(e) => handleRightClick(e, account)} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                     <td className="px-6 py-4"></td>
                     <td className="px-6 py-4"></td>
                     <td className="px-6 py-4">
@@ -388,6 +419,33 @@ export default function LedgerDetails() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Right-click context modal */}
+            {showRightClickModal && (
+                <div
+                id="user-modal-overlay"
+                className="fixed inset-0 flex justify-center items-center"
+                onClick={closeModalOnOutsideClick}
+                onContextMenu={(event) => closeModalOnOutsideClick(event)}
+              >
+                    <div
+                        style={{ top: modalPosition.y, left: modalPosition.x }}
+                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={closeModalOnOutsideClick}
+                        >
+                            Edit Row
+                        </button>
+                        {/* Add more options here */}
+                    </div>
+                </div>
+            )}
+
+
+
+
         </Fragment>
     );
 }
