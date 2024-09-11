@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
-import { doc, collection, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
+import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
 import { TransparentModal } from '../../../../components/Modal';
 
@@ -104,16 +104,34 @@ export default function LedgerDetails() {
         }
       };
 
-      const closeModalonRightClickOutside = (event) =>{
-        
-        if (event.target.id === "user-modal-overlay") {
-            event.preventDefault();
-            setShowRightClickModal(false);
+      //Delete Row
+      const handleDeleteRow = async () => {
+        if (!selectedRowData || !ledgerId) return;
+    
+        try {
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountDocRef = doc(ledgerDocRef, 'accounts', selectedRowData.id);
+    
+            await deleteDoc(accountDocRef);
+            
+            // Optionally, you may want to update the UI to reflect the deletion
+            setLedgerData(prevData => 
+                prevData.map(group => ({
+                    ...group,
+                    accounts: group.accounts.filter(account => account.id !== selectedRowData.id)
+                }))
+            );
+    
+            console.log('Account deleted successfully');
+            setShowRightClickModal(false); // Close the context menu
+        } catch (error) {
+            console.error('Error deleting row:', error);
         }
+    };
 
+    //Add row Above
 
-      }
-
+    
 
     const calculateBalance = (type, debit, credit, previousBalance) => {
         let balance = previousBalance || 0;
@@ -423,25 +441,37 @@ export default function LedgerDetails() {
             {/* Right-click context modal */}
             {showRightClickModal && (
                 <div
-                id="user-modal-overlay"
-                className="fixed inset-0 flex justify-center items-center"
-                onClick={closeModalOnOutsideClick}
-                onContextMenu={(event) => closeModalOnOutsideClick(event)}
-              >
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
+                >
                     <div
-                        style={{ top: modalPosition.y, left: modalPosition.x }}
-                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    style={{ top: modalPosition.y, left: modalPosition.x }}
+                    className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
                     >
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={closeModalOnOutsideClick}
-                        >
-                            Edit Row
-                        </button>
-                        {/* Add more options here */}
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        
+                    >
+                        Add Row Above
+                    </button>
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        
+                    >
+                        Add Row Below
+                    </button>
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={handleDeleteRow}
+                    >
+                        Delete Row
+                    </button>
                     </div>
                 </div>
-            )}
+                )}
+
 
 
 
