@@ -241,7 +241,7 @@ export default function FireStationCollections() {
             >
               <FaTimes size={20} />
             </button>
-            <h2 className="text-xl font-semibold mb-4">Confirm Submission</h2
+            <h2 className="text-xl font-semibold mb-4">Confirm Submission</h2>
             <p>Are you sure you want to submit the following report?</p>
 
             <ul className="my-4">
