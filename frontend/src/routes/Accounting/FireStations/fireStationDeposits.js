@@ -1,7 +1,7 @@
 import React, { useState, Fragment } from "react";
 import { FaTimes } from "react-icons/fa";
 
-export default function FireStationReportForm() {
+export default function FireStationDeposits() {
   const [reportData, setReportData] = useState([
     {
       id: 1,

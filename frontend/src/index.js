@@ -6,6 +6,10 @@ import {
 } from 'react-router-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
+import { Provider } from 'react-redux';
+import store from './store';
+import { Navigate } from 'react-router-dom';
+
 import Login from './routes/Authentication/login';
 import Main from './routes/main';
 import Dashboard from './routes/Accounting/Admin/dashboard';
@@ -21,9 +25,11 @@ import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
 import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
-import { Provider } from 'react-redux';
-import store from './store';
-import { Navigate } from 'react-router-dom';
+//FireStations
+import FireStationCollections from './routes/Accounting/FireStations/fireStationCollections';
+import FireStationDeposits from './routes/Accounting/FireStations/fireStationDeposits';
+import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
+
 
 const router = createBrowserRouter([
   {
@@ -94,8 +100,21 @@ const router = createBrowserRouter([
         path: 'collections',
         element: <Collections />,
       },
+      {
+        path: 'fireStation/dashboard',
+        element: <FireStationDashboard/>,
+      },
+      {
+        path: 'fireStation/deposits',
+        element: <FireStationDeposits/>,
+      },
+      {
+        path: 'fireStation/collections',
+        element: <FireStationCollections/>,
+      },
     ],
   },
+  
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
