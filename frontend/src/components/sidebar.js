@@ -115,6 +115,9 @@ const Sidebar = () => {
           <FaCircleChevronLeft size={26} color='#b91c1c'/>
         </button>
       </div>
+
+      <hr className={`border-gray-300 my-2`} />
+
       <nav className="px-2 py-3 flex-grow">
         <ul className="space-y-1">
           {currentMenuItems.map((item, index) =>
