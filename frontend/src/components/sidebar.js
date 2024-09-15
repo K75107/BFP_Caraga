@@ -26,7 +26,6 @@ const Sidebar = () => {
 
   const isActive = (path) => {
     const currentPath = location.pathname;
-    // Consider the General Ledger path as active if the current path starts with `/main/generalLedger`
     if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger')) {
       return true;
     }
@@ -71,7 +70,6 @@ const Sidebar = () => {
     return () => unsubscribe(); // Cleanup the listener on component unmount
   }, []);
 
-  // Define the visibility of each menu item based on user types
   const menuItems = {
     "admin": [
       { path: '/main/dashboard', icon: isActive('/main/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
@@ -97,11 +95,10 @@ const Sidebar = () => {
     ]
   };
 
-  // Get the current user's menu items
   const currentMenuItems = menuItems[userType] || [];
 
   return (
-    <div className={` flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-0' : 'px-2'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300 py-2 `}>
+    <div className={`flex h-screen ${isCollapsed ? 'w-16' : 'w-64'} ${isCollapsed ? 'px-0' : 'px-2'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300 py-2`}>
       <div className="flex items-center px-2 py-3 whitespace-nowrap">
         <img 
           src={logo} 
@@ -128,8 +125,8 @@ const Sidebar = () => {
                 </div>
               </li>
             ) : (
-              <li key={item.path} className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-md font-normal ${isActive(item.path) ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold' : 'hover:bg-color-lighter-gray'}`}>
-                <Link to={item.path} className="flex items-center">
+              <li key={item.path}>
+                <Link to={item.path} className={`whitespace-nowrap flex items-center pl-3 py-2 rounded-md font-normal ${isActive(item.path) ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold' : 'hover:bg-color-lighter-gray'}`}>
                   {item.icon}
                   <div className={`${isCollapsed ? 'hidden' : 'block'} ml-4 py-1`}>
                     <span>{item.label}</span>
