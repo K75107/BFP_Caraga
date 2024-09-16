@@ -1,292 +1,180 @@
-import React, { Fragment, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { db } from '../../../../config/firebase-config'; // Firestore configuration
-import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs } from 'firebase/firestore';
-import Modal from "../../../../components/Modal";
-import { TransparentModal } from '../../../../components/Modal';
+//Right Click Functions
 
-export default function LedgerDetails() {
-    const [showModal, setShowModal] = useState(false);
-    const { ledgerId } = useParams(); // Get ledgerId from URL
-    const [ledgerData, setLedgerData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [accountTitles, setAccountTitles] = useState([]);
-    const [selectedAccountTitle, setSelectedAccountTitle] = useState('');
-    const [accountCode, setAccountCode] = useState('');
-    const [accountType, setAccountType] = useState('');
-    const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
-    const [editValue, setEditValue] = useState('');
+const handleRightClick = (event, rowData) => {
+    event.preventDefault(); // Prevent the browser's default right-click menu
+    setSelectedRowData(rowData); // Set the row's data
 
-    //Right click Modal
-    const [showRightClickModal, setShowRightClickModal] = useState(false); 
-    const [selectedRowData, setSelectedRowData] = useState(null);
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    
+    // Set the modal position based on the mouse position
+    setModalPosition({ x: event.clientX, y: event.clientY });
 
-    useEffect(() => {
-        if (!ledgerId) {
-            console.error('ledgerId is not provided.');
-            return;
-        }
-    
-        // Fetch ledger data with onSnapshot for real-time updates
+    setShowRightClickModal(true); // Open the modal
+  };
+
+  const closeModalOnOutsideClick = (e) => {
+    if (e.target.id === "user-modal-overlay") {
+        setShowRightClickModal(false);
+    }
+  };
+
+// Fetch account titles with onSnapshot
+const accountTitleCollectionRef = collection(db, 'accountTitle');
+const unsubscribeAccountTitles = onSnapshot(accountTitleCollectionRef, (snapshot) => {
+    const titles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setAccountTitles(titles);
+}, (error) => {
+    console.error('Error fetching account titles:', error);
+});
+
+
+
+  const handleAddAccount = async () => {
+    try {
         const ledgerDocRef = doc(db, 'ledger', ledgerId); // Reference to the specific ledger document
-        const accountsCollectionRef = collection(ledgerDocRef, 'accounttitles'); // Subcollection 'accounts' under the ledger document
-    
-        ;
-
-        const unsubscribeLedger = onSnapshot(accountsCollectionRef, (snapshot) => {
-            const accountsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log(snapshot);
-
-
-            if (snapshot.empty) {
-                console.log('No account titles found');
-                return;
-            }
-            // Group by accountTitle and calculate balances
-            const groupedData = accountsData.reduce((acc, entry) => {
-                if (!acc[entry.accountTitle]) {
-                    acc[entry.accountTitle] = {
-                        title: entry.accountTitle,
-                        code: entry.accountCode,
-                        type: entry.accountType,
-                        accounts: [],
-                        runningBalance: 0 // Initialize running balance for this account
-                    };
-                }
-    
-                // Calculate running balance
-                const balance = calculateBalance(
-                    acc[entry.accountTitle].type,
-                    parseFloat(entry.debit || 0),
-                    parseFloat(entry.credit || 0),
-                    acc[entry.accountTitle].runningBalance
-                );
-    
-                // Set the balance for this entry
-                entry.balance = balance;
-    
-                // Update running balance in the group
-                acc[entry.accountTitle].runningBalance = balance;
-    
-                // Add the entry to the group's accounts
-                acc[entry.accountTitle].accounts.push(entry);
-    
-                return acc;
-            }, {});
-    
-            setLedgerData(Object.values(groupedData));
-            setLoading(false);
-        }, (error) => {
-            console.error('Error fetching ledger data:', error);
-        });
-    
-        // Fetch account titles with onSnapshot
-        const accountTitleCollectionRef = collection(db, 'accountTitle');
-        const unsubscribeAccountTitles = onSnapshot(accountTitleCollectionRef, (snapshot) => {
-            const titles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setAccountTitles(titles);
-        }, (error) => {
-            console.error('Error fetching account titles:', error);
-        });
-
-    
-        // Clean up the snapshot listeners
-        return () => {
-            unsubscribeLedger();
-            unsubscribeAccountTitles();
+        const accountTitlesLedgerRef = collection(ledgerDocRef, 'accountTitles'); // Reference to the accountTitles subcollection inside the ledger
+        
+        // Check if the account title already exists, or add it if necessary (optional)
+        const accountTitleDocRef = doc(accountTitlesLedgerRef, selectedAccountTitle);
+        
+        // Reference the 'accounts' subcollection within the specific account title document
+        const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
+        
+        const NewAccount = {
+            accountTitle: selectedAccountTitle || null,
+            accountCode: accountCode || null,
+            accountType: accountType || null,
+            date: null,
+            particulars: null,
+            debit: null,
+            credit: null,
+            balance: null
         };
-    }, [ledgerId]);
-    
+
+        // Add the new account to the 'accounts' subcollection
+        await addDoc(accountsSubcollectionRef, NewAccount);
+
+        console.log('New account added to Firestore under the selected account title');
+        setShowModal(false);
+    } catch (error) {
+        console.error('Error adding account to Firestore:', error);
+    }
+};
 
 
-    //Right Click Functions
+  //Delete Row
+  const handleDeleteRow = async () => {
+    if (!selectedRowData || !ledgerId) return;
 
-    const handleRightClick = (event, rowData) => {
-        event.preventDefault(); // Prevent the browser's default right-click menu
-        setSelectedRowData(rowData); // Set the row's data
-    
-        // Set the modal position based on the mouse position
-        setModalPosition({ x: event.clientX, y: event.clientY });
-    
-        setShowRightClickModal(true); // Open the modal
-      };
+    try {
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountDocRef = doc(ledgerDocRef, 'accounts', selectedRowData.id);
 
-      const closeModalOnOutsideClick = (e) => {
-        if (e.target.id === "user-modal-overlay") {
-            setShowRightClickModal(false);
-        }
-      };
+        await deleteDoc(accountDocRef);
+        
+        // Optionally, you may want to update the UI to reflect the deletion
+        setLedgerData(prevData => 
+            prevData.map(group => ({
+                ...group,
+                accounts: group.accounts.filter(account => account.id !== selectedRowData.id)
+            }))
+        );
 
-      //Delete Row
-      const handleDeleteRow = async () => {
-        if (!selectedRowData || !ledgerId) return;
-    
-        try {
-            const ledgerDocRef = doc(db, 'ledger', ledgerId);
-            const accountDocRef = doc(ledgerDocRef, 'accounts', selectedRowData.id);
-    
-            await deleteDoc(accountDocRef);
-            
-            // Optionally, you may want to update the UI to reflect the deletion
-            setLedgerData(prevData => 
-                prevData.map(group => ({
+        console.log('Account deleted successfully');
+        setShowRightClickModal(false); // Close the context menu
+    } catch (error) {
+        console.error('Error deleting row:', error);
+    }
+};
+
+//Add row Above
+
+
+
+const calculateBalance = (type, debit, credit, previousBalance) => {
+    let balance = previousBalance || 0;
+
+    switch (type) {
+        case 'Assets':
+        case 'Expenses':
+            balance += debit - credit;
+            break;
+        case 'Liabilities':
+        case 'Equity':
+        case 'Revenue':
+        case 'Contra Assets':
+            balance += credit - debit;
+            break;
+        default:
+            balance += debit - credit;
+    }
+    return balance;
+};
+
+
+
+
+const handleCellChange = async (id, field, value) => {
+    try {
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountsDocRef = doc(ledgerDocRef, 'accounts', id);
+
+        await updateDoc(accountsDocRef, { [field]: value });
+
+        setLedgerData(prevData => {
+            // Recalculate balances for the entire dataset after any cell change
+            return prevData.map(group => {
+                let runningBalance = 0;
+                return {
                     ...group,
-                    accounts: group.accounts.filter(account => account.id !== selectedRowData.id)
-                }))
-            );
-    
-            console.log('Account deleted successfully');
-            setShowRightClickModal(false); // Close the context menu
-        } catch (error) {
-            console.error('Error deleting row:', error);
-        }
-    };
+                    accounts: group.accounts.map(entry => {
+                        if (entry.id === id) {
+                            const updatedEntry = { ...entry, [field]: value };
 
-    //Add row Above
-
-    
-
-    const calculateBalance = (type, debit, credit, previousBalance) => {
-        let balance = previousBalance || 0;
-
-        switch (type) {
-            case 'Assets':
-            case 'Expenses':
-                balance += debit - credit;
-                break;
-            case 'Liabilities':
-            case 'Equity':
-            case 'Revenue':
-            case 'Contra Assets':
-                balance += credit - debit;
-                break;
-            default:
-                balance += debit - credit;
-        }
-        return balance;
-    };
-
-    const handleAddAccount = async () => {
-        try {
-            // Reference to the specific ledger document
-            const ledgerDocRef = doc(db, 'ledger', ledgerId); 
-            
-            // Reference to the 'accounttitles' subcollection under the specific ledger document
-            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles'); 
-            
-            // Check if the selected account title exists as a document in the 'accounttitles' subcollection
-            const accountTitlesQuery = query(accountTitlesCollectionRef, where("accountTitle", "==", selectedAccountTitle));
-            const accountTitlesSnapshot = await getDocs(accountTitlesQuery);
-    
-            let accountTitleDocRef;
-            if (accountTitlesSnapshot.empty) {
-                // If the account title does not exist, create a new document for it
-                accountTitleDocRef = await addDoc(accountTitlesCollectionRef, {
-                    accountTitle: selectedAccountTitle,
-                    accountCode: accountCode || null,
-                    accountType: accountType || null
-                });
-                console.log('New account title added:', accountTitleDocRef.id);
-            } else {
-                // If the account title already exists, use its document reference
-                accountTitleDocRef = accountTitlesSnapshot.docs[0].ref;
-                console.log('Existing account title found:', accountTitleDocRef.id);
-            }
-    
-            // Reference the 'accounts' subcollection within the specific account title document
-            const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
-    
-            // Create the new account object
-            const newAccount = {
-                accountTitle: selectedAccountTitle || null,
-                accountCode: accountCode || null,
-                accountType: accountType || null,
-                date: null,
-                particulars: null,
-                debit: null,
-                credit: null,
-                balance: null,
-            };
-    
-            // Add the new account to the 'accounts' subcollection
-            await addDoc(accountsSubcollectionRef, newAccount);
-    
-            console.log('New account added to Firestore under the selected account title');
-    
-            // Hide the modal after successfully adding the account
-            setShowModal(false);
-        } catch (error) {
-            console.error('Error adding account to Firestore:', error);
-        }
-    };
-    
-
-    const handleCellChange = async (id, field, value) => {
-        try {
-            const ledgerDocRef = doc(db, 'ledger', ledgerId);
-            const accountsDocRef = doc(ledgerDocRef, 'accounts', id);
-
-            await updateDoc(accountsDocRef, { [field]: value });
-
-            setLedgerData(prevData => {
-                // Recalculate balances for the entire dataset after any cell change
-                return prevData.map(group => {
-                    let runningBalance = 0;
-                    return {
-                        ...group,
-                        accounts: group.accounts.map(entry => {
-                            if (entry.id === id) {
-                                const updatedEntry = { ...entry, [field]: value };
-
-                                // Recalculate balance for the updated entry
-                                runningBalance = calculateBalance(
-                                    updatedEntry.accountType,
-                                    parseFloat(updatedEntry.debit || 0),
-                                    parseFloat(updatedEntry.credit || 0),
-                                    runningBalance
-                                );
-                                updatedEntry.balance = runningBalance;
-                                return updatedEntry;
-                            }
-
-                            // Calculate balance for the rest of the entries in the group
+                            // Recalculate balance for the updated entry
                             runningBalance = calculateBalance(
-                                entry.accountType,
-                                parseFloat(entry.debit || 0),
-                                parseFloat(entry.credit || 0),
+                                updatedEntry.accountType,
+                                parseFloat(updatedEntry.debit || 0),
+                                parseFloat(updatedEntry.credit || 0),
                                 runningBalance
                             );
-                            entry.balance = runningBalance;
-                            return entry;
-                        })
-                    };
-                });
+                            updatedEntry.balance = runningBalance;
+                            return updatedEntry;
+                        }
+
+                        // Calculate balance for the rest of the entries in the group
+                        runningBalance = calculateBalance(
+                            entry.accountType,
+                            parseFloat(entry.debit || 0),
+                            parseFloat(entry.credit || 0),
+                            runningBalance
+                        );
+                        entry.balance = runningBalance;
+                        return entry;
+                    })
+                };
             });
+        });
 
-            setEditingCell(null);
-        } catch (error) {
-            console.error(`Error updating ${field}:`, error);
-        }
-    };
+        setEditingCell(null);
+    } catch (error) {
+        console.error(`Error updating ${field}:`, error);
+    }
+};
 
-    // Function to format numbers with commas and handle empty/null cases
-    const formatNumber = (num) => {
-        if (num === null || num === undefined || isNaN(num) || num === '') {
-            return '-'; // Return '-' if no value
-        }
-        return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
+// Function to format numbers with commas and handle empty/null cases
+const formatNumber = (num) => {
+    if (num === null || num === undefined || isNaN(num) || num === '') {
+        return '-'; // Return '-' if no value
+    }
+    return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
-    const formatBalance = (balance) => {
-        return formatNumber(balance);
-    };
+const formatBalance = (balance) => {
+    return formatNumber(balance);
+};
 
-    //sif (loading) return <p>Loading...</p>;
 
-    return (
-        <Fragment>
+
+<Fragment>
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Ledger Details</h1>
                 <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ ADD ACCOUNT</button>
@@ -524,5 +412,3 @@ export default function LedgerDetails() {
 
 
         </Fragment>
-    );
-}

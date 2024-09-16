@@ -50,7 +50,7 @@ export default function LedgerList() {
         try {
             // Create the reference document
             const collectionRef = collection(db, "ledger");
-
+            
             // Add the new ledger
             await addDoc(collectionRef, {
                 description: ledgerDescription,
@@ -66,6 +66,28 @@ export default function LedgerList() {
             console.error("Error adding document:", err);
         }
     };
+
+
+    //Right Click Functions
+
+const handleRightClick = (event, rowData) => {
+    event.preventDefault(); // Prevent the browser's default right-click menu
+    setSelectedRowData(rowData); // Set the row's data
+
+    // Set the modal position based on the mouse position
+    setModalPosition({ x: event.clientX, y: event.clientY });
+
+    setShowRightClickModal(true); // Open the modal
+  };
+
+  const closeModalOnOutsideClick = (e) => {
+    if (e.target.id === "user-modal-overlay") {
+        setShowRightClickModal(false);
+    }
+  };
+
+
+  
 
     return (
         <Fragment>

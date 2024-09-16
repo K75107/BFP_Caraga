@@ -19,8 +19,10 @@ export default function Accounts() {
             try {
                 const accountsDataCollectionRef = collection(db, 'accountTitle');
                 const accountsSnapshot = await getDocs(accountsDataCollectionRef);
+
                 const titles = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setAccountsData(titles);
+                
             } catch (error) {
                 console.error('Error fetching account data:', error);
             }
