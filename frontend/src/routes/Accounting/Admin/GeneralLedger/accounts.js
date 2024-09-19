@@ -74,28 +74,32 @@ export default function Accounts() {
     const handleAddAccount = async () => {
         try {
             const newAccount = {
-                "Account Title": newAccountTitle,
-                "Account Code": newAccountCode,
-                "Account Type": newAccountType
+                "AccountTitle": newAccountTitle,
+                "AccountCode": newAccountCode,
+                "AccountType": newAccountType
             };
-
-            // Add new account to Firestore
-            await addDoc(collection(db, 'accountTitle'), newAccount);
-
-            // Update the local state
-            setAccountsData((prev) => [...prev, newAccount]);
-
+    
+            // Add new account to Firestore and get the document reference
+            const docRef = await addDoc(collection(db, 'accountTitle'), newAccount);
+    
+            // Update the local state with the new account, including the Firestore-generated id
+            setAccountsData((prev) => [
+                ...prev, 
+                { id: docRef.id, ...newAccount }
+            ]);
+    
             // Reset the input fields
             setNewAccountTitle('');
             setNewAccountCode('');
             setNewAccountType('');
-
+    
             // Close the modal
             setShowModal(false);
         } catch (error) {
             console.error('Error adding new account:', error);
         }
     };
+    
 
     return (
         <Fragment>
@@ -119,18 +123,18 @@ export default function Accounts() {
                     <tbody>
                         {accountsData.map((account) => (
                             <tr
-                                key={account.id}
+                                key={account.id}  
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                             >
                                 <th
                                     scope="row"
                                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                 >
-                                    {account["Account Title"] || "No Title"}
+                                    {account["AccountTitle"] || "No Title"}
                                 </th>
                                 {/* Editable Account Code */}
                                 <td className="px-6 py-4">
-                                    {editing.id === account.id && editing.field === "Account Code" ? (
+                                    {editing.id === account.id && editing.field === "AccountCode" ? (
                                         <input
                                             type="text"
                                             value={editing.value}
@@ -140,16 +144,16 @@ export default function Accounts() {
                                         />
                                     ) : (
                                         <span
-                                            onClick={() => handleEdit(account.id, "Account Code", account["Account Code"])}
+                                            onClick={() => handleEdit(account.id, "AccountCode", account["AccountCode"])}
                                             className="cursor-pointer"
                                         >
-                                            {account["Account Code"] || "Not Set"}
+                                            {account["AccountCode"] || "Not Set"}
                                         </span>
                                     )}
                                 </td>
                                 {/* Editable Account Type */}
                                 <td className="px-6 py-4">
-                                    {editing.id === account.id && editing.field === "Account Type" ? (
+                                    {editing.id === account.id && editing.field === "AccountType" ? (
                                         <select
                                             value={editing.value}
                                             onChange={handleInputChange}
@@ -164,10 +168,10 @@ export default function Accounts() {
                                         </select>
                                     ) : (
                                         <span
-                                            onClick={() => handleEdit(account.id, "Account Type", account["Account Type"])}
+                                            onClick={() => handleEdit(account.id, "AccountType", account["AccountType"])}
                                             className="cursor-pointer"
                                         >
-                                            {account["Account Type"] || "Not Set"}
+                                            {account["AccountType"] || "Not Set"}
                                         </span>
                                     )}
                                 </td>
@@ -195,6 +199,7 @@ export default function Accounts() {
                             </tr>
                         ))}
                     </tbody>
+
                 </table>
             </div>
 

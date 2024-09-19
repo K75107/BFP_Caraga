@@ -68,24 +68,7 @@ export default function LedgerList() {
     };
 
 
-    //Right Click Functions
-
-const handleRightClick = (event, rowData) => {
-    event.preventDefault(); // Prevent the browser's default right-click menu
-    setSelectedRowData(rowData); // Set the row's data
-
-    // Set the modal position based on the mouse position
-    setModalPosition({ x: event.clientX, y: event.clientY });
-
-    setShowRightClickModal(true); // Open the modal
-  };
-
-  const closeModalOnOutsideClick = (e) => {
-    if (e.target.id === "user-modal-overlay") {
-        setShowRightClickModal(false);
-    }
-  };
-
+  
 
   
 
