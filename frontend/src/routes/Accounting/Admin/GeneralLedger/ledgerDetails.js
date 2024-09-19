@@ -535,7 +535,7 @@ const handleDeleteRow = async () => {
                                 {editingCell === account.id && editValue.field === 'date' ? (
                                     <input
                                         type="date"
-                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-36 h-8 px-2 "
+                                        className="border border-gray-400 focus: focus:outline-none w-36 h-8 px-2 "
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
@@ -556,7 +556,7 @@ const handleDeleteRow = async () => {
                                 {editingCell === account.id && editValue.field === 'particulars' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
@@ -577,7 +577,7 @@ const handleDeleteRow = async () => {
                                 {editingCell === account.id && editValue.field === 'debit' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
@@ -598,7 +598,7 @@ const handleDeleteRow = async () => {
                                 {editingCell === account.id && editValue.field === 'credit' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
