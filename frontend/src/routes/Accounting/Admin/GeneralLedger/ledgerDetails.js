@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
-import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc } from 'firebase/firestore';
+import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc,writeBatch } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
 import { TransparentModal } from '../../../../components/Modal';
 
@@ -20,6 +20,7 @@ export default function LedgerDetails() {
     const [accountsData, setSelectedAccountsData] = useState('');
 
     const [selectedAccountTitle, setSelectedAccountTitle] = useState('');
+
     const [accountCode, setAccountCode] = useState('');
     const [accountType, setAccountType] = useState('');
     const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
@@ -29,6 +30,7 @@ export default function LedgerDetails() {
     const [showRightClickModal, setShowRightClickModal] = useState(false); 
     const [selectedRowData, setSelectedRowData] = useState(null);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [selectedAccountTitleRowData,setSelectedAccountTitleRowData] = useState(null);
     
 
     useEffect(() => {
@@ -100,14 +102,25 @@ export default function LedgerDetails() {
 
     //Right Click Functions
 
-    const handleRightClick = (event, rowData) => {
-        event.preventDefault(); // Prevent the browser's default right-click menu
-        setSelectedRowData(rowData); // Set the row's data
-    
+    const handleRightClick = (event,account, accountTitle) => {
+        event.preventDefault(); 
+
+        const accountId = account.id; // Account document ID
+        const accountTitleId = accountTitle.id; // Parent accountTitle document ID
+
+        console.log('Account:', accountId);  // Logs the account object
+         console.log('Account Title ID:', accountTitleId);  // Logs the accountTitleId
+
+
+         setSelectedRowData(account);
+         setSelectedAccountTitleRowData(accountTitle);
+        
         // Set the modal position based on the mouse position
         setModalPosition({ x: event.clientX, y: event.clientY });
-    
         setShowRightClickModal(true); // Open the modal
+
+
+        
       };
 
       const closeModalOnOutsideClick = (e) => {
@@ -116,78 +129,164 @@ export default function LedgerDetails() {
         }
       };
 
-      //Delete Row
-      const handleDeleteRow = async () => {
-        try {
-            // Get the ledger reference
-            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+      
+
+   // Add Row Above
+   const handleAddRowAbove = async () => {
+    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+
+    try {
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+
+        // Fetch existing accounts and their positions
+        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+        const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const sortedAccounts = existingAccounts.sort((a, b) => a.position - b.position);
+
+        // Find the selected row's position
+        const selectedRowPosition = selectedRowData.position;
+
+        // Find the row above (if any) and calculate new position
+        const index = sortedAccounts.findIndex(account => account.position === selectedRowPosition);
+        const rowAbove = sortedAccounts[index - 1];
+
+        // Calculate the new position (as a float)
+        const newPosition = rowAbove ? (rowAbove.position + selectedRowPosition) / 2 : selectedRowPosition - 1;
+
+        // Ensure the new position is a float
+        const newAccount = {
+            date: '',
+            particulars: '',
+            debit: 0,
+            credit: 0,
+            balance: selectedRowData.balance,
+            position: parseFloat(newPosition.toFixed(10)),  // Force float precision
+        };
+
+        // Add new document with auto-generated ID and calculated position
+        const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
+
+        // Fetch the updated list of accounts and update the local state
+        const updatedAccountsSnapshot = await getDocs(accountsSubcollectionRef);
+        const updatedAccounts = updatedAccountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Update the state to reflect the new account
+        setSelectedAccountsData(prevData => ({
+            ...prevData,
+            [selectedAccountTitleRowData.id]: updatedAccounts.sort((a, b) => a.position - b.position),
+        }));
+
+    } catch (error) {
+        console.error('Error adding row above:', error);
+    }
+};
+
+
     
-            // Get the collection of account titles
-            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-    
-            // Loop through account titles to find the matching account
-            for (let accountTitle of accountTitles) {
-                const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, accountTitle.id), 'accounts');
-                const accountDocRef = doc(accountsSubcollectionRef, selectedAccountTitle);
-    
-                // Delete the account from Firestore
-                await deleteDoc(accountDocRef);
-    
-                // Update local state by removing the deleted account
-                setSelectedAccountsData(prevData => ({
-                    ...prevData,
-                    [accountTitle.id]: prevData[accountTitle.id].filter(account => account.id !== selectedAccountTitle)
-                }));
+
+const handleAddRowBelow = async () => {
+    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+
+    try {
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+
+        // Fetch existing accounts to determine positions
+        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+        const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Find the position of the selected row
+        const selectedRowPosition = selectedRowData.position;
+
+        // Determine the new position (below the selected row)
+        const newPosition = existingAccounts.reduce((acc, account) => {
+            if (account.position > selectedRowPosition) {
+                acc.push(account.position);
             }
-    
-            // Close the right-click modal
-            setShowRightClickModal(false);
-        } catch (error) {
-            console.error('Error deleting account row from Firestore:', error);
-        }
-    };
-    
+            return acc;
+        }, []);
+        
+        const newRowPosition = newPosition.length > 0 ? (selectedRowPosition + Math.min(...newPosition)) / 2 : selectedRowPosition + 1;
 
-    //Add row Above
-    const handleAddRowAbove = async () => {
-        if (!selectedRowData || !ledgerId || !selectedRowData.accountTitleId) return; // Ensure all required variables are set
-    
-        try {
-            const ledgerDocRef = doc(db, 'ledger', ledgerId);
-            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-            const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedRowData.accountTitleId), 'accounts');
-    
-            const newAccount = {
-                date: '',
-                particulars: '',
-                debit: 0,
-                credit: 0,
-                balance: selectedRowData.balance,  // Set balance if necessary
-            };
-    
-            // Add new document
-            const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
-    
-            // Fetch the updated list of accounts
-            const updatedAccountsSnapshot = await getDocs(accountsSubcollectionRef);
-            const updatedAccounts = updatedAccountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-            // Find the index of the selected row and insert the new row above it
-            const index = updatedAccounts.findIndex(account => account.id === selectedRowData.id);
-            updatedAccounts.splice(index, 0, { id: newAccountRef.id, ...newAccount });
-    
-            setSelectedAccountsData(prevData => ({
-                ...prevData,
-                [selectedRowData.accountTitleId]: updatedAccounts,
-            }));
-        } catch (error) {
-            console.error('Error adding row above:', error);
-        }
-    };
-    
+        const newAccount = {
+            date: null,
+            particulars: null,
+            debit: null,
+            credit: null,
+            balance: null,
+            position: parseFloat(newRowPosition.toFixed(10)), // Ensure position is a float
+        };
 
-    
-    
+        // Add the new account to the subcollection
+        await addDoc(accountsSubcollectionRef, newAccount);
+
+        // Fetch updated accounts after the new one is added
+        const updatedSnapshot = await getDocs(accountsSubcollectionRef);
+        const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Update the state with the new accounts data
+        setSelectedAccountsData(prevData => ({
+            ...prevData,
+            [selectedAccountTitleRowData.id]: updatedAccounts.sort((a, b) => a.position - b.position),
+        }));
+
+    } catch (error) {
+        console.error('Error adding row below:', error);
+    }
+};
+
+
+
+const handleDeleteRow = async () => {
+    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+
+    try {
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+
+        // Reference to the account document to delete
+        const accountDocRef = doc(accountsSubcollectionRef, selectedRowData.id);
+
+        // Delete the account from Firestore
+        await deleteDoc(accountDocRef);
+
+        // Fetch updated accounts after deletion
+        const updatedSnapshot = await getDocs(accountsSubcollectionRef);
+        const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Update positions of remaining accounts
+        const newAccounts = updatedAccounts.map((account, index) => ({
+            ...account,
+            position: parseFloat((index + 1).toFixed(10)), // Reassign positions
+        }));
+
+        // Update Firestore with new positions
+        const batch = writeBatch(db);
+        newAccounts.forEach(account => {
+            const accountRef = doc(accountsSubcollectionRef, account.id);
+            batch.update(accountRef, { position: account.position });
+        });
+        await batch.commit();
+
+        // Update the state with the new accounts data
+        setSelectedAccountsData(prevData => ({
+            ...prevData,
+            [selectedAccountTitleRowData.id]: newAccounts.sort((a, b) => a.position - b.position),
+        }));
+
+        // Close the right-click modal
+        setShowRightClickModal(false);
+    } catch (error) {
+        console.error('Error deleting account row from Firestore:', error);
+    }
+};
+
+
     
 
     const calculateBalance = (type, debit, credit, previousBalance) => {
@@ -212,42 +311,58 @@ export default function LedgerDetails() {
 
     const handleAddAccount = async () => {
         try {
-            const ledgerDocRef = doc(db, 'ledger', ledgerId); 
-            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles'); 
-        
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+    
+            // Check if the selected account title already exists
             const accountTitlesQuery = query(accountTitlesCollectionRef, where("accountTitle", "==", selectedAccountTitle));
             const accountTitlesSnapshot = await getDocs(accountTitlesQuery);
-        
+    
             let accountTitleDocRef;
             if (accountTitlesSnapshot.empty) {
+                // Add the new account title if it doesn't exist
                 accountTitleDocRef = await addDoc(accountTitlesCollectionRef, {
                     accountTitle: selectedAccountTitle,
                     accountCode: accountCode || null,
                     accountType: accountType || null
                 });
             } else {
+                // Use the existing account title document reference
                 accountTitleDocRef = accountTitlesSnapshot.docs[0].ref;
             }
-        
+    
             const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
-        
+    
+            // Fetch all existing accounts to determine the current maximum position
+            const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+            const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+            // Find the current maximum position
+            const maxPosition = existingAccounts.length > 0
+                ? Math.max(...existingAccounts.map(account => account.position || 0))
+                : 0; // Default to 0 if there are no accounts
+    
+            // Prepare the new account data with the next position after the current max
             const newAccount = {
                 date: null,
                 particulars: null,
                 debit: null,
                 credit: null,
                 balance: null,
+                position: parseFloat((maxPosition + 1).toFixed(10)), // Ensure the position is a float
             };
-        
+    
+            // Add the new account to the subcollection
             await addDoc(accountsSubcollectionRef, newAccount);
     
-            // Fetch the updated account titles and accounts again after the new account is added
+            // Fetch updated accounts after the new one is added
             const updatedSnapshot = await getDocs(accountsSubcollectionRef);
             const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
+    
+            // Update the state with the new accounts data
             setSelectedAccountsData(prevData => ({
                 ...prevData,
-                [accountTitleDocRef.id]: updatedAccounts // Update the specific account title with new accounts
+                [accountTitleDocRef.id]: updatedAccounts.sort((a, b) => a.position - b.position),
             }));
     
             setShowModal(false); // Close the modal
@@ -361,123 +476,123 @@ export default function LedgerDetails() {
                         </tr>
                     </thead>
                     <tbody>
-                    {accountTitles.map((accountTitle) => (
-    <Fragment key={accountTitle.id}>
-        {/* Account Title Header */}
-        <tr className="bg-gray-100 font-bold">
-            <td className="table-cell px-6 py-4 w-40">{accountTitle.accountTitle}</td>
-            <td className="table-cell px-6 py-4 w-24">{accountTitle.accountCode}</td>
-            <td className="table-cell px-6 py-4 w-24"></td>
-            <td className="table-cell px-6 py-4 w-32"></td>
-            <td className="table-cell px-6 py-4 w-24"></td>
-            <td className="table-cell px-6 py-4 w-24"></td>
-            <td className="table-cell px-6 py-4 w-32">{formatBalance(accountTitle.runningBalance)}</td>
-        </tr>
+            {accountTitles.map((accountTitle) => (
+                <Fragment key={accountTitle.id}>
+                    {/* Account Title Header */}
+                    <tr className="bg-gray-100 font-bold">
+                        <td className="table-cell px-6 py-4 w-40">{accountTitle.accountTitle}</td>
+                        <td className="table-cell px-6 py-4 w-24">{accountTitle.accountCode}</td>
+                        <td className="table-cell px-6 py-4 w-24"></td>
+                        <td className="table-cell px-6 py-4 w-32"></td>
+                        <td className="table-cell px-6 py-4 w-24"></td>
+                        <td className="table-cell px-6 py-4 w-24"></td>
+                        <td className="table-cell px-6 py-4 w-32">{formatBalance(accountTitle.runningBalance)}</td>
+                    </tr>
 
-        {/* Account Rows */}
-        {accountsData[accountTitle.id]?.map((account) => (
-            <tr
-                key={account.id}
-                onContextMenu={(e) => handleRightClick(e, account)}
-                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-            >
-                <td className="px-6 py-4 w-40"></td>
-                <td className="px-6 py-4 w-24"></td>
-
-                {/* Date Field */}
-                <td className="px-6 py-4 w-36 h-8">
-                    {editingCell === account.id && editValue.field === 'date' ? (
-                        <input
-                            type="date"
-                            className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-36 h-8 px-2 py-1"
-                            value={editValue.value}
-                            onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
-                            onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
-                            autoFocus
-                        />
-                    ) : (
-                        <span
-                            onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
-                            className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                    {/* Account Rows */}
+                    {accountsData[accountTitle.id]?.map((account) => (
+                        <tr
+                            key={account.id}
+                            onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
+                            className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         >
-                            {account.date || '-'}
-                        </span>
-                    )}
-                </td>
+                            <td className="px-6 py-4 w-40"></td>
+                            <td className="px-6 py-4 w-24"></td>
 
-                {/* Particulars Field */}
-                <td className="px-6 py-4 w-40 h-8">
-                    {editingCell === account.id && editValue.field === 'particulars' ? (
-                        <input
-                            type="text"
-                            className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
-                            value={editValue.value}
-                            onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
-                            onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
-                            autoFocus
-                        />
-                    ) : (
-                        <span
-                            onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
-                            className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                        >
-                            {account.particulars || '-'}
-                        </span>
-                    )}
-                </td>
+                            {/* Date Field */}
+                            <td className="px-6 py-4 w-36 h-8">
+                                {editingCell === account.id && editValue.field === 'date' ? (
+                                    <input
+                                        type="date"
+                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-36 h-8 px-2 py-1"
+                                        value={editValue.value}
+                                        onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
+                                        onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <span
+                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
+                                        className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                                    >
+                                        {account.date || '-'}
+                                    </span>
+                                )}
+                            </td>
 
-                {/* Debit Field */}
-                <td className="px-6 py-4 w-24 h-8">
-                    {editingCell === account.id && editValue.field === 'debit' ? (
-                        <input
-                            type="text"
-                            className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
-                            value={editValue.value}
-                            onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
-                            onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
-                            autoFocus
-                        />
-                    ) : (
-                        <span
-                            onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
-                            className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                        >
-                            {formatNumber(account.debit) || '-'}
-                        </span>
-                    )}
-                </td>
+                            {/* Particulars Field */}
+                            <td className="px-6 py-4 w-40 h-8">
+                                {editingCell === account.id && editValue.field === 'particulars' ? (
+                                    <input
+                                        type="text"
+                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        value={editValue.value}
+                                        onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                        onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <span
+                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
+                                        className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                    >
+                                        {account.particulars || '-'}
+                                    </span>
+                                )}
+                            </td>
 
-                {/* Credit Field */}
-                <td className="px-6 py-4 w-24 h-8">
-                    {editingCell === account.id && editValue.field === 'credit' ? (
-                        <input
-                            type="text"
-                            className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
-                            value={editValue.value}
-                            onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
-                            onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
-                            autoFocus
-                        />
-                    ) : (
-                        <span
-                            onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
-                            className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                        >
-                            {formatNumber(account.credit) || '-'}
-                        </span>
-                    )}
-                </td>
+                            {/* Debit Field */}
+                            <td className="px-6 py-4 w-30 h-8">
+                                {editingCell === account.id && editValue.field === 'debit' ? (
+                                    <input
+                                        type="text"
+                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        value={editValue.value}
+                                        onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
+                                        onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <span
+                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
+                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8 px-2 py-1"
+                                    >
+                                        {formatNumber(account.debit) || '-'}
+                                    </span>
+                                )}
+                            </td>
 
-                {/* Balance Field (Non-editable, no border) */}
-                <td className="px-6 py-4 w-32">
-                    <span className="block w-full h-full px-2 py-1">
-                        {formatBalance(account.balance) || '-'}
-                    </span>
-                </td>
-            </tr>
-        ))}
-    </Fragment>
-))}
+                            {/* Credit Field */}
+                            <td className="px-6 py-4 w-30 h-8">
+                                {editingCell === account.id && editValue.field === 'credit' ? (
+                                    <input
+                                        type="text"
+                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-full h-8 px-2 py-1"
+                                        value={editValue.value}
+                                        onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
+                                        onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <span
+                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
+                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8  px-2 py-1"
+                                    >
+                                        {formatNumber(account.credit) || '-'}
+                                    </span>
+                                )}
+                            </td>
+
+                            {/* Balance Field (Non-editable, no border) */}
+                            <td className="px-6 py-4 w-32">
+                                <span className="block w-full h-full px-2 py-1">
+                                    {formatBalance(account.balance) || '-'}
+                                </span>
+                            </td>
+                        </tr>
+                    ))}
+                </Fragment>
+            ))}
 
 
 
@@ -580,9 +695,11 @@ export default function LedgerDetails() {
                     >
                         Add Row Above
                     </button>
+
+
                     <button
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        
+                        onClick={handleAddRowBelow}
                     >
                         Add Row Below
                     </button>
