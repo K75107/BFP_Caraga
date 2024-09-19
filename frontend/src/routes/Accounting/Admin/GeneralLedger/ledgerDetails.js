@@ -480,13 +480,13 @@ const handleDeleteRow = async () => {
                 <Fragment key={accountTitle.id}>
                     {/* Account Title Header */}
                     <tr className="bg-gray-100 font-bold">
-                        <td className="table-cell px-6 py-4 w-40">{accountTitle.accountTitle}</td>
-                        <td className="table-cell px-6 py-4 w-24">{accountTitle.accountCode}</td>
-                        <td className="table-cell px-6 py-4 w-24"></td>
-                        <td className="table-cell px-6 py-4 w-32"></td>
-                        <td className="table-cell px-6 py-4 w-24"></td>
-                        <td className="table-cell px-6 py-4 w-24"></td>
-                        <td className="table-cell px-6 py-4 w-32">{formatBalance(accountTitle.runningBalance)}</td>
+                        <td className="table-cell px-6 py-3 w-40">{accountTitle.accountTitle}</td>
+                        <td className="table-cell px-6 py-3 w-24">{accountTitle.accountCode}</td>
+                        <td className="table-cell px-6 py-3 w-24"></td>
+                        <td className="table-cell px-6 py-3 w-32"></td>
+                        <td className="table-cell px-6 py-3 w-24"></td>
+                        <td className="table-cell px-6 py-3 w-24"></td>
+                        <td className="table-cell px-6 py-3 w-32">{formatBalance(accountTitle.runningBalance)}</td>
                     </tr>
 
                     {/* Account Rows */}
@@ -496,15 +496,15 @@ const handleDeleteRow = async () => {
                             onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
                             className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         >
-                            <td className="px-6 py-4 w-40"></td>
-                            <td className="px-6 py-4 w-24"></td>
+                            <td className="px-6 py-5 w-40"></td>
+                            <td className="px-6 py-5 w-24"></td>
 
                             {/* Date Field */}
-                            <td className="px-6 py-4 w-36 h-8">
+                            <td className="px-6 py-2 w-36 h-6">
                                 {editingCell === account.id && editValue.field === 'date' ? (
                                     <input
                                         type="date"
-                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-36 h-8 px-2 py-1"
+                                        className="border border-gray-400 focus:bg-yellow-100 focus:outline-none w-36 h-8 px-2 "
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
@@ -521,7 +521,7 @@ const handleDeleteRow = async () => {
                             </td>
 
                             {/* Particulars Field */}
-                            <td className="px-6 py-4 w-40 h-8">
+                            <td className="px-6 py-2 w-40 h-6">
                                 {editingCell === account.id && editValue.field === 'particulars' ? (
                                     <input
                                         type="text"
@@ -542,7 +542,7 @@ const handleDeleteRow = async () => {
                             </td>
 
                             {/* Debit Field */}
-                            <td className="px-6 py-4 w-30 h-8">
+                            <td className="px-6 py-2 w-30 h-6">
                                 {editingCell === account.id && editValue.field === 'debit' ? (
                                     <input
                                         type="text"
@@ -563,7 +563,7 @@ const handleDeleteRow = async () => {
                             </td>
 
                             {/* Credit Field */}
-                            <td className="px-6 py-4 w-30 h-8">
+                            <td className="px-6 py-2 w-30 h-6">
                                 {editingCell === account.id && editValue.field === 'credit' ? (
                                     <input
                                         type="text"
@@ -584,7 +584,7 @@ const handleDeleteRow = async () => {
                             </td>
 
                             {/* Balance Field (Non-editable, no border) */}
-                            <td className="px-6 py-4 w-32">
+                            <td className="px-6 py-2 w-32">
                                 <span className="block w-full h-full px-2 py-1">
                                     {formatBalance(account.balance) || '-'}
                                 </span>
