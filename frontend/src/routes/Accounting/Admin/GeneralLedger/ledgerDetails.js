@@ -3,14 +3,16 @@ import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
 import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc,writeBatch } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
-import { TransparentModal } from '../../../../components/Modal';
+import { IoMdAddCircleOutline } from "react-icons/io";
 
 export default function LedgerDetails() {
     const [showModal, setShowModal] = useState(false);
     const { ledgerId } = useParams(); // Get ledgerId from URL
-    const [ledgerData, setLedgerData] = useState([]);
     const [loading, setLoading] = useState(true);
     
+    //Hover on Rows
+    const [hoveredRowId, setHoveredRowId] = useState(null);
+
     //List of Account Titles from
     const [listAccountTitles,setListAccountTitles] = useState([]); 
 
@@ -69,8 +71,14 @@ export default function LedgerDetails() {
                 accounts[accountTitleId] = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }
 
-            setAccountTitles(accountTitles);
+
+            // Filter out account titles with no associated accounts
+            const filteredAccountTitles = accountTitles.filter(title => accounts[title.id] && accounts[title.id].length > 0);
+
+            setAccountTitles(filteredAccountTitles);
             setSelectedAccountsData(accounts);
+
+
 
         }, (error) => {
             console.error('Error fetching ledger data:', error);
@@ -191,6 +199,9 @@ const handleAddRowBelow = async () => {
     if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
 
     try {
+        
+
+
         const ledgerDocRef = doc(db, 'ledger', ledgerId);
         const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
         const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
@@ -287,7 +298,20 @@ const handleDeleteRow = async () => {
 };
 
 
-    
+    const handleHoverData = (account, accountTitle) =>{
+        const accountId = account.id; // Account document ID
+        const accountTitleId = accountTitle.id; // Parent accountTitle document ID
+
+        console.log('Account:', accountId);  // Logs the account object
+         console.log('Account Title ID:', accountTitleId);  // Logs the accountTitleId
+
+
+         setSelectedRowData(account);
+         setSelectedAccountTitleRowData(accountTitle);
+
+
+    }    
+
 
     const calculateBalance = (type, debit, credit, previousBalance) => {
         let balance = previousBalance || 0;
@@ -450,7 +474,7 @@ const handleDeleteRow = async () => {
         return formatNumber(balance);
     };
 
-    //sif (loading) return <p>Loading...</p>;
+   //if (loading) return <p>Loading...</p>;
 
     return (
         <Fragment>
@@ -462,20 +486,22 @@ const handleDeleteRow = async () => {
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/*TABLE*/}
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" className="px-6 py-3 w-[150px]">ACCOUNT TITLE</th>
+                            <th scope="col" className="px-6 py-3 w-[200px]">ACCOUNT TITLE</th>
                             <th scope="col" className="px-6 py-3 w-[150px]">ACCOUNT CODE</th>
-                            <th scope="col" className="px-6 py-3 w-[120px]">DATE</th>
-                            <th scope="col" className="px-6 py-3 w-[200px]">PARTICULARS</th>
-                            <th scope="col" className="px-6 py-3 w-[100px]">DEBIT</th>
-                            <th scope="col" className="px-6 py-3 w-[100px]">CREDIT</th>
-                            <th scope="col" className="px-6 py-3 w-[120px]">BALANCE</th>
+                            <th scope="col" className="px-6 py-3 w-[100px]">DATE</th>
+                            <th scope="col" className="px-6 py-3 w-[300px]">PARTICULARS</th>
+                            <th scope="col" className="px-6 py-3 w-[180px]">DEBIT</th>
+                            <th scope="col" className="px-6 py-3 w-[180px]">CREDIT</th>
+                            <th scope="col" className="px-6 py-3 w-[180px]">BALANCE</th>
+                            <th scope="col" className=" w-[0px]"></th>
                         </tr>
                     </thead>
                     <tbody>
+                        
             {accountTitles.map((accountTitle) => (
                 <Fragment key={accountTitle.id}>
                     {/* Account Title Header */}
@@ -494,7 +520,12 @@ const handleDeleteRow = async () => {
                         <tr
                             key={account.id}
                             onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
-                            className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                            onMouseEnter={(e) => { 
+                                setHoveredRowId(account.id); 
+                                handleHoverData(account, accountTitle); 
+                              }}
+                            onMouseLeave={() => setHoveredRowId(null)}     
+                            className="bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         >
                             <td className="px-6 py-5 w-40"></td>
                             <td className="px-6 py-5 w-24"></td>
@@ -582,13 +613,23 @@ const handleDeleteRow = async () => {
                                     </span>
                                 )}
                             </td>
-
-                            {/* Balance Field (Non-editable, no border) */}
-                            <td className="px-6 py-2 w-32">
-                                <span className="block w-full h-full px-2 py-1">
-                                    {formatBalance(account.balance) || '-'}
-                                </span>
+                            
+                            {/**/}
+                            <td className="px-6 py-4">
+                                {formatBalance(account.balance) || '-'}
                             </td>
+
+                            {hoveredRowId === account.id && (
+                                <td className="absolute right-8 mt-9 mr-1">  {/* Position the button absolutely */}
+                                <button
+                                    className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                    style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
+                                    onClick={handleAddRowBelow}
+                                >
+                                    <IoMdAddCircleOutline />
+                                </button>
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </Fragment>
