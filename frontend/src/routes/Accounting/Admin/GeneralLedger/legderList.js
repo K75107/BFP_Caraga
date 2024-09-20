@@ -31,6 +31,7 @@ export default function LedgerList() {
     useEffect(() => {
         const getLedgerList = async () => {
             try {
+                
                 const querySnapshot = await getDocs(collection(db, "ledger"));
                 const ledgerData = querySnapshot.docs.map((doc) => ({
                     id: doc.id,

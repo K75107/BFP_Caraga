@@ -40,67 +40,68 @@ export default function LedgerDetails() {
             console.error('ledgerId is not provided.');
             return;
         }
-
-
+    
         // Fetch ledger data with onSnapshot for real-time updates
-        const ledgerDocRef = doc(db, 'ledger', ledgerId); // Reference to the specific ledger document
-        const accountsCollectionRef = collection(ledgerDocRef, 'accounttitles'); // Subcollection 'accounttitles' under the ledger document
-
-        let accountTitles = []; // To store account titles
-        let accounts = {}; // To store accounts under each account title
-
+        const ledgerDocRef = doc(db, 'ledger', ledgerId); 
+        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+    
+        let unsubscribeLedger;
+        let unsubscribeAccountTitles;
+    
+        // Function to fetch accounts for each account title
+        const fetchAccounts = async (accountTitleId) => {
+            const accountsSubcollectionRef = collection(ledgerDocRef, `accounttitles/${accountTitleId}/accounts`);
+            const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+    
+            return accountsSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => a.position - b.position);
+        };
+    
         // Fetch account titles and their subcollection accounts
-        const unsubscribeLedger = onSnapshot(accountsCollectionRef, async (snapshot) => {
+        unsubscribeLedger = onSnapshot(accountTitlesCollectionRef, async (snapshot) => {
             if (snapshot.empty) {
                 console.log('No account titles found');
+                setAccountTitles([]); // Clear state if no titles
                 return;
             }
-
-            // Store account titles
-            accountTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Loop through each account title to fetch its accounts
+    
+            const fetchedAccountTitles = [];
+            const fetchedAccounts = {};
+    
+            // Loop through each account title and fetch its accounts
             for (const accountTitleDoc of snapshot.docs) {
-                const accountTitleId = accountTitleDoc.id;
-
-                // Reference to the 'accounts' subcollection under each account title
-                const accountsSubCollectionRef = collection(accountTitleDoc.ref, 'accounts');
-
-                // Fetch accounts under each account title
-                const accountsSnapshot = await getDocs(accountsSubCollectionRef);
-                accounts[accountTitleId] = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
+                fetchedAccountTitles.push(accountTitleData);
+    
+                // Fetch accounts for this account title
+                const accounts = await fetchAccounts(accountTitleDoc.id);
+                fetchedAccounts[accountTitleDoc.id] = accounts;
             }
-
-            setAccountTitles(accountTitles);
-            setSelectedAccountsData(accounts);
-
+    
+            setAccountTitles(fetchedAccountTitles);
+            setSelectedAccountsData(fetchedAccounts);
+    
         }, (error) => {
             console.error('Error fetching ledger data:', error);
         });
-
-
-        // Fetch account titles with onSnapshot
-        const listAccountTitlesRef = collection(db, 'accountTitle'); 
-
-        const unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
+    
+        // Fetch list of all account titles (assuming these are used elsewhere)
+        const listAccountTitlesRef = collection(db, 'accountTitle');
+        unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
             const listTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setListAccountTitles(listTitles);
-
-
-
         }, (error) => {
             console.error('Error fetching account titles:', error);
         });
-
-
+    
         // Clean up the snapshot listeners
         return () => {
-            unsubscribeLedger();
-            unsubscribeAccountTitles();
-
+            if (unsubscribeLedger) unsubscribeLedger();
+            if (unsubscribeAccountTitles) unsubscribeAccountTitles();
         };
     }, [ledgerId]);
-
+    
     
     //Right Click Functions
 
