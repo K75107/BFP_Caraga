@@ -41,71 +41,79 @@ export default function LedgerDetails() {
             return;
         }
     
-        
         // Fetch ledger data with onSnapshot for real-time updates
         const ledgerDocRef = doc(db, 'ledger', ledgerId); // Reference to the specific ledger document
         const accountsCollectionRef = collection(ledgerDocRef, 'accounttitles'); // Subcollection 'accounttitles' under the ledger document
-
+    
         let accountTitles = []; // To store account titles
         let accounts = {}; // To store accounts under each account title
-
+    
         // Fetch account titles and their subcollection accounts
         const unsubscribeLedger = onSnapshot(accountsCollectionRef, async (snapshot) => {
             if (snapshot.empty) {
                 console.log('No account titles found');
                 return;
             }
-
-            // Store account titles
-            accountTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
+    
+            // Store account titles and sort them by `accountTitle` (with error handling for undefined values)
+            accountTitles = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => {
+                    const titleA = a.accountTitle || "";  // Handle undefined values by defaulting to empty string
+                    const titleB = b.accountTitle || "";
+                    return titleA.localeCompare(titleB); // Use localeCompare to sort alphabetically
+                });
+    
             // Loop through each account title to fetch its accounts
             for (const accountTitleDoc of snapshot.docs) {
                 const accountTitleId = accountTitleDoc.id;
-
+    
                 // Reference to the 'accounts' subcollection under each account title
                 const accountsSubCollectionRef = collection(accountTitleDoc.ref, 'accounts');
-
-                // Fetch accounts under each account title
+    
+                // Fetch accounts under each account title and sort them by position
                 const accountsSnapshot = await getDocs(accountsSubCollectionRef);
-                accounts[accountTitleId] = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                accounts[accountTitleId] = accountsSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => a.position - b.position); // Sort accounts by position
             }
-
-
+    
             // Filter out account titles with no associated accounts
             const filteredAccountTitles = accountTitles.filter(title => accounts[title.id] && accounts[title.id].length > 0);
-
+    
+            // Update state with sorted and filtered data
             setAccountTitles(filteredAccountTitles);
             setSelectedAccountsData(accounts);
-
-
-
+    
         }, (error) => {
             console.error('Error fetching ledger data:', error);
         });
-
     
-        // Fetch account titles with onSnapshot
+        // Fetch account titles with onSnapshot for the listAccountTitles
         const listAccountTitlesRef = collection(db, 'accountTitle'); 
-        
+    
         const unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
-            const listTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const listTitles = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => {
+                    const titleA = a.accountTitle || "";  // Handle undefined values by defaulting to empty string
+                    const titleB = b.accountTitle || "";
+                    return titleA.localeCompare(titleB); // Sort alphabetically
+                });
+    
             setListAccountTitles(listTitles);
-
-
-
         }, (error) => {
             console.error('Error fetching account titles:', error);
         });
-
-
+    
         // Clean up the snapshot listeners
         return () => {
             unsubscribeLedger();
             unsubscribeAccountTitles();
-           
         };
     }, [ledgerId]);
+    
+    
     
 
     //Right Click Functions
@@ -139,172 +147,192 @@ export default function LedgerDetails() {
 
       
 
-   // Add Row Above
-   const handleAddRowAbove = async () => {
-    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
-
-    try {
-        const ledgerDocRef = doc(db, 'ledger', ledgerId);
-        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
-
-        // Fetch existing accounts and their positions
-        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
-        const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const sortedAccounts = existingAccounts.sort((a, b) => a.position - b.position);
-
-        // Find the selected row's position
-        const selectedRowPosition = selectedRowData.position;
-
-        // Find the row above (if any) and calculate new position
-        const index = sortedAccounts.findIndex(account => account.position === selectedRowPosition);
-        const rowAbove = sortedAccounts[index - 1];
-
-        // Calculate the new position (as a float)
-        const newPosition = rowAbove ? (rowAbove.position + selectedRowPosition) / 2 : selectedRowPosition - 1;
-
-        // Ensure the new position is a float
-        const newAccount = {
-            date: '',
-            particulars: '',
-            debit: 0,
-            credit: 0,
-            balance: selectedRowData.balance,
-            position: parseFloat(newPosition.toFixed(10)),  // Force float precision
-        };
-
-        // Add new document with auto-generated ID and calculated position
-        const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
-
-        // Fetch the updated list of accounts and update the local state
-        const updatedAccountsSnapshot = await getDocs(accountsSubcollectionRef);
-        const updatedAccounts = updatedAccountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Update the state to reflect the new account
-        setSelectedAccountsData(prevData => ({
-            ...prevData,
-            [selectedAccountTitleRowData.id]: updatedAccounts.sort((a, b) => a.position - b.position),
-        }));
-
-    } catch (error) {
-        console.error('Error adding row above:', error);
-    }
-};
-
+      const handleAddRowAbove = async () => {
+        if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+    
+        try {
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+            const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+    
+            // Fetch existing accounts and sort them by position
+            const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+            const sortedAccounts = accountsSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => a.position - b.position);
+    
+            // Get the position of the selected row
+            const selectedRowPosition = selectedRowData.position;
+    
+            // Find the row immediately above the selected row, if any
+            const index = sortedAccounts.findIndex(account => account.position === selectedRowPosition);
+            const rowAbove = sortedAccounts[index - 1];
+    
+            // Calculate the new position (between rowAbove and the selected row, or -1 if no rowAbove)
+            const newPosition = rowAbove 
+                ? (rowAbove.position + selectedRowPosition) / 2 
+                : selectedRowPosition - 1;
+    
+            const newAccount = {
+                date: '',
+                particulars: '',
+                debit: 0,
+                credit: 0,
+                balance: selectedRowData.balance, // Preserving balance of the selected row
+                position: parseFloat(newPosition.toFixed(10)),  // Ensure it's a float for consistency
+            };
+    
+            // Add the new account to Firestore and get its reference
+            const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
+    
+            // Fetch the new account's ID
+            const newAccountWithId = {
+                ...newAccount,
+                id: newAccountRef.id,  // Use the Firestore-generated ID
+            };
+    
+            // Update the local state with the new account
+            setSelectedAccountsData(prevData => ({
+                ...prevData,
+                [selectedAccountTitleRowData.id]: [...sortedAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
+            }));
+    
+        } catch (error) {
+            console.error('Error adding row above:', error.message || error);
+        }
+    };
+    
+    
+    
 
     
 
-const handleAddRowBelow = async () => {
-    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+    const handleAddRowBelow = async () => {
+        if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+    
+        try {
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+            const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+    
+            // Fetch and sort existing accounts by position
+            const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+            const sortedAccounts = accountsSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => a.position - b.position);
+    
+            // Find the position of the selected row
+            const selectedRowPosition = selectedRowData.position;
+    
+            // Find the next row after the selected one
+            const nextRow = sortedAccounts.find(account => account.position > selectedRowPosition);
+    
+            // Calculate the new position (midpoint or +1)
+            const newRowPosition = nextRow 
+                ? (selectedRowPosition + nextRow.position) / 2 
+                : selectedRowPosition + 1;
+    
+            // Create the new account with the calculated position
+            const newAccount = {
+                date: null,
+                particulars: null,
+                debit: null,
+                credit: null,
+                balance: null,
+                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+            };
+    
+            // Add the new account to Firestore and get its reference
+            const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
+    
+            // Fetch the new account's ID
+            const newAccountWithId = {
+                ...newAccount,
+                id: newAccountRef.id,  // Use the Firestore-generated ID
+            };
+    
+            // Update the local state, ensuring all accounts have a unique key (ID)
+            setSelectedAccountsData(prevData => ({
+                ...prevData,
+                [selectedAccountTitleRowData.id]: [...sortedAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
+            }));
+    
+        } catch (error) {
+            console.error('Error adding row below:', error.message || error);
+        }
+    };
+    
+    
 
-    try {
-        
 
-
-        const ledgerDocRef = doc(db, 'ledger', ledgerId);
-        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
-
-        // Fetch existing accounts to determine positions
-        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
-        const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Find the position of the selected row
-        const selectedRowPosition = selectedRowData.position;
-
-        // Determine the new position (below the selected row)
-        const newPosition = existingAccounts.reduce((acc, account) => {
-            if (account.position > selectedRowPosition) {
-                acc.push(account.position);
+    const handleDeleteRow = async () => {
+        if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
+    
+        try {
+            const ledgerDocRef = doc(db, 'ledger', ledgerId);
+            const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+            const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
+    
+            // Reference to the account document to delete
+            const accountDocRef = doc(accountsSubcollectionRef, selectedRowData.id);
+    
+            // Delete the account from Firestore
+            await deleteDoc(accountDocRef);
+    
+            // Fetch updated accounts after deletion
+            const updatedSnapshot = await getDocs(accountsSubcollectionRef);
+            const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+            // Keep existing positions unless some rows need adjustment
+            const sortedAccounts = updatedAccounts.sort((a, b) => a.position - b.position);
+    
+            // Optional: If the position gap between rows becomes too large, we can consider reassigning positions.
+            // This is more of a safeguard and not mandatory.
+            const shouldReassign = sortedAccounts.some((account, index) => {
+                const nextAccount = sortedAccounts[index + 1];
+                return nextAccount && (nextAccount.position - account.position) > 1;
+            });
+    
+            if (shouldReassign) {
+                const newAccounts = sortedAccounts.map((account, index) => ({
+                    ...account,
+                    position: parseFloat((index + 1).toFixed(10)), // Reassign positions only if necessary
+                }));
+    
+                // Update Firestore with new positions
+                const batch = writeBatch(db);
+                newAccounts.forEach(account => {
+                    const accountRef = doc(accountsSubcollectionRef, account.id);
+                    batch.update(accountRef, { position: account.position });
+                });
+                await batch.commit();
+    
+                // Update the state with the new accounts data
+                setSelectedAccountsData(prevData => ({
+                    ...prevData,
+                    [selectedAccountTitleRowData.id]: newAccounts,
+                }));
+            } else {
+                // If no reassigning needed, just update the state with the updated account list
+                setSelectedAccountsData(prevData => ({
+                    ...prevData,
+                    [selectedAccountTitleRowData.id]: sortedAccounts,
+                }));
             }
-            return acc;
-        }, []);
-        
-        const newRowPosition = newPosition.length > 0 ? (selectedRowPosition + Math.min(...newPosition)) / 2 : selectedRowPosition + 1;
-
-        const newAccount = {
-            date: null,
-            particulars: null,
-            debit: null,
-            credit: null,
-            balance: null,
-            position: parseFloat(newRowPosition.toFixed(10)), // Ensure position is a float
-        };
-
-        // Add the new account to the subcollection
-        await addDoc(accountsSubcollectionRef, newAccount);
-
-        // Fetch updated accounts after the new one is added
-        const updatedSnapshot = await getDocs(accountsSubcollectionRef);
-        const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Update the state with the new accounts data
-        setSelectedAccountsData(prevData => ({
-            ...prevData,
-            [selectedAccountTitleRowData.id]: updatedAccounts.sort((a, b) => a.position - b.position),
-        }));
-
-    } catch (error) {
-        console.error('Error adding row below:', error);
-    }
-};
-
-
-
-const handleDeleteRow = async () => {
-    if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
-
-    try {
-        const ledgerDocRef = doc(db, 'ledger', ledgerId);
-        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedAccountTitleRowData.id), 'accounts');
-
-        // Reference to the account document to delete
-        const accountDocRef = doc(accountsSubcollectionRef, selectedRowData.id);
-
-        // Delete the account from Firestore
-        await deleteDoc(accountDocRef);
-
-        // Fetch updated accounts after deletion
-        const updatedSnapshot = await getDocs(accountsSubcollectionRef);
-        const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Update positions of remaining accounts
-        const newAccounts = updatedAccounts.map((account, index) => ({
-            ...account,
-            position: parseFloat((index + 1).toFixed(10)), // Reassign positions
-        }));
-
-        // Update Firestore with new positions
-        const batch = writeBatch(db);
-        newAccounts.forEach(account => {
-            const accountRef = doc(accountsSubcollectionRef, account.id);
-            batch.update(accountRef, { position: account.position });
-        });
-        await batch.commit();
-
-        // Update the state with the new accounts data
-        setSelectedAccountsData(prevData => ({
-            ...prevData,
-            [selectedAccountTitleRowData.id]: newAccounts.sort((a, b) => a.position - b.position),
-        }));
-
-        // Close the right-click modal
-        setShowRightClickModal(false);
-    } catch (error) {
-        console.error('Error deleting account row from Firestore:', error);
-    }
-};
+    
+            // Close the right-click modal
+            setShowRightClickModal(false);
+    
+        } catch (error) {
+            console.error('Error deleting account row from Firestore:', error);
+        }
+    };
+    
 
 
     const handleHoverData = (account, accountTitle) =>{
         const accountId = account.id; // Account document ID
         const accountTitleId = accountTitle.id; // Parent accountTitle document ID
-
-        console.log('Account:', accountId);  // Logs the account object
-         console.log('Account Title ID:', accountTitleId);  // Logs the accountTitleId
-
 
          setSelectedRowData(account);
          setSelectedAccountTitleRowData(accountTitle);
@@ -334,6 +362,8 @@ const handleDeleteRow = async () => {
     };
 
     const handleAddAccount = async () => {
+        if (!ledgerId || !selectedAccountTitle) return;  // Ensure necessary data exists
+    
         try {
             const ledgerDocRef = doc(db, 'ledger', ledgerId);
             const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
@@ -357,41 +387,40 @@ const handleDeleteRow = async () => {
     
             const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
     
-            // Fetch all existing accounts to determine the current maximum position
+            // Fetch existing accounts and find the max position in a single pass
             const accountsSnapshot = await getDocs(accountsSubcollectionRef);
             const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-            // Find the current maximum position
+            // Find the max position efficiently
             const maxPosition = existingAccounts.length > 0
                 ? Math.max(...existingAccounts.map(account => account.position || 0))
-                : 0; // Default to 0 if there are no accounts
+                : 0; // Default to 0 if no accounts exist
     
-            // Prepare the new account data with the next position after the current max
+            // Prepare the new account with the next position
             const newAccount = {
                 date: null,
                 particulars: null,
                 debit: null,
                 credit: null,
                 balance: null,
-                position: parseFloat((maxPosition + 1).toFixed(10)), // Ensure the position is a float
+                position: parseFloat((maxPosition + 1).toFixed(10)), // Ensure position is a float
             };
     
-            // Add the new account to the subcollection
-            await addDoc(accountsSubcollectionRef, newAccount);
+            // Add the new account to the subcollection and get its reference
+            const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
     
-            // Fetch updated accounts after the new one is added
-            const updatedSnapshot = await getDocs(accountsSubcollectionRef);
-            const updatedAccounts = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Update the newAccount with its ID (after it is added to Firestore)
+            const newAccountWithId = { ...newAccount, id: newAccountRef.id };
     
-            // Update the state with the new accounts data
+            // Directly update state without re-fetching all documents
             setSelectedAccountsData(prevData => ({
                 ...prevData,
-                [accountTitleDocRef.id]: updatedAccounts.sort((a, b) => a.position - b.position),
+                [accountTitleDocRef.id]: [...existingAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
             }));
     
-            setShowModal(false); // Close the modal
+            setShowModal(false); // Close the modal after successful addition
         } catch (error) {
-            console.error('Error adding account to Firestore:', error);
+            console.error('Error adding account to Firestore:', error.message || error);
         }
     };
     
