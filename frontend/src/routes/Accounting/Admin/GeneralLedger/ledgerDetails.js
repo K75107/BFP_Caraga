@@ -40,82 +40,68 @@ export default function LedgerDetails() {
             console.error('ledgerId is not provided.');
             return;
         }
-    
+
+
         // Fetch ledger data with onSnapshot for real-time updates
         const ledgerDocRef = doc(db, 'ledger', ledgerId); // Reference to the specific ledger document
         const accountsCollectionRef = collection(ledgerDocRef, 'accounttitles'); // Subcollection 'accounttitles' under the ledger document
-    
+
         let accountTitles = []; // To store account titles
         let accounts = {}; // To store accounts under each account title
-    
+
         // Fetch account titles and their subcollection accounts
         const unsubscribeLedger = onSnapshot(accountsCollectionRef, async (snapshot) => {
             if (snapshot.empty) {
                 console.log('No account titles found');
                 return;
             }
-    
-            // Store account titles and sort them by `accountTitle` (with error handling for undefined values)
-            accountTitles = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .sort((a, b) => {
-                    const titleA = a.accountTitle || "";  // Handle undefined values by defaulting to empty string
-                    const titleB = b.accountTitle || "";
-                    return titleA.localeCompare(titleB); // Use localeCompare to sort alphabetically
-                });
-    
+
+            // Store account titles
+            accountTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
             // Loop through each account title to fetch its accounts
             for (const accountTitleDoc of snapshot.docs) {
                 const accountTitleId = accountTitleDoc.id;
-    
+
                 // Reference to the 'accounts' subcollection under each account title
                 const accountsSubCollectionRef = collection(accountTitleDoc.ref, 'accounts');
-    
-                // Fetch accounts under each account title and sort them by position
+
+                // Fetch accounts under each account title
                 const accountsSnapshot = await getDocs(accountsSubCollectionRef);
-                accounts[accountTitleId] = accountsSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => a.position - b.position); // Sort accounts by position
+                accounts[accountTitleId] = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }
-    
-            // Filter out account titles with no associated accounts
-            const filteredAccountTitles = accountTitles.filter(title => accounts[title.id] && accounts[title.id].length > 0);
-    
-            // Update state with sorted and filtered data
-            setAccountTitles(filteredAccountTitles);
+
+            setAccountTitles(accountTitles);
             setSelectedAccountsData(accounts);
-    
+
         }, (error) => {
             console.error('Error fetching ledger data:', error);
         });
-    
-        // Fetch account titles with onSnapshot for the listAccountTitles
+
+
+        // Fetch account titles with onSnapshot
         const listAccountTitlesRef = collection(db, 'accountTitle'); 
-    
+
         const unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
-            const listTitles = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .sort((a, b) => {
-                    const titleA = a.accountTitle || "";  // Handle undefined values by defaulting to empty string
-                    const titleB = b.accountTitle || "";
-                    return titleA.localeCompare(titleB); // Sort alphabetically
-                });
-    
+            const listTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setListAccountTitles(listTitles);
+
+
+
         }, (error) => {
             console.error('Error fetching account titles:', error);
         });
-    
+
+
         // Clean up the snapshot listeners
         return () => {
             unsubscribeLedger();
             unsubscribeAccountTitles();
+
         };
     }, [ledgerId]);
-    
-    
-    
 
+    
     //Right Click Functions
 
     const handleRightClick = (event,account, accountTitle) => {
@@ -123,11 +109,7 @@ export default function LedgerDetails() {
 
         const accountId = account.id; // Account document ID
         const accountTitleId = accountTitle.id; // Parent accountTitle document ID
-
-        console.log('Account:', accountId);  // Logs the account object
-         console.log('Account Title ID:', accountTitleId);  // Logs the accountTitleId
-
-
+        
          setSelectedRowData(account);
          setSelectedAccountTitleRowData(accountTitle);
         
@@ -387,11 +369,9 @@ export default function LedgerDetails() {
     
             const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
     
-            // Fetch existing accounts and find the max position in a single pass
+            // Fetch existing accounts and find the max position
             const accountsSnapshot = await getDocs(accountsSubcollectionRef);
             const existingAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-            // Find the max position efficiently
             const maxPosition = existingAccounts.length > 0
                 ? Math.max(...existingAccounts.map(account => account.position || 0))
                 : 0; // Default to 0 if no accounts exist
@@ -403,27 +383,30 @@ export default function LedgerDetails() {
                 debit: null,
                 credit: null,
                 balance: null,
-                position: parseFloat((maxPosition + 1).toFixed(10)), // Ensure position is a float
+                position: parseFloat((maxPosition + 10).toFixed(10)), // Ensure position is a float and increment by 10
             };
     
             // Add the new account to the subcollection and get its reference
             const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
     
-            // Update the newAccount with its ID (after it is added to Firestore)
+            // Fetch the new account's ID
             const newAccountWithId = { ...newAccount, id: newAccountRef.id };
     
-            // Directly update state without re-fetching all documents
-            setSelectedAccountsData(prevData => ({
-                ...prevData,
-                [accountTitleDocRef.id]: [...existingAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
-            }));
+            // Directly update state with the new account
+            setSelectedAccountsData(prevData => {
+                const updatedAccounts = prevData[accountTitleDocRef.id] || [];
+                return {
+                    ...prevData,
+                    [accountTitleDocRef.id]: [...updatedAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
+                };
+            });
     
             setShowModal(false); // Close the modal after successful addition
+    
         } catch (error) {
             console.error('Error adding account to Firestore:', error.message || error);
         }
     };
-    
     
     
 
