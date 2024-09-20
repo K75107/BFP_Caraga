@@ -26,10 +26,10 @@ import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
 //FireStations
+import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
 import FireStationCollections from './routes/Accounting/FireStations/fireStationCollections';
 import FireStationDeposits from './routes/Accounting/FireStations/fireStationDeposits';
 import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
-
 
 const router = createBrowserRouter([
   {
@@ -111,6 +111,10 @@ const router = createBrowserRouter([
       {
         path: 'fireStation/collections',
         element: <FireStationCollections/>,
+      },
+      {
+        path: 'fireStation/officers',
+        element: <FireStationOfficers/>,
       },
     ],
   },
