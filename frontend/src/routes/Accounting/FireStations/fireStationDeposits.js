@@ -1,12 +1,19 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import { getAuth, onAuthStateChanged} from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc } from 'firebase/firestore';
 import { db } from "../../../config/firebase-config";
 
 export default function FireStationDeposits() {
   const [firestationCollection, setFirestationCollection] = useState([]);
   const [collectionsData, setCollectionsData] = useState([]);
+
+
+
+  const [editingCell,setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [reportData, setReportData] = useState([]);
+
 
   useEffect(() => {
     // Function to check if the current user's email matches any document in unsubmittedCollections
@@ -26,6 +33,7 @@ export default function FireStationDeposits() {
           
           // Create a default document with fields set to null
           const defaultDoc = {
+            fireStationName: userFound.username,
             collectingOfficer: null,
             lcNumber: null,
             date: null,
@@ -71,16 +79,70 @@ export default function FireStationDeposits() {
     };
   }, []); // Empty dependency array to run this effect only once on component mount
 
-  const [reportData, setReportData] = useState([
-    {
-      id: 1,
-      fireStation: "",
-      lcNumber: "",
-      date: "",
-      orNumber: "",
-      amount: "",
-    },
-  ]);
+  
+
+
+  const handleCellChange = async (collectionId, field, newValue) => {
+    try {
+      // Fetch the current authenticated user
+      const auth = getAuth();
+      const user = auth.currentUser;
+  
+      if (!user) {
+        console.error('No logged-in user found.');
+        return;
+      }
+  
+      // Check if the logged-in user's email matches any document in unsubmittedCollections
+      const unsubmittedCollectionsSnapshot = await getDocs(collection(db, 'unsubmittedCollections'));
+  
+      // Find the document where the email matches the logged-in user's email
+      const userDoc = unsubmittedCollectionsSnapshot.docs.find(doc => doc.data().email === user.email);
+  
+      if (!userDoc) {
+        console.error('No unsubmitted collection found for the logged-in user.');
+        return;
+      }
+  
+      // Check if the subcollection 'collections' exists for the user's document
+      const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userDoc.id, 'collections');
+      const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
+  
+      if (!docSnapshot.exists()) {
+        console.error(`No collection document found with ID ${collectionId}.`);
+        return;
+      }
+  
+      const existingData = docSnapshot.data();
+  
+      // Only update if there is a change in value
+      if (existingData[field] === newValue) {
+        console.log('No changes detected, skipping update.');
+        return;
+      }
+  
+      // Update the specific field of the collection document
+      await updateDoc(doc(collectionsSubCollectionRef, collectionId), {
+        [field]: newValue
+      });
+  
+      // Update the local state after a successful update
+      setCollectionsData(prevCollections =>
+        prevCollections.map(collection =>
+          collection.id === collectionId ? { ...collection, [field]: newValue } : collection
+        )
+      );
+  
+      // Clear the editing state after a successful update
+      setEditingCell(null);
+      setEditValue('');
+  
+    } catch (error) {
+      console.error('Error updating collection field:', error);
+    }
+  };
+  
+
 
   const [officerName, setOfficerName] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -168,17 +230,43 @@ export default function FireStationDeposits() {
                         </tr>
                   </thead>
                   <tbody>
-                    {collectionsData.map((collections) => (
+                  {collectionsData.map((collections) => (
                       <Fragment key={collections.id}>
-                        <tr className="bg-gray-100 font-bold">
-                          <td className="table-cell px-6 py-3 w-40">hi</td>
-                          <td className="table-cell px-6 py-3 w-24">{collections.date}</td>
-                          <td className="table-cell px-6 py-3 w-24">{collections.lcNumber}</td>
-                          <td className="table-cell px-6 py-3 w-32">{collections.orNumber}</td>
-                          <td className="table-cell px-6 py-3 w-24">{collections.amount}</td>
+                        <tr className="bg-white">
+                          
+                          <td className="table-cell px-6 py-3 w-40">
+                          {collections.fireStationName}
+                          </td>
+
+
+                          <td className="table-cell px-6 py-3 w-24">
+                            {editingCell === collections.id && editValue.field === 'lcNumber' ? (
+                              <input
+                                type="text"
+                                className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'lcNumber', editValue.value)}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'lcNumber', value: collections.lcNumber || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                              >
+                                {collections.lcNumber || '-'}
+                              </span>
+                            )}
+                          </td>
+
+
+
+                          <td className="table-cell px-6 py-3 w-24">{collections.orNumber}</td>
+                          <td className="table-cell px-6 py-3 w-32">{collections.amount}</td>
                         </tr>
                       </Fragment>
                     ))}
+
                   </tbody>
                 </table>
       </div>
