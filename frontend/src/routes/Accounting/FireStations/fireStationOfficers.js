@@ -3,7 +3,7 @@ import Modal from "../../../components/Modal";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../config/firebase-config"; // 
 
-export default function FireStations() {
+export default function FireStationOfficers() {
   const [showModal, setShowModal] = useState(false);
   const [stationsList, setStationsList] = useState([]);
   
