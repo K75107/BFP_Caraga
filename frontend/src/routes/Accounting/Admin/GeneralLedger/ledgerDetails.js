@@ -513,30 +513,40 @@ export default function LedgerDetails() {
                             <th scope="col" className=" w-[0px]"></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        
-            {accountTitles.map((accountTitle) => (
-                <Fragment key={accountTitle.id}>
-                    {/* Account Title Header */}
-                    <tr className="bg-gray-100 font-bold">
-                        <td className="table-cell px-6 py-3 w-40">{accountTitle.accountTitle}</td>
-                        <td className="table-cell px-6 py-3 w-24">{accountTitle.accountCode}</td>
-                        <td className="table-cell px-6 py-3 w-24"></td>
-                        <td className="table-cell px-6 py-3 w-32"></td>
-                        <td className="table-cell px-6 py-3 w-24"></td>
-                        <td className="table-cell px-6 py-3 w-24"></td>
-                        <td className="table-cell px-6 py-3 w-32">{formatBalance(accountTitle.runningBalance)}</td>
-                    </tr>
+<tbody>
+    {accountTitles.map((accountTitle) => {
+        let runningBalance = 0;  // Initialize running balance for this account title group
 
-                    {/* Account Rows */}
-                    {accountsData[accountTitle.id]?.map((account) => (
+        return (
+            <Fragment key={accountTitle.id}>
+                {/* Account Title Header */}
+                <tr className="bg-gray-100 font-bold">
+                    <td className="table-cell px-6 py-3 w-40">{accountTitle.accountTitle}</td>
+                    <td className="table-cell px-6 py-3 w-24">{accountTitle.accountCode}</td>
+                    <td className="table-cell px-6 py-3 w-24"></td>
+                    <td className="table-cell px-6 py-3 w-32"></td>
+                    <td className="table-cell px-6 py-3 w-24"></td>
+                    <td className="table-cell px-6 py-3 w-24"></td>
+                    <td className="table-cell px-6 py-3 w-32">{runningBalance}</td>
+                </tr>
+
+                {/* Account Rows */}
+                {accountsData[accountTitle.id]?.map((account) => {
+                    runningBalance = calculateBalance(
+                        accountTitle.accountType,
+                        account.debit,
+                        account.credit,
+                        runningBalance
+                    );
+
+                    return (
                         <tr
                             key={account.id}
-                            onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
-                            onMouseEnter={(e) => { 
+                            onContextMenu={(e) => handleRightClick(e, account, accountTitle)}  // Right-click functionality
+                            onMouseEnter={() => { 
                                 setHoveredRowId(account.id); 
                                 handleHoverData(account, accountTitle); 
-                              }}
+                            }}
                             onMouseLeave={() => setHoveredRowId(null)}     
                             className="bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         >
@@ -548,7 +558,7 @@ export default function LedgerDetails() {
                                 {editingCell === account.id && editValue.field === 'date' ? (
                                     <input
                                         type="date"
-                                        className="border border-gray-400 focus: focus:outline-none w-36 h-8 px-2 "
+                                        className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
@@ -569,7 +579,7 @@ export default function LedgerDetails() {
                                 {editingCell === account.id && editValue.field === 'particulars' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
@@ -590,7 +600,7 @@ export default function LedgerDetails() {
                                 {editingCell === account.id && editValue.field === 'debit' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
@@ -611,7 +621,7 @@ export default function LedgerDetails() {
                                 {editingCell === account.id && editValue.field === 'credit' ? (
                                     <input
                                         type="text"
-                                        className="border border-gray-400 focus: focus:outline-none w-full h-8 px-2 py-1"
+                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
                                         value={editValue.value}
                                         onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
                                         onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
@@ -620,38 +630,38 @@ export default function LedgerDetails() {
                                 ) : (
                                     <span
                                         onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
-                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8  px-2 py-1"
+                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8 px-2 py-1"
                                     >
                                         {formatNumber(account.credit) || '-'}
                                     </span>
                                 )}
                             </td>
-                            
-                            {/**/}
+
+                            {/* Display Running Balance */}
                             <td className="px-6 py-4">
-                                {formatBalance(account.balance) || '-'}
+                                {formatBalance(runningBalance) || '-'}
                             </td>
 
+                            {/* Add Row Button */}
                             {hoveredRowId === account.id && (
-                                <td className="absolute right-8 mt-9 mr-1">  {/* Position the button absolutely */}
-                                <button
-                                    className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                    style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
-                                    onClick={handleAddRowBelow}
-                                >
-                                    <IoMdAddCircleOutline />
-                                </button>
+                                <td className="absolute right-8 mt-9 mr-1">
+                                    <button
+                                        className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                        style={{ position: 'absolute', right: '-50px' }}
+                                        onClick={handleAddRowBelow}
+                                    >
+                                        <IoMdAddCircleOutline />
+                                    </button>
                                 </td>
                             )}
                         </tr>
-                    ))}
-                </Fragment>
-            ))}
-
-
-
-
+                    );
+                })}
+            </Fragment>
+        );
+    })}
 </tbody>
+
                 </table>
             </div>
 
