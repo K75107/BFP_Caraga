@@ -22,7 +22,7 @@ export default function FireStationDeposits() {
       const userFound = deposits.find((deposit) => deposit.email === userEmail);
       if (userFound) {
         console.log('User found in unsubmitted deposits');
-        const depositsSubCollectionRef = collection(db, 'unsubmittedCollections', userFound.id, 'deposits');
+        const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userFound.id, 'deposits');
         const snapshot = await getDocs(depositsSubCollectionRef);
         if (snapshot.empty) {
           console.log('No documents in deposits subcollection. Creating default document...');
@@ -47,7 +47,7 @@ export default function FireStationDeposits() {
       }
     };
 
-    const unsubmitCollectionRef = collection(db, 'unsubmittedCollections');
+    const unsubmitCollectionRef = collection(db, 'unsubmittedReports');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
       const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFirestationCollection(listCollections);
@@ -77,14 +77,14 @@ export default function FireStationDeposits() {
         return;
       }
 
-      const unsubmittedCollectionsSnapshot = await getDocs(collection(db, 'unsubmittedCollections'));
-      const userDoc = unsubmittedCollectionsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
+      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
       if (!userDoc) {
         console.error('No unsubmitted collection found for the logged-in user.');
         return;
       }
 
-      const depositsSubCollectionRef = collection(db, 'unsubmittedCollections', userDoc.id, 'deposits');
+      const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'deposits');
       const docSnapshot = await getDoc(doc(depositsSubCollectionRef, depositId));
       if (!docSnapshot.exists()) {
         console.error(`No deposit document found with ID ${depositId}.`);
@@ -327,14 +327,18 @@ export default function FireStationDeposits() {
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
-                      <button
-                        className={`text-red-500 hover:text-red-700 ${hoveredRowId === deposit.id ? 'visible' : 'invisible'}`}
-                     
-                      >
-                        <FaTimes />
-                      </button>
-                    </td>
+
+                   {hoveredRowId === deposit.id && (
+                                <td className="absolute right-8 mt-9 mr-1">  {/* Position the button absolutely */}
+                                <button
+                                    className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                    style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
+                        
+                                >
+                                    <IoMdAddCircleOutline />
+                                </button>
+                                </td>
+                            )}
                   </tr>
                 </Fragment>
               ))}

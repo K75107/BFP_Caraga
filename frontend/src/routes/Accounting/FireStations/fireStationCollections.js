@@ -24,9 +24,9 @@ export default function FireStationCollection() {
         const userFound = collections.find((collection) => collection.email === userEmail);
         
         if (userFound) {
-            console.log('User found in unsubmitted collections');
+            console.log('User found in unsubmitted Reports');
             
-            const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userFound.id, 'collections');
+            const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userFound.id, 'collections');
             const snapshot = await getDocs(collectionsSubCollectionRef);
 
             // If there are no documents, create a default document
@@ -65,7 +65,7 @@ export default function FireStationCollection() {
     };
 
     // Set up a listener for the unsubmitted collections
-    const unsubmitCollectionRef = collection(db, 'unsubmittedCollections');
+    const unsubmitCollectionRef = collection(db, 'unsubmittedReports');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
         const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setFirestationCollection(listCollections); // Update state with fetched data
@@ -100,11 +100,11 @@ export default function FireStationCollection() {
         return;
       }
   
-      // Check if the logged-in user's email matches any document in unsubmittedCollections
-      const unsubmittedCollectionsSnapshot = await getDocs(collection(db, 'unsubmittedCollections'));
+      // Check if the logged-in user's email matches any document in unsubmittedReports
+      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
   
       // Find the document where the email matches the logged-in user's email
-      const userDoc = unsubmittedCollectionsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
   
       if (!userDoc) {
         console.error('No unsubmitted collection found for the logged-in user.');
@@ -112,7 +112,7 @@ export default function FireStationCollection() {
       }
   
       // Check if the subcollection 'collections' exists for the user's document
-      const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'collections');
       const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
   
       if (!docSnapshot.exists()) {
@@ -223,15 +223,15 @@ const handleAddRowBelow = async () => {
           return;
       }
 
-      const unsubmittedCollectionsSnapshot = await getDocs(collection(db, 'unsubmittedCollections'));
-      const userDoc = unsubmittedCollectionsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
+      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
 
       if (!userDoc) {
           console.error('No unsubmitted collection found for the logged-in user.');
           return;
       }
 
-      const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'collections');
       
       // Add the new collection to Firestore
       const newCollectionRef = await addDoc(collectionsSubCollectionRef, newCollection);
@@ -300,7 +300,7 @@ const handleAddRowBelow = async () => {
                   <tbody>
                   {collectionsData.map((collections) => (
                       <Fragment key={collections.id}>
-                        <tr className="bg-white"
+                        <tr className="bg-white hover:border-solid hover:border-grey-100 hover:border "
                         onMouseEnter={(e) => { 
                           setHoveredRowId(collections.id); 
                           handleHoverData(collections); 
@@ -312,7 +312,7 @@ const handleAddRowBelow = async () => {
 
 
 
-                          <td className="table-cell px-6 py-3 w-24">
+                          <td className="table-cell px-6 py-3 w-24 ">
                             {editingCell === collections.id && editValue.field === 'date' ? (
                               <input
                                 type="date"
