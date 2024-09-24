@@ -9,6 +9,7 @@ export default function LedgerDetails() {
     const [showModal, setShowModal] = useState(false);
     const { ledgerId } = useParams(); // Get ledgerId from URL
     const [loading, setLoading] = useState(true);
+    const [ledgerDescription, setLedgerDescription] = useState('');
     
     //Hover on Rows
     const [hoveredRowId, setHoveredRowId] = useState(null);
@@ -40,9 +41,23 @@ export default function LedgerDetails() {
             console.error('ledgerId is not provided.');
             return;
         }
-    
-        // Fetch ledger data with onSnapshot for real-time updates
+
         const ledgerDocRef = doc(db, 'ledger', ledgerId); 
+
+        // Fetch ledger description from Firestore
+        const fetchLedgerDescription = async () => {
+            const docSnap = await getDoc(ledgerDocRef);
+
+            if (docSnap.exists()) {
+                setLedgerDescription(docSnap.data().description || 'No Description');
+            } else {
+                console.error('No such document!');
+            }
+        };
+
+        fetchLedgerDescription();
+
+        // Fetch ledger data with onSnapshot for real-time updates
         const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
     
         let unsubscribeLedger;
@@ -492,7 +507,7 @@ export default function LedgerDetails() {
     return (
         <Fragment>
             <div className="flex justify-between w-full">
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Ledger Details</h1>
+                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{ledgerDescription}</h1>
                 <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ ADD ACCOUNT</button>
             </div>
 
