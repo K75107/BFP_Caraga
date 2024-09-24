@@ -47,17 +47,29 @@ export default function LedgerList() {
     }, []);
 
     // Add New Ledger to the Firestore
+
     const addNewLedger = async () => {
         try {
             // Create the reference document
             const collectionRef = collection(db, "ledger");
-            
+
             // Add the new ledger
-            await addDoc(collectionRef, {
+            const docRef = await addDoc(collectionRef, {
                 description: ledgerDescription,
                 year: ledgerYear,
                 created_at: new Date(),
             });
+
+            // Fetch the newly added ledger using its document reference
+            const newLedger = {
+                id: docRef.id,
+                description: ledgerDescription,
+                year: ledgerYear,
+                created_at: new Date(),
+            };
+
+            // Update the ledgerList state to include the new ledger
+            setLedgerList((prevLedgerList) => [...prevLedgerList, newLedger]);
 
             // Optionally, you might want to refresh the list or close the modal
             setShowModal(false);
@@ -67,7 +79,6 @@ export default function LedgerList() {
             console.error("Error adding document:", err);
         }
     };
-
 
   
 
