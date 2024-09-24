@@ -1,191 +1,122 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
-import { getAuth, onAuthStateChanged} from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from "../../../config/firebase-config";
+import { IoMdAddCircleOutline } from "react-icons/io";
 
 export default function FireStationDeposits() {
   const [firestationCollection, setFirestationCollection] = useState([]);
-  const [collectionsData, setCollectionsData] = useState([]);
+  const [depositsData, setDepositsData] = useState([]);
 
-
-
-  const [editingCell,setEditingCell] = useState(null);
+  const [hoveredRowId, setHoveredRowId] = useState(null);
+  const [selectedRowData, setSelectedRowData] = useState(null);
+  const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [reportData, setReportData] = useState([]);
-
+  const [officerName, setOfficerName] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [currentDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
-    // Function to check if the current user's email matches any document in unsubmittedCollections
-    const checkUserInCollections = async (userEmail, collections) => {
-      // Find the document where the email matches the logged-in user's email
-      const userFound = collections.find((collection) => collection.email === userEmail);
-      
+    const checkUserInDeposits = async (userEmail, deposits) => {
+      const userFound = deposits.find((deposit) => deposit.email === userEmail);
       if (userFound) {
-        console.log('User found in unsubmitted collections');
-        
-        // Check if subcollection 'collections' exists or has any documents
-        const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userFound.id, 'collections');
-        const snapshot = await getDocs(collectionsSubCollectionRef);
-
+        console.log('User found in unsubmitted deposits');
+        const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userFound.id, 'deposits');
+        const snapshot = await getDocs(depositsSubCollectionRef);
         if (snapshot.empty) {
-          console.log('No documents in collections subcollection. Creating default document...');
-          
-          // Create a default document with fields set to null
+          console.log('No documents in deposits subcollection. Creating default document...');
           const defaultDoc = {
-            fireStationName: userFound.username,
-            collectingOfficer: null,
-            lcNumber: null,
-            date: null,
+            opsNumber: null,
+            opsDate: null,
+            opsAmount: null,
+            orDate: null,
             orNumber: null,
-            amount: null
+            payorName: null,
+            fireCodeClassification: null,
+            amountPaid: null,
+            position: 0, // Set a default position
           };
-
-          // Add default document with auto-generated ID
-          await addDoc(collectionsSubCollectionRef, defaultDoc);
-          console.log('Default document created in collections subcollection');
+          await addDoc(depositsSubCollectionRef, defaultDoc);
+          console.log('Default document created in deposits subcollection');
         }
-
-        // Fetch subcollection documents
         const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCollectionsData(subCollectionDocs); // Update state with subcollection data
+        setDepositsData(subCollectionDocs);
       } else {
-        console.log('User not found in unsubmitted collections');
+        console.log('User not found in unsubmitted deposits');
       }
     };
 
-    // Set up a listener for the unsubmitted collections
-    const unsubmitCollectionRef = collection(db, 'unsubmittedCollections');
+    const unsubmitCollectionRef = collection(db, 'unsubmittedReports');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
       const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFirestationCollection(listCollections); // Update state with fetched data
+      setFirestationCollection(listCollections);
 
-      // Once collections are fetched, check for the user
       const auth = getAuth();
       onAuthStateChanged(auth, (user) => {
         if (user) {
-          // User is signed in, compare user email with unsubmitted collections
           console.log('Current User Email:', user.email);
-          checkUserInCollections(user.email, listCollections);
+          checkUserInDeposits(user.email, listCollections);
         } else {
           console.log('No user is currently logged in');
         }
       });
     });
 
-    // Cleanup the listeners when the component unmounts
     return () => {
-      unsubscribeUnsubmitCollections(); // Unsubscribe from Firestore snapshot listener
+      unsubscribeUnsubmitCollections();
     };
-  }, []); // Empty dependency array to run this effect only once on component mount
+  }, []);
 
-  
-
-
-  const handleCellChange = async (collectionId, field, newValue) => {
+  const handleCellChange = async (depositId, field, newValue) => {
     try {
-      // Fetch the current authenticated user
       const auth = getAuth();
       const user = auth.currentUser;
-  
       if (!user) {
         console.error('No logged-in user found.');
         return;
       }
-  
-      // Check if the logged-in user's email matches any document in unsubmittedCollections
-      const unsubmittedCollectionsSnapshot = await getDocs(collection(db, 'unsubmittedCollections'));
-  
-      // Find the document where the email matches the logged-in user's email
-      const userDoc = unsubmittedCollectionsSnapshot.docs.find(doc => doc.data().email === user.email);
-  
+
+      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
+      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
       if (!userDoc) {
         console.error('No unsubmitted collection found for the logged-in user.');
         return;
       }
-  
-      // Check if the subcollection 'collections' exists for the user's document
-      const collectionsSubCollectionRef = collection(db, 'unsubmittedCollections', userDoc.id, 'collections');
-      const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
-  
+
+      const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'deposits');
+      const docSnapshot = await getDoc(doc(depositsSubCollectionRef, depositId));
       if (!docSnapshot.exists()) {
-        console.error(`No collection document found with ID ${collectionId}.`);
+        console.error(`No deposit document found with ID ${depositId}.`);
         return;
       }
-  
+
       const existingData = docSnapshot.data();
-  
-      // Only update if there is a change in value
       if (existingData[field] === newValue) {
         console.log('No changes detected, skipping update.');
         return;
       }
-  
-      // Update the specific field of the collection document
-      await updateDoc(doc(collectionsSubCollectionRef, collectionId), {
+
+      await updateDoc(doc(depositsSubCollectionRef, depositId), {
         [field]: newValue
       });
-  
-      // Update the local state after a successful update
-      setCollectionsData(prevCollections =>
-        prevCollections.map(collection =>
-          collection.id === collectionId ? { ...collection, [field]: newValue } : collection
+
+      setDepositsData(prevDeposits =>
+        prevDeposits.map(deposit =>
+          deposit.id === depositId ? { ...deposit, [field]: newValue } : deposit
         )
       );
-  
-      // Clear the editing state after a successful update
+
       setEditingCell(null);
       setEditValue('');
-  
     } catch (error) {
-      console.error('Error updating collection field:', error);
+      console.error('Error updating deposit field:', error);
     }
   };
-  
 
-
-  const [officerName, setOfficerName] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [currentDate] = useState(new Date().toISOString().split('T')[0]); 
-
-  const handleChange = (id, field, value) => {
-    const updatedData = reportData.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item
-    );
-    setReportData(updatedData);
-  };
-
-  const handleOfficerNameChange = (e) => {
-    setOfficerName(e.target.value);
-  };
-
-  const handleAddRow = () => {
-    const newRow = {
-      id: reportData.length + 1,
-      fireStation: "",
-      lcNumber: "",
-      date: "",
-      orNumber: "",
-      amount: "",
-    };
-    setReportData([...reportData, newRow]);
-  };
-
-  const handleRemoveRow = (id) => {
-    setReportData(reportData.filter((item) => item.id !== id));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setShowModal(true);
-  };
-
-  const handleConfirm = () => {
-    setShowModal(false);
-    console.log("Submitted data:", reportData);
-    console.log("Collecting Officer:", officerName);
-    console.log("Current Date:", currentDate);
-    // Add form submission logic here
+  const handleHoverData = (deposits) => {
+    const deposit = deposits.id;
+    setSelectedRowData(deposit);
   };
 
   return (
@@ -198,12 +129,13 @@ export default function FireStationDeposits() {
           <button
             type="button"
             className="bg-[#2196F3] text-white px-4 py-2 rounded hover:bg-[#1976D2]"
-            onClick={handleSubmit}
+            onClick={() => setShowModal(true)}
           >
             Submit
           </button>
         </div>
 
+        {/* Officer Name Input */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">
             Collecting Officer's Name
@@ -212,66 +144,234 @@ export default function FireStationDeposits() {
             type="text"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             value={officerName}
-            onChange={handleOfficerNameChange}
+            onChange={(e) => setOfficerName(e.target.value)}
             required
           />
         </div>
 
-        {/*TABLE*/}
+        {/* Deposits Table */}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 w-[200px]">FIRE STATION</th>
-                            <th scope="col" className="px-6 py-3 w-[150px]">LC NUMBER</th>
-                            <th scope="col" className="px-6 py-3 w-[100px]">DATE</th>
-                            <th scope="col" className="px-6 py-3 w-[150px]">OR NUMBER</th>
-                            <th scope="col" className="px-6 py-3 w-[150px]">AMOUNT</th>
-                        </tr>
-                  </thead>
-                  <tbody>
-                  {collectionsData.map((collections) => (
-                      <Fragment key={collections.id}>
-                        <tr className="bg-white">
-                          
-                          <td className="table-cell px-6 py-3 w-40">
-                          {collections.fireStationName}
-                          </td>
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+              <tr>
+                <th scope="col" className="px-2 py-3 w-[100px]">OPS Date</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">OPS Number</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">OPS Amount</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">OR Date</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">OR Number</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">Payor Name</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">Fire Code Classification</th>
+                <th scope="col" className="px-2 py-3 w-[100px]">Amount Paid</th>
+                <th scope="col" className=" w-[0px]"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {depositsData.map((deposit) => (
+                <Fragment key={deposit.id}>
+                  <tr className="bg-white"
+                    onMouseEnter={() => { 
+                      setHoveredRowId(deposit.id); 
+                      handleHoverData(deposit); 
+                    }}
+                    onMouseLeave={() => setHoveredRowId(null)}
+                  >
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'opsDate' ? (
+                        <input
+                          type="date"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'opsDate', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'opsDate', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsDate', value: deposit.opsDate || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.opsDate || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'opsNumber' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'opsNumber', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'opsNumber', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsNumber', value: deposit.opsNumber || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.opsNumber || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'opsAmount' ? (
+                        <input
+                          type="number"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'opsAmount', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'opsAmount', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsAmount', value: deposit.opsAmount || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.opsAmount || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'orDate' ? (
+                        <input
+                          type="date"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'orDate', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'orDate', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'orDate', value: deposit.orDate || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.orDate || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'orNumber' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'orNumber', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'orNumber', value: deposit.orNumber || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.orNumber || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'payorName' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'payorName', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'payorName', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'payorName', value: deposit.payorName || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.payorName || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'fireCodeClassification' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'fireCodeClassification', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'fireCodeClassification', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'fireCodeClassification', value: deposit.fireCodeClassification || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.fireCodeClassification || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-1 py-3 w-24">
+                      {editingCell === deposit.id && editValue.field === 'amountPaid' ? (
+                        <input
+                          type="number"
+                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'amountPaid', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposit.id, 'amountPaid', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'amountPaid', value: deposit.amountPaid || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                        >
+                          {deposit.amountPaid || '-'}
+                        </span>
+                      )}
+                    </td>
 
-
-                          <td className="table-cell px-6 py-3 w-24">
-                            {editingCell === collections.id && editValue.field === 'lcNumber' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'lcNumber', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'lcNumber', value: collections.lcNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
-                              >
-                                {collections.lcNumber || '-'}
-                              </span>
+                   {hoveredRowId === deposit.id && (
+                                <td className="absolute right-8 mt-9 mr-1">  {/* Position the button absolutely */}
+                                <button
+                                    className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                    style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
+                        
+                                >
+                                    <IoMdAddCircleOutline />
+                                </button>
+                                </td>
                             )}
-                          </td>
+                  </tr>
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
+        {/* Modal for submission confirmation */}
+        {showModal && (
+          <div className="fixed z-10 inset-0 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="bg-white rounded-lg p-6 w-1/3">
+                <h2 className="text-lg font-semibold mb-4">Confirm Submission</h2>
+                <p>Are you sure you want to submit the deposits?</p>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
 
-
-                          <td className="table-cell px-6 py-3 w-24">{collections.orNumber}</td>
-                          <td className="table-cell px-6 py-3 w-32">{collections.amount}</td>
-                        </tr>
-                      </Fragment>
-                    ))}
-
-                  </tbody>
-                </table>
-      </div>
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
+                    onClick={() => setShowModal(false)}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Fragment>
-    
   );
 }
