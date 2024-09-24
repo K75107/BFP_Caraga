@@ -89,14 +89,17 @@ export default function LedgerList() {
                         <tr>
                             <th scope="col" className="px-6 py-3">DESCRIPTION</th>
                             <th scope="col" className="px-6 py-3">Year</th>
-                            <th scope="col" className="px-6 py-3"><span className="sr-only">View</span></th>
+                            <th scope="col" className="px-6 py-3">
+                                <span className="sr-only">View</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {ledgerList.map((ledger) => (
                             <tr
                                 key={ledger.id}
-                                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
                             >
                                 <th
                                     scope="row"
@@ -110,10 +113,10 @@ export default function LedgerList() {
                                 <td className="px-6 py-4 text-right">
                                     <a
                                         href="#"
-                                        className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                                        onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
+                                        className="font-medium text-red-600 dark:text-blue-500 hover:underline"
+                                        onClick={() => navigate(``)}
                                     >
-                                        View
+                                        Delete
                                     </a>
                                 </td>
 
