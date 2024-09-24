@@ -48,6 +48,7 @@ export default function Users() {
 
   const handleAddUser = async () => {
     try {
+
       // Create a new user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
@@ -61,16 +62,30 @@ export default function Users() {
       }
 
       // Create a new document in Firestore with the user's ID as the document ID
-      const docRef = doc(db, "users", userId);
-      await setDoc(docRef, {
-        email: email,
-        username: username,
-        usertype: usertype,
-        profilePicture: profilePictureUrl,
-        isActive: true, // Assuming new users are active by default
-      });
-      
-      console.log("User added successfully!");
+        const docRef = doc(db, "users", userId);
+        await setDoc(docRef, {
+            email: email,
+            username: username,
+            usertype: usertype,
+            profilePicture: profilePictureUrl,
+            isActive: true, // Assuming new users are active by default
+        });
+
+        console.log("User added successfully!");
+
+        // Add user to the unsubmittedCollections if the usertype is 'firestation'
+        if (usertype === "fire-stations") {
+            const unsubmitCollectionRef = doc(db, "unsubmittedCollections", userId);
+            await setDoc(unsubmitCollectionRef, {
+                email: email,
+                username: username,
+            });
+
+            console.log("User added to unsubmittedCollections!");
+        }
+
+
+
     } catch (err) {
       console.error("Error adding user: ", err);
     }
