@@ -513,9 +513,14 @@ export default function LedgerDetails() {
                             <th scope="col" className=" w-[0px]"></th>
                         </tr>
                     </thead>
-<tbody>
+                    <tbody>
     {accountTitles.map((accountTitle) => {
-        let runningBalance = 0;  // Initialize running balance for this account title group
+        let runningBalance = 0; // Initialize running balance for this account title group
+
+        // Calculate the final running balance for the account title header
+        const finalRunningBalance = accountsData[accountTitle.id]?.reduce((balance, account) => {
+            return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
+        }, 0);
 
         return (
             <Fragment key={accountTitle.id}>
@@ -527,7 +532,9 @@ export default function LedgerDetails() {
                     <td className="table-cell px-6 py-3 w-32"></td>
                     <td className="table-cell px-6 py-3 w-24"></td>
                     <td className="table-cell px-6 py-3 w-24"></td>
-                    <td className="table-cell px-6 py-3 w-32">{runningBalance}</td>
+                    <td className="table-cell px-6 py-3 w-32">
+                        {formatBalance(finalRunningBalance)}
+                    </td>
                 </tr>
 
                 {/* Account Rows */}
