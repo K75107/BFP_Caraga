@@ -35,6 +35,10 @@ export default function LedgerDetails() {
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
     const [selectedAccountTitleRowData,setSelectedAccountTitleRowData] = useState(null);
     
+    /// Main Account Right click Modal
+    const [showMainAccountRightClick, setShowMainAccountRightClick] = useState(false); 
+    const [selectedMainAccount, setSelectedMainAccount] = useState(null);
+
 
     useEffect(() => {
         if (!ledgerId) {
@@ -137,13 +141,34 @@ export default function LedgerDetails() {
         
       };
 
+      // Main Account Right Click Functions
+      const handleMainAccountRightClick = (event, accountTitle) => {
+        event.preventDefault();
+
+        setSelectedMainAccount(accountTitle);
+
+        // Set the modal position based on the mouse position
+        setModalPosition({ x: event.clientX, y: event.clientY });
+        setShowMainAccountRightClick(true); // Open the modal
+      };
+
       const closeModalOnOutsideClick = (e) => {
         if (e.target.id === "user-modal-overlay") {
             setShowRightClickModal(false);
+            setShowMainAccountRightClick(false);
         }
       };
 
       
+      //ADD ENTRY UNDER MAIN ACCOUNT
+      const handleAddEntry = async () => {
+        console.log('WALA PAY FUNCTION');
+    };
+
+      //DELETE MAIN ACCOUNT
+      const handleDeleteAccount = async () => {
+        console.log('WALA PAY FUNCTION');
+    };
 
       const handleAddRowAbove = async () => {
         if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
@@ -540,7 +565,15 @@ export default function LedgerDetails() {
         return (
             <Fragment key={accountTitle.id}>
                 {/* Account Title Header */}
-                <tr className="bg-gray-100 font-bold text-[12px]">
+                <tr className="bg-gray-100 font-bold text-[12px]"
+                        key={accountTitle.id}
+                        onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle)}
+                        onMouseEnter={() => { 
+                            setSelectedMainAccount(accountTitle.id); 
+                        }}
+                        onMouseLeave={() => setSelectedMainAccount(null)}     
+                        >
+
                     <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
                     <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
                     <td className="table-cell px-2 py-3 w-24"></td>
@@ -795,6 +828,34 @@ export default function LedgerDetails() {
                     >
                         Delete Row
                     </button>
+                    </div>
+                </div>
+                )}
+
+            {/*Main Account Right-click context modal */}
+            {showMainAccountRightClick && (
+                <div
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
+                >
+                    <div
+                    style={{ top: modalPosition.y, left: modalPosition.x }}
+                    className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={handleAddEntry}
+                        >
+                            Add Row Below
+                        </button>
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={handleDeleteAccount}
+                        >
+                            Delete Account
+                        </button>
                     </div>
                 </div>
                 )}

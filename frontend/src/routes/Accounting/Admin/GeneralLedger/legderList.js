@@ -2,10 +2,15 @@ import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "../../../../components/Modal";
 import { db } from "../../../../config/firebase-config";
-import { getDocs, collection, addDoc } from "firebase/firestore";
+import { getDocs, collection, addDoc, deleteDoc, doc } from "firebase/firestore"; // Import deleteDoc and doc
 
 export default function LedgerList() {
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    //DELETE LEDGER ID
+    const [deleteLedgerID, setDeleteLedgerID] = useState(null);
+
     const [ledgerList, setLedgerList] = useState([]);
     const [ledgerDescription, setLedgerDescription] = useState("");
     const [ledgerYear, setLedgerYear] = useState("");
@@ -31,7 +36,6 @@ export default function LedgerList() {
     useEffect(() => {
         const getLedgerList = async () => {
             try {
-                
                 const querySnapshot = await getDocs(collection(db, "ledger"));
                 const ledgerData = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
@@ -47,7 +51,6 @@ export default function LedgerList() {
     }, []);
 
     // Add New Ledger to the Firestore
-
     const addNewLedger = async () => {
         try {
             // Create the reference document
@@ -80,9 +83,18 @@ export default function LedgerList() {
         }
     };
 
-  
+    // Function to delete a ledger
+    const deleteLedger = async () => {
+        try {
+            // Reference the specific document by its ID and delete it
+            await deleteDoc(doc(db, "ledger", deleteLedgerID));
 
-  
+            // Update the state to remove the deleted ledger from the list
+            setLedgerList((prevLedgerList) => prevLedgerList.filter((ledger) => ledger.id !== deleteLedgerID));
+        } catch (err) {
+            console.error("Error deleting document:", err);
+        }
+    };
 
     return (
         <Fragment>
@@ -122,15 +134,18 @@ export default function LedgerList() {
                                     {ledger.year || "N/A"}
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <a
-                                        href="#"
+                                    <span
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline"
-                                        onClick={() => navigate(``)}
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent row click event
+                                            //deleteLedger(ledger.id); 
+                                            setDeleteLedgerID(ledger.id)// Call delete function
+                                            setShowDeleteModal(true);
+                                        }}
                                     >
                                         Remove
-                                    </a>
+                                    </span>
                                 </td>
-
                             </tr>
                         ))}
                     </tbody>
@@ -198,6 +213,34 @@ export default function LedgerList() {
                         <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" onClick={addNewLedger}>ADD</button>
                     </div>
                 </div>
+            </Modal>
+
+        
+        {/*DELETE MODAL*/}
+            <Modal isVisible={showDeleteModal}>
+            <div class="relative p-4 w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="popup-modal"
+            onClick={() => setShowDeleteModal(false)}>
+                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                </svg>
+                <span class="sr-only">Close modal</span>
+            </button>
+            <div class="p-4 md:p-5 text-center">
+                <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this product?</h3>
+                <button data-modal-hide="popup-modal" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                onClick={() => deleteLedger() & setShowDeleteModal(false)}>
+                    Yes, I'm sure
+                </button>
+                <button data-modal-hide="popup-modal" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                onClick={() => setShowDeleteModal(false)}>No, cancel</button>
+            </div>
+        </div>
+    </div>
             </Modal>
         </Fragment>
     );
