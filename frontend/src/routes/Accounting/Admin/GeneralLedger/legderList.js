@@ -127,7 +127,7 @@ export default function LedgerList() {
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline"
                                         onClick={() => navigate(``)}
                                     >
-                                        Delete
+                                        Remove
                                     </a>
                                 </td>
 
