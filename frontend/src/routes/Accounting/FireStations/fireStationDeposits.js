@@ -153,15 +153,15 @@ export default function FireStationDeposits() {
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
           <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-              <tr>
-                <th scope="col" className="px-2 py-3 w-[100px]">OPS Date</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">OPS Number</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">OPS Amount</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">OR Date</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">OR Number</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">Payor Name</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">Fire Code Classification</th>
-                <th scope="col" className="px-2 py-3 w-[100px]">Amount Paid</th>
+              <tr className="text-[12px]">
+                <th scope="col" className="px-2 py-3 w-20">OPS Date</th>
+                <th scope="col" className="px-2 py-3 w-20">OPS Number</th>
+                <th scope="col" className="px-2 py-3 w-20">OPS Amount</th>
+                <th scope="col" className="px-2 py-3 w-20">OR Date</th>
+                <th scope="col" className="px-2 py-3 w-20">OR Number</th>
+                <th scope="col" className="px-2 py-3 w-20">Payor Name</th>
+                <th scope="col" className="px-2 py-3 w-20">Fire Code Classification</th>
+                <th scope="col" className="px-2 py-3 w-20">Amount Paid</th>
                 <th scope="col" className=" w-[0px]"></th>
               </tr>
             </thead>
@@ -175,11 +175,11 @@ export default function FireStationDeposits() {
                     }}
                     onMouseLeave={() => setHoveredRowId(null)}
                   >
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'opsDate' ? (
                         <input
                           type="date"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'opsDate', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'opsDate', editValue.value)}
@@ -188,17 +188,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsDate', value: deposit.opsDate || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border  w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
-                          {deposit.opsDate || '-'}
+                          {deposit.opsDate || 'mm/dd/yyyy'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'opsNumber' ? (
                         <input
                           type="text"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'opsNumber', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'opsNumber', editValue.value)}
@@ -207,17 +207,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsNumber', value: deposit.opsNumber || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.opsNumber || '-'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'opsAmount' ? (
                         <input
                           type="number"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'opsAmount', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'opsAmount', editValue.value)}
@@ -226,17 +226,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'opsAmount', value: deposit.opsAmount || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.opsAmount || '-'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'orDate' ? (
                         <input
                           type="date"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 text-[12px] focus:outline-none w-20 h-8 px-2"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'orDate', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'orDate', editValue.value)}
@@ -245,17 +245,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'orDate', value: deposit.orDate || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
-                          {deposit.orDate || '-'}
+                          {deposit.orDate || 'mm/dd/yyyy'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'orNumber' ? (
                         <input
                           type="text"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'orNumber', editValue.value)}
@@ -264,17 +264,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'orNumber', value: deposit.orNumber || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border  w-20 border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.orNumber || '-'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'payorName' ? (
                         <input
                           type="text"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'payorName', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'payorName', editValue.value)}
@@ -283,17 +283,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'payorName', value: deposit.payorName || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.payorName || '-'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'fireCodeClassification' ? (
                         <input
                           type="text"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'fireCodeClassification', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'fireCodeClassification', editValue.value)}
@@ -302,17 +302,17 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'fireCodeClassification', value: deposit.fireCodeClassification || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.fireCodeClassification || '-'}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell px-1 py-3 w-24">
+                    <td className="table-cell px-1 py-3 w-20 text-[12px]">
                       {editingCell === deposit.id && editValue.field === 'amountPaid' ? (
                         <input
                           type="number"
-                          className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                          className="border border-gray-400 focus:outline-none w-20 h-8 px-2 text-[12px]"
                           value={editValue.value}
                           onChange={(e) => setEditValue({ field: 'amountPaid', value: e.target.value })}
                           onBlur={() => handleCellChange(deposit.id, 'amountPaid', editValue.value)}
@@ -321,7 +321,7 @@ export default function FireStationDeposits() {
                       ) : (
                         <span
                           onClick={() => { setEditingCell(deposit.id); setEditValue({ field: 'amountPaid', value: deposit.amountPaid || '' }) }}
-                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                          className="block border w-20  border-gray-300 text-[12px] hover:bg-gray-100 h-8 w-20 px-2 py-1"
                         >
                           {deposit.amountPaid || '-'}
                         </span>

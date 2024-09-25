@@ -516,16 +516,16 @@ export default function LedgerDetails() {
             {/*TABLE*/}
             <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" className="px-6 py-3 w-[200px]">ACCOUNT TITLE</th>
-                            <th scope="col" className="px-6 py-3 w-[150px]">ACCOUNT CODE</th>
-                            <th scope="col" className="px-6 py-3 w-[100px]">DATE</th>
-                            <th scope="col" className="px-6 py-3 w-[300px]">PARTICULARS</th>
-                            <th scope="col" className="px-6 py-3 w-[180px]">DEBIT</th>
-                            <th scope="col" className="px-6 py-3 w-[180px]">CREDIT</th>
-                            <th scope="col" className="px-6 py-3 w-[180px]">BALANCE</th>
-                            <th scope="col" className=" w-[0px]"></th>
+                            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
+                            <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
+                            <th scope="col" className="px-2 py-3 w-24">DATE</th>
+                            <th scope="col" className="px-2 py-3 w-80">PARTICULARS</th>
+                            <th scope="col" className="px-2 py-3 w-48">DEBIT</th>
+                            <th scope="col" className="px-2 py-3 w-48">CREDIT</th>
+                            <th scope="col" className="px-2 py-3 w-48 text-center">BALANCE</th>
+                            <th scope="col" className=" w-[0px] "></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -540,14 +540,14 @@ export default function LedgerDetails() {
         return (
             <Fragment key={accountTitle.id}>
                 {/* Account Title Header */}
-                <tr className="bg-gray-100 font-bold">
-                    <td className="table-cell px-6 py-3 w-40">{accountTitle.accountTitle}</td>
-                    <td className="table-cell px-6 py-3 w-24">{accountTitle.accountCode}</td>
-                    <td className="table-cell px-6 py-3 w-24"></td>
-                    <td className="table-cell px-6 py-3 w-32"></td>
-                    <td className="table-cell px-6 py-3 w-24"></td>
-                    <td className="table-cell px-6 py-3 w-24"></td>
-                    <td className="table-cell px-6 py-3 w-32">
+                <tr className="bg-gray-100 font-bold text-[12px]">
+                    <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
+                    <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
+                    <td className="table-cell px-2 py-3 w-24"></td>
+                    <td className="table-cell px-2 py-3 w-80"></td>
+                    <td className="table-cell px-2 py-3 w-48"></td>
+                    <td className="table-cell px-2 py-3 w-48"></td>
+                    <td className="table-cell px-2 py-3 w-48 text-center">
                         {formatBalance(finalRunningBalance)}
                     </td>
                 </tr>
@@ -570,13 +570,13 @@ export default function LedgerDetails() {
                                 handleHoverData(account, accountTitle); 
                             }}
                             onMouseLeave={() => setHoveredRowId(null)}     
-                            className="bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                            className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         >
-                            <td className="px-6 py-5 w-40"></td>
+                            <td className="px-6 py-5 w-72"></td>
                             <td className="px-6 py-5 w-24"></td>
 
                             {/* Date Field */}
-                            <td className="px-6 py-2 w-36 h-6">
+                            <td className="px-2 py-2 w-36 h-6 text-[12px]">
                                 {editingCell === account.id && editValue.field === 'date' ? (
                                     <input
                                         type="date"
@@ -597,7 +597,7 @@ export default function LedgerDetails() {
                             </td>
 
                             {/* Particulars Field */}
-                            <td className="px-6 py-2 w-40 h-6">
+                            <td className="px-2 py-2 w-72 h-6">
                                 {editingCell === account.id && editValue.field === 'particulars' ? (
                                     <input
                                         type="text"
@@ -618,7 +618,7 @@ export default function LedgerDetails() {
                             </td>
 
                             {/* Debit Field */}
-                            <td className="px-6 py-2 w-30 h-6">
+                            <td className="px-2 py-2 w-30 h-6">
                                 {editingCell === account.id && editValue.field === 'debit' ? (
                                     <input
                                         type="text"
@@ -639,7 +639,7 @@ export default function LedgerDetails() {
                             </td>
 
                             {/* Credit Field */}
-                            <td className="px-6 py-2 w-30 h-6">
+                            <td className="px-2 py-2 w-30 h-6">
                                 {editingCell === account.id && editValue.field === 'credit' ? (
                                     <input
                                         type="text"
@@ -660,7 +660,7 @@ export default function LedgerDetails() {
                             </td>
 
                             {/* Display Running Balance */}
-                            <td className="px-6 py-4">
+                            <td className="px-2 py-4 text-center ">
                                 {formatBalance(runningBalance) || '-'}
                             </td>
 

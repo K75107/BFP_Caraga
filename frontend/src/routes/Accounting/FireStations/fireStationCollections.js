@@ -287,20 +287,20 @@ const handleAddRowBelow = async () => {
 
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 w-[100px]">DATE</th>
-                            <th scope="col" className="px-6 py-3 w-[260px]">LC NUMBER</th>
-                            <th scope="col" className="px-6 py-3 w-[260px]">OR NUMBER</th>
-                            <th scope="col" className="px-6 py-3 w-[260px]">AMOUNT</th>
+            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
+            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
+                        <tr className="text-[12px]">
+                            <th scope="col" className="px-2 py-3 w-24">DATE</th>
+                            <th scope="col" className="px-2 py-3 w-56">LC NUMBER</th>
+                            <th scope="col" className="px-2 py-3 w-56">OR NUMBER</th>
+                            <th scope="col" className="px-2 py-3 w-56">AMOUNT</th>
                             <th scope="col" className="w-[0px]"></th>
                         </tr>
                   </thead>
                   <tbody>
                   {collectionsData.map((collections) => (
                       <Fragment key={collections.id}>
-                        <tr className="bg-white hover:border-solid hover:border-grey-100 hover:border "
+                        <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                         onMouseEnter={(e) => { 
                           setHoveredRowId(collections.id); 
                           handleHoverData(collections); 
@@ -311,8 +311,7 @@ const handleAddRowBelow = async () => {
 
 
 
-
-                          <td className="table-cell px-6 py-3 w-24 ">
+                          <td className="table-cell px-2 py-2 w-24 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'date' ? (
                               <input
                                 type="date"
@@ -334,11 +333,11 @@ const handleAddRowBelow = async () => {
 
                           
 
-                          <td className="table-cell px-6 py-3 w-[260px]">
+                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-[260px] h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'lcNumber', editValue.value)}
@@ -347,7 +346,7 @@ const handleAddRowBelow = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'lcNumber', value: collections.lcNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-[260px] px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
                               >
                                 {collections.lcNumber || '-'}
                               </span>
@@ -355,13 +354,11 @@ const handleAddRowBelow = async () => {
                           </td>
 
 
-
-
-                          <td className="table-cell px-6 py-3 w-[260px]">
+                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'orNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-[260px] h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'orNumber', editValue.value)}
@@ -370,17 +367,17 @@ const handleAddRowBelow = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'orNumber', value: collections.orNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-[260px] px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
                               >
                                 {collections.orNumber || '-'}
                               </span>
                             )}
                           </td>
-                          <td className="table-cell px-6 py-3 w-[260px]">
+                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'amount' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-[260px] h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'amount', editValue.value)}
@@ -389,16 +386,16 @@ const handleAddRowBelow = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'amount', value: collections.amount || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-[260px] px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
                               >
                                 {collections.amount || '-'}
                               </span>
                             )}
                           </td>
                           {hoveredRowId === collections.id && (
-                                <td className="absolute right-8 mt-9 mr-1">  {/* Position the button absolutely */}
+                                <td className="relative right-8 mr-1 text-[12px]">  {/* Position the button absolutely */}
                                 <button
-                                    className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                    className="mt-2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
                                     style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
                                     onClick={handleAddRowBelow}
                                 >
