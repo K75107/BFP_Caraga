@@ -91,7 +91,7 @@ const Sidebar = () => {
       { path: '/main/firestation/dashboard', icon: isActive('/main/firestation/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
       { section: 'Reports' },
       { path: '/main/firestation/deposits', icon: isActive('/main/firestation/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits' },
-      { path: '/main/firestation/co llections', icon: isActive('/main/firestation/collections') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections' },
+      { path: '/main/firestation/collections', icon: isActive('/main/firestation/collections') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections' },
       { path: '/main/firestation/officers', icon: isActive('/main/firestation/officers') ? <HiUsers size={18} /> : <HiUsers size={18} />, label: 'Officers' },
     ]
   };
