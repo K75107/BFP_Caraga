@@ -3,6 +3,7 @@ import { FaTimes } from "react-icons/fa";
 import { getAuth, onAuthStateChanged} from 'firebase/auth';
 import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc } from 'firebase/firestore';
 import { db } from "../../../config/firebase-config";
+import Modal from "../../../components/Modal"
 
 import { IoMdAddCircleOutline } from "react-icons/io";
 
@@ -18,15 +19,24 @@ export default function FireStationCollection() {
   const [editValue, setEditValue] = useState('');
   const [reportData, setReportData] = useState([]);
 
+  //Modal
+  const [showModal, setShowModal] = useState(false);
+  const [officersData, setOfficersData] = useState([]);
+
+  const [selectedOfficer,setSelectedOfficer] = useState('');
+
+
+
 
   useEffect(() => {
     const checkUserInCollections = async (userEmail, collections) => {
         const userFound = collections.find((collection) => collection.email === userEmail);
         
         if (userFound) {
-            console.log('User found in unsubmitted Reports');
             
-            const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userFound.id, 'collections');
+            /*--------------------------------------------------Collections------------------------------------------------------------- */
+
+            const collectionsSubCollectionRef = collection(db, 'firestationReports', userFound.id, 'collections');
             const snapshot = await getDocs(collectionsSubCollectionRef);
 
             // If there are no documents, create a default document
@@ -59,13 +69,25 @@ export default function FireStationCollection() {
                 const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setCollectionsData(subCollectionDocs); // Update state with existing documents
             }
+
+            /*------------------------------------------------------------------------------------------------------------------ */
+
+
+            //Collecting Officer
+            const officersSubcollectionRef = collection(db, 'firestationReports', userFound.id, 'officers');
+            const officerSnapshot = await getDocs(officersSubcollectionRef);
+
+            const officerDocs = officerSnapshot.docs.map(doc =>({id:doc.id, ...doc.data()}));
+            setOfficersData(officerDocs);
+
+          
         } else {
             console.log('User not found in unsubmitted collections');
         }
     };
 
     // Set up a listener for the unsubmitted collections
-    const unsubmitCollectionRef = collection(db, 'unsubmittedReports');
+    const unsubmitCollectionRef = collection(db, 'firestationReports');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
         const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setFirestationCollection(listCollections); // Update state with fetched data
@@ -73,7 +95,7 @@ export default function FireStationCollection() {
         const auth = getAuth();
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                console.log('Current User Email:', user.email);
+                // console.log('Current User Email:', user.email);
                 checkUserInCollections(user.email, listCollections);
             } else {
                 console.log('No user is currently logged in');
@@ -100,11 +122,11 @@ export default function FireStationCollection() {
         return;
       }
   
-      // Check if the logged-in user's email matches any document in unsubmittedReports
-      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
+      // Check if the logged-in user's email matches any document in firestationReports
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReports'));
   
       // Find the document where the email matches the logged-in user's email
-      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
   
       if (!userDoc) {
         console.error('No unsubmitted collection found for the logged-in user.');
@@ -112,7 +134,7 @@ export default function FireStationCollection() {
       }
   
       // Check if the subcollection 'collections' exists for the user's document
-      const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'collections');
       const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
   
       if (!docSnapshot.exists()) {
@@ -148,23 +170,11 @@ export default function FireStationCollection() {
       console.error('Error updating collection field:', error);
     }
   };
-  
 
 
-  const [officerName, setOfficerName] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [currentDate] = useState(new Date().toISOString().split('T')[0]); 
 
-  const handleChange = (id, field, value) => {
-    const updatedData = reportData.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item
-    );
-    setReportData(updatedData);
-  };
-
-  const handleOfficerNameChange = (e) => {
-    setOfficerName(e.target.value);
-  };
+ 
 
  
 
@@ -223,15 +233,15 @@ const handleAddRowBelow = async () => {
           return;
       }
 
-      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
-      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReports'));
+      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
 
       if (!userDoc) {
           console.error('No unsubmitted collection found for the logged-in user.');
           return;
       }
 
-      const collectionsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'collections');
       
       // Add the new collection to Firestore
       const newCollectionRef = await addDoc(collectionsSubCollectionRef, newCollection);
@@ -272,18 +282,7 @@ const handleAddRowBelow = async () => {
           </button>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Collecting Officer's Name
-          </label>
-          <input
-            type="text"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            value={officerName}
-            onChange={handleOfficerNameChange}
-            required
-          />
-        </div>
+       
 
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
@@ -308,9 +307,6 @@ const handleAddRowBelow = async () => {
                       onMouseLeave={() => setHoveredRowId(null)} 
                         
                         >
-
-
-
                           <td className="table-cell px-2 py-2 w-24 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'date' ? (
                               <input
@@ -411,6 +407,55 @@ const handleAddRowBelow = async () => {
                 </table>
       </div>
       </div>
+
+
+                    {/*Submit Modal*/}
+                    <Modal isVisible={showModal}>
+                <div className="bg-white w-1/3 h-72 rounded py-2 px-4">
+                    <div className="flex justify-between">
+                        <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
+                            Confirm Submission
+                        </h1>
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+                            ×
+                        </button>
+                    </div>
+
+                    <hr className="border-t border-[#7694D4] my-3" />
+
+                    {/*LABEL*/}
+                    <div className="flex flex-row justify-start">
+                        
+
+                        <div className="py-2 ">
+                          <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
+                          <select
+                              className="mt-1 block w-2/4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              value={selectedOfficer}
+                              onChange={(e) => setSelectedOfficer(e.target.value)} // Handle change here
+                            >
+                              <option value="" disabled>Select an officer</option>
+
+                              {/* Dynamically render officers */}
+                              {officersData.map((officer) => (
+                                <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
+                                  {officer.firstname} {officer.lastname}
+                                </option>
+                              ))}
+                            </select>
+                        </div>
+                       
+                    </div>
+                 
+
+                    <div className="flex justify-end py-3 px-4">
+                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" >Submit</button>
+                    </div>
+                </div>
+            </Modal>
+
+
+
     </Fragment>
     
   );

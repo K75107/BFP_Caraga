@@ -22,7 +22,7 @@ export default function FireStationDeposits() {
       const userFound = deposits.find((deposit) => deposit.email === userEmail);
       if (userFound) {
         console.log('User found in unsubmitted deposits');
-        const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userFound.id, 'deposits');
+        const depositsSubCollectionRef = collection(db, 'firestationReports', userFound.id, 'deposits');
         const snapshot = await getDocs(depositsSubCollectionRef);
         if (snapshot.empty) {
           console.log('No documents in deposits subcollection. Creating default document...');
@@ -47,7 +47,7 @@ export default function FireStationDeposits() {
       }
     };
 
-    const unsubmitCollectionRef = collection(db, 'unsubmittedReports');
+    const unsubmitCollectionRef = collection(db, 'firestationReports');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
       const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFirestationCollection(listCollections);
@@ -77,14 +77,14 @@ export default function FireStationDeposits() {
         return;
       }
 
-      const unsubmittedReportsSnapshot = await getDocs(collection(db, 'unsubmittedReports'));
-      const userDoc = unsubmittedReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReports'));
+      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
       if (!userDoc) {
         console.error('No unsubmitted collection found for the logged-in user.');
         return;
       }
 
-      const depositsSubCollectionRef = collection(db, 'unsubmittedReports', userDoc.id, 'deposits');
+      const depositsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'deposits');
       const docSnapshot = await getDoc(doc(depositsSubCollectionRef, depositId));
       if (!docSnapshot.exists()) {
         console.error(`No deposit document found with ID ${depositId}.`);
@@ -135,19 +135,7 @@ export default function FireStationDeposits() {
           </button>
         </div>
 
-        {/* Officer Name Input */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Collecting Officer's Name
-          </label>
-          <input
-            type="text"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            value={officerName}
-            onChange={(e) => setOfficerName(e.target.value)}
-            required
-          />
-        </div>
+
 
         {/* Deposits Table */}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">

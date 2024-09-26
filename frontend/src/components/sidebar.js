@@ -99,7 +99,7 @@ const Sidebar = () => {
   const currentMenuItems = menuItems[userType] || [];
 
   return (
-    <div className={`flex h-screen ${isCollapsed ? 'w-12' : 'w-52'} ${isCollapsed ? 'px-0' : 'px-1'} bg-white text-black font-body flex-col text-xs border-r transition-all duration-300 py-1`}>
+    <div className={`flex h-screen ${isCollapsed ? 'w-12' : 'w-64'} ${isCollapsed ? 'px-0' : 'px-1'} bg-white text-black font-body flex-col text-sm border-r transition-all duration-300 py-1`}>
   <div className="flex items-center px-1 py-2 whitespace-nowrap">
     <img 
       src={logo} 

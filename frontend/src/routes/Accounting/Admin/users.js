@@ -73,15 +73,15 @@ export default function Users() {
 
         console.log("User added successfully!");
 
-        // Add user to the unsubmittedReports if the usertype is 'firestation'
+        // Add user to the firestationReports if the usertype is 'firestation'
         if (usertype === "fire-stations") {
-            const unsubmitCollectionRef = doc(db, "unsubmittedReports", userId);
+            const unsubmitCollectionRef = doc(db, "firestationReports", userId);
             await setDoc(unsubmitCollectionRef, {
                 email: email,
                 username: username,
             });
 
-            console.log("User added to unsubmittedReports!");
+            console.log("User added to firestationReports!");
         }
 
 
