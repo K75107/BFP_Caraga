@@ -84,7 +84,9 @@ export default function LedgerDetails() {
                 setAccountTitles([]); // Clear state if no titles
                 return;
             }
-    
+            
+            
+
             const fetchedAccountTitles = [];
             const fetchedAccounts = {};
     
@@ -97,7 +99,8 @@ export default function LedgerDetails() {
                 const accounts = await fetchAccounts(accountTitleDoc.id);
                 fetchedAccounts[accountTitleDoc.id] = accounts;
             }
-    
+            
+            
             setAccountTitles(fetchedAccountTitles);
             setSelectedAccountsData(fetchedAccounts);
     
@@ -167,8 +170,22 @@ export default function LedgerDetails() {
 
       //DELETE MAIN ACCOUNT
       const handleDeleteAccount = async () => {
-        console.log('WALA PAY FUNCTION');
+
+        if (!selectedMainAccount || !ledgerId) return;
+        try{
+
+            const selectedAccountTitleRef = doc(db, 'ledger', ledgerId , 'accounttitles', selectedMainAccount);
+
+            console.log(selectedAccountTitleRef);
+            await deleteDoc(selectedAccountTitleRef);
+            console.log("successfully deleted account");
+        }catch(error){
+            console.error(error);
+        }
+
+
     };
+
 
       const handleAddRowAbove = async () => {
         if (!selectedRowData || !ledgerId || !selectedAccountTitleRowData) return;
@@ -567,11 +584,9 @@ export default function LedgerDetails() {
                 {/* Account Title Header */}
                 <tr className="bg-gray-100 font-bold text-[12px]"
                         key={accountTitle.id}
-                        onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle)}
-                        onMouseEnter={() => { 
-                            setSelectedMainAccount(accountTitle.id); 
-                        }}
-                        onMouseLeave={() => setSelectedMainAccount(null)}     
+                        onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
+                        
+    
                         >
 
                     <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
