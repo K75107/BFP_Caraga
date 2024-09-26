@@ -178,6 +178,7 @@ export default function LedgerDetails() {
             const selectedAccountTitleRef = doc(db, 'ledger', ledgerId , 'accounttitles', selectedMainAccount);
 
             await deleteDoc(selectedAccountTitleRef);
+            setShowMainAccountRightClick(false);
             console.log("successfully deleted account");
         }catch(error){
             console.error(error);
