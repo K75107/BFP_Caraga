@@ -174,9 +174,9 @@ export default function LedgerDetails() {
         if (!selectedMainAccount || !ledgerId) return;
         try{
 
+            //Reference directly
             const selectedAccountTitleRef = doc(db, 'ledger', ledgerId , 'accounttitles', selectedMainAccount);
 
-            console.log(selectedAccountTitleRef);
             await deleteDoc(selectedAccountTitleRef);
             console.log("successfully deleted account");
         }catch(error){
