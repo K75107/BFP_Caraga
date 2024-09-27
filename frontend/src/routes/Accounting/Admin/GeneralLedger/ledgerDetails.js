@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
 import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc,writeBatch } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { IoMdAddCircleOutline } from "react-icons/io";
 
 export default function LedgerDetails() {
@@ -624,14 +626,16 @@ export default function LedgerDetails() {
                             <td className="px-6 py-5 w-72"></td>
                             <td className="px-6 py-5 w-24"></td>
 
+
                             {/* Date Field */}
                             <td className="px-2 py-2 w-36 h-6 text-[12px]">
                                 {editingCell === account.id && editValue.field === 'date' ? (
-                                    <input
-                                        type="date"
+                                    <DatePicker
+                                        selected={editValue.value ? new Date(editValue.value) : null}
+                                        onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
+                                        dateFormat="yyyy-MM-dd"
                                         className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
-                                        value={editValue.value}
-                                        onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
+                                        placeholderText="Select date"
                                         onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
                                         autoFocus
                                     />
@@ -644,6 +648,7 @@ export default function LedgerDetails() {
                                     </span>
                                 )}
                             </td>
+
 
                             {/* Particulars Field */}
                             <td className="px-2 py-2 w-72 h-6">
