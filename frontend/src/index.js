@@ -25,6 +25,7 @@ import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
 
 import TrialBalance from './routes/Accounting/Admin/TrialBalance/TrialBalance';
 import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
+import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
@@ -98,6 +99,10 @@ const router = createBrowserRouter([
           {
           path: '/main/TrialBalance/TrialBalanceList',
           element: <TrialBalanceList/>,
+          },
+          {
+            path: '/main/TrialBalance/TrialBalanceDetails/:trialbalanceID',
+            element: <TrialBalanceDetails/>
           },
           {
             index: true,
