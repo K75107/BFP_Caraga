@@ -21,8 +21,8 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
 
     // Fetch Fire Station Data from Firebase
     useEffect(() => {
-      // Reference to the 'firestationReports' collection
-      const unsubmitCollectionRef = collection(db, 'firestationReports');
+      // Reference to the 'firestationReportsOfficers' collection
+      const unsubmitCollectionRef = collection(db, 'firestationReportsOfficers');
   
       // Snapshot listener for the collection
       const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
@@ -49,7 +49,7 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
   
         if (userFound) {
           // Access the document using userFound.id
-          const userSubcollectionRef = collection(db, 'firestationReports', userFound.id, 'officers');
+          const userSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
 
           //fetch using snapshot
           const officerSnapshot = await getDocs(userSubcollectionRef);
@@ -86,7 +86,7 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
         }
     
         // Get the reference to the collection
-        const unsubmitCollectionRef = collection(db, 'firestationReports');
+        const unsubmitCollectionRef = collection(db, 'firestationReportsOfficers');
         
         // Fetch documents from the collection
         const querySnapshot = await getDocs(unsubmitCollectionRef);
@@ -100,8 +100,8 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
           return;
         }
     
-        // Access the subcollection under the firestationReports
-        const collectionsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'officers');
+        // Access the subcollection under the firestationReportsOfficers
+        const collectionsSubCollectionRef = collection(db, 'firestationReportsOfficers', userDoc.id, 'officers');
     
         // Prepare the new officer data
         const newCollection = {
@@ -148,8 +148,8 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
       if (!station) return;
     
       try {
-        // Get the reference to the 'firestationReports' collection
-        const unsubmitCollectionRef = collection(db, 'firestationReports');
+        // Get the reference to the 'firestationReportsOfficers' collection
+        const unsubmitCollectionRef = collection(db, 'firestationReportsOfficers');
         
         // Fetch documents from the collection
         const querySnapshot = await getDocs(unsubmitCollectionRef);
@@ -170,7 +170,7 @@ import { getAuth,onAuthStateChanged } from "firebase/auth";
         }
         
         // Get reference to the specific officer's document you want to update
-        const officerDocRef = doc(db, 'firestationReports', userDoc.id, 'officers', station);
+        const officerDocRef = doc(db, 'firestationReportsOfficers', userDoc.id, 'officers', station);
     
         // Update the specific officer's document to mark it as deleted
         await updateDoc(officerDocRef, {

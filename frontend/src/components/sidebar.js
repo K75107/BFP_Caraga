@@ -112,8 +112,8 @@ const Sidebar = () => {
         <h1 className='font-bold text-xl flex-1'>BFP CARAGA</h1>
       </>
     )}
-    <button onClick={toggleSidebar} className={` ${isCollapsed ? ' z-10 rotate-180 duration-300' : 'ml-8 z-10 rotate-360 duration-300'}`}>
-      <FaCircleChevronLeft size={20} color='#b91c1c'/>
+    <button onClick={toggleSidebar} className={` ${isCollapsed ? '  z-10 rotate-180 duration-300' : 'ml-8 z-10 rotate-360 duration-300'}`}>
+      <FaCircleChevronLeft size={20} color='#b91c1c' className='ml-18'/>
     </button>
   </div>
 

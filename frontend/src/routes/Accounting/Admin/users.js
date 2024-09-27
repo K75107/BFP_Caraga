@@ -75,16 +75,34 @@ export default function Users() {
 
         // Add user to the firestationReports if the usertype is 'firestation'
         if (usertype === "fire-stations") {
-            const unsubmitCollectionRef = doc(db, "firestationReports", userId);
+            const unsubmitCollectionRef = doc(db, "firestationReportsDeposits", userId);
             await setDoc(unsubmitCollectionRef, {
                 email: email,
                 username: username,
             });
 
-            console.log("User added to firestationReports!");
+            // console.log("User added to firestationReportsDeposits!");
         }
 
+        if (usertype === "fire-stations") {
+          const unsubmitCollectionRef = doc(db, "firestationReportsCollections", userId);
+          await setDoc(unsubmitCollectionRef, {
+              email: email,
+              username: username,
+          });
 
+          // console.log("User added to firestationReportsCollections!");
+      }
+
+        if (usertype === "fire-stations") {
+          const unsubmitCollectionRef = doc(db, "firestationReportsOfficers", userId);
+          await setDoc(unsubmitCollectionRef, {
+              email: email,
+              username: username,
+          });
+
+          // console.log("User added to firestationReportsOfficers!");
+      }
 
     } catch (err) {
       console.error("Error adding user: ", err);

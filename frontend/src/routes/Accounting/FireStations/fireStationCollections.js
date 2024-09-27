@@ -1,7 +1,7 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import { getAuth, onAuthStateChanged} from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc } from 'firebase/firestore';
 import { db } from "../../../config/firebase-config";
 import Modal from "../../../components/Modal"
 
@@ -25,7 +25,8 @@ export default function FireStationCollection() {
 
   const [selectedOfficer,setSelectedOfficer] = useState('');
 
-
+  //Loggin User
+  const [logginUser, setLogginUser] = useState('');
 
 
   useEffect(() => {
@@ -34,9 +35,12 @@ export default function FireStationCollection() {
         
         if (userFound) {
             
+            //Set the loggin user to global
+            setLogginUser(userFound);
+
             /*--------------------------------------------------Collections------------------------------------------------------------- */
 
-            const collectionsSubCollectionRef = collection(db, 'firestationReports', userFound.id, 'collections');
+            const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userFound.id, 'collections');
             const snapshot = await getDocs(collectionsSubCollectionRef);
 
             // If there are no documents, create a default document
@@ -74,7 +78,7 @@ export default function FireStationCollection() {
 
 
             //Collecting Officer
-            const officersSubcollectionRef = collection(db, 'firestationReports', userFound.id, 'officers');
+            const officersSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
             const officerSnapshot = await getDocs(officersSubcollectionRef);
 
             const officerDocs = officerSnapshot.docs.map(doc =>({id:doc.id, ...doc.data()}));
@@ -87,7 +91,7 @@ export default function FireStationCollection() {
     };
 
     // Set up a listener for the unsubmitted collections
-    const unsubmitCollectionRef = collection(db, 'firestationReports');
+    const unsubmitCollectionRef = collection(db, 'firestationReportsCollections');
     const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
         const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setFirestationCollection(listCollections); // Update state with fetched data
@@ -122,8 +126,8 @@ export default function FireStationCollection() {
         return;
       }
   
-      // Check if the logged-in user's email matches any document in firestationReports
-      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReports'));
+      // Check if the logged-in user's email matches any document in firestationReportsCollections
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsCollections'));
   
       // Find the document where the email matches the logged-in user's email
       const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
@@ -134,7 +138,7 @@ export default function FireStationCollection() {
       }
   
       // Check if the subcollection 'collections' exists for the user's document
-      const collectionsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userDoc.id, 'collections');
       const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
   
       if (!docSnapshot.exists()) {
@@ -172,11 +176,7 @@ export default function FireStationCollection() {
   };
 
 
-  const [currentDate] = useState(new Date().toISOString().split('T')[0]); 
 
- 
-
- 
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -233,7 +233,7 @@ const handleAddRowBelow = async () => {
           return;
       }
 
-      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReports'));
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsCollections'));
       const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
 
       if (!userDoc) {
@@ -241,7 +241,7 @@ const handleAddRowBelow = async () => {
           return;
       }
 
-      const collectionsSubCollectionRef = collection(db, 'firestationReports', userDoc.id, 'collections');
+      const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userDoc.id, 'collections');
       
       // Add the new collection to Firestore
       const newCollectionRef = await addDoc(collectionsSubCollectionRef, newCollection);
@@ -263,6 +263,89 @@ const handleAddRowBelow = async () => {
   }
 };
 
+const handleSubmitDataToRegion = async () => {
+  try {
+    // Reference to the submittedReportsCollections (without logginUser.id initially)
+    const submittedReportsCollectionRef = collection(db, 'submittedReportsCollections');
+
+    // First, create a document for the logginUser.id with email and username
+    const userDocRef = doc(submittedReportsCollectionRef, logginUser.id);
+    await setDoc(userDocRef, {
+      email: logginUser.email,
+      username: logginUser.username,
+      date_created: serverTimestamp() // Optional: track when this document was created
+    });
+
+    console.log('User document created successfully with email and username.');
+
+    // Now, reference the specific subcollection under the newly created logginUser.id document
+    const collectionsSubCollectionRef = collection(
+      db,
+      'firestationReportsCollections',
+      logginUser.id,
+      'collections'
+    );
+
+    // Fetch the value of collections
+    const collectionsSnapshot = await getDocs(collectionsSubCollectionRef);
+
+    if (collectionsSnapshot.empty) {
+      console.log("No documents inside the collections");
+    } else {
+      // Create an array of promises for each document to be added and deleted
+      const submissionPromises = collectionsSnapshot.docs.map(async (docSnapshot) => {
+        const data = docSnapshot.data();
+
+        // Prepare the new data with a submission timestamp
+        const newData = {
+          ...data,
+          date_submitted: serverTimestamp(),
+        };
+
+        // Reference the subcollection under the logginUser.id document in submittedReportsCollections
+        const userSubmittedReportsRef = collection(
+          db,
+          'submittedReportsCollections',
+          logginUser.id,
+          'Collections'
+        );
+
+        // Add the new data to the submitted reports subcollection
+        await addDoc(userSubmittedReportsRef, newData);
+
+        // Delete the document from the original collections after it's submitted
+        await deleteDoc(docSnapshot.ref);
+      });
+
+      // Wait for all documents to be processed
+      await Promise.all(submissionPromises);
+
+      console.log("All documents submitted and deleted successfully");
+    }
+
+    // Now, create a new blank row after deleting all the data
+    const newBlankRow = {
+      fireStationName: logginUser.username,
+      collectingOfficer: null,
+      lcNumber: null,
+      date: null,
+      orNumber: null,
+      amount: null,
+      position: 1 // Default position for the first row
+    };
+
+    // Add the new blank row to the original collections subcollection
+    await addDoc(collectionsSubCollectionRef, newBlankRow);
+
+    console.log("New blank row created successfully");
+
+    // Hide the modal after completion
+    setShowModal(false);
+
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 
 
@@ -449,7 +532,9 @@ const handleAddRowBelow = async () => {
                  
 
                     <div className="flex justify-end py-3 px-4">
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" >Submit</button>
+                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" 
+                                onClick={handleSubmitDataToRegion}
+                        >Submit</button>
                     </div>
                 </div>
             </Modal>
