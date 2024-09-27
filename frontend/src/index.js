@@ -22,7 +22,10 @@ import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger
 import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
 import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
 import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
-import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
+
+import TrialBalance from './routes/Accounting/Admin/TrialBalance/TrialBalance';
+import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
+
 import Deposits from './routes/Accounting/Admin/deposits';
 import Collections from './routes/Accounting/Admin/collections';
 //FireStations
@@ -89,8 +92,18 @@ const router = createBrowserRouter([
       },
 
       {
-        path: 'trialBalance',
+        path: 'TrialBalance',
         element: <TrialBalance />,
+        children: [
+          {
+          path: '/main/TrialBalance/TrialBalanceList',
+          element: <TrialBalanceList/>,
+          },
+          {
+            index: true,
+            element: <Navigate to="TrialBalanceList"/>
+          },
+        ],
       },
       {
         path: 'deposits',
