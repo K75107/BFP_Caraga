@@ -1,7 +1,7 @@
 import React, { Fragment, useState } from "react";
 import { FaFilter, FaCog, FaSortDown, FaSortUp } from 'react-icons/fa'; // Ensure react-icons is installed
 
-export default function FireStationReports() {
+export default function CollectionsPerStation() {
     const [isSortedAsc, setIsSortedAsc] = useState(true);
 
     const handleSortClick = () => {
@@ -11,7 +11,7 @@ export default function FireStationReports() {
 
     return (
         <Fragment>
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+            
                 <div className="flex justify-between items-center w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Fire Station Reports - Collections</h1>
                     <div className="flex space-x-3">
@@ -52,7 +52,7 @@ export default function FireStationReports() {
                         </tbody>
                     </table>
                 </div>
-            </div>
+      
         </Fragment>
     );
 }
