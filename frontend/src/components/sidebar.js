@@ -26,11 +26,12 @@ const Sidebar = () => {
 
   const isActive = (path) => {
     const currentPath = location.pathname;
-    if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger')) {
+    if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger') || path === '/main/TrialBalance' && currentPath.startsWith('/main/TrialBalance')) {
       return true;
     }
     return currentPath === path;
   };
+  
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -77,7 +78,7 @@ const Sidebar = () => {
       { section: 'Ledger' },
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
       { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
-      { path: '/main/trialBalance', icon: isActive('/main/trialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
       { section: 'Financial Statements' },
       { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },
       { path: '/main/balanceSheet', icon: isActive('/main/balanceSheet') ? <PiBookOpenTextFill size={18} /> : <PiBookOpenText size={18} />, label: 'Balance Sheet' },
