@@ -608,10 +608,11 @@ const handleAddEntry = async () => {
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/*TABLE*/}
-            <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-screen ">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
+                            <th scope="col" className=" w-[20px] "></th>
                             <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
                             <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
                             <th scope="col" className="px-2 py-3 w-24">DATE</th>
@@ -619,175 +620,184 @@ const handleAddEntry = async () => {
                             <th scope="col" className="px-2 py-3 w-48">DEBIT</th>
                             <th scope="col" className="px-2 py-3 w-48">CREDIT</th>
                             <th scope="col" className="px-2 py-3 w-48 text-center">BALANCE</th>
-                            <th scope="col" className=" w-[0px] "></th>
+                            
                         </tr>
                     </thead>
-                    <tbody>
-    {accountTitles.map((accountTitle) => {
-        let runningBalance = 0; // Initialize running balance for this account title group
+                </table>
+                <div className=' w-full overflow-y-scroll h-[calc(100vh-200px)]'>
+                <table className='w-full overflow-x-visible'>
+                   
+                        <tbody>
+                            {accountTitles.map((accountTitle) => {
+                                let runningBalance = 0; // Initialize running balance for this account title group
 
-        // Calculate the final running balance for the account title header
-        const finalRunningBalance = accountsData[accountTitle.id]?.reduce((balance, account) => {
-            return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
-        }, 0);
+                                // Calculate the final running balance for the account title header
+                                const finalRunningBalance = accountsData[accountTitle.id]?.reduce((balance, account) => {
+                                    return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
+                                }, 0);
 
-        return (
-            <Fragment key={accountTitle.id}>
-                {/* Account Title Header */}
-                <tr className="bg-gray-100 font-bold text-[12px]"
-                        key={accountTitle.id}
-                        onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
+                                return (
+                                    <Fragment key={accountTitle.id}>
+                                        {/* Account Title Header */}
+                                        <tr className="bg-gray-100 font-bold text-[12px]"
+                                                key={accountTitle.id}
+                                                onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
+                                                
+                            
+                                                >
+                                            <td className=" w-[20px] "></td>
+                                            <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
+                                            <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
+                                            <td className="table-cell px-2 py-3 w-24"></td>
+                                            <td className="table-cell px-2 py-3 w-80"></td>
+                                            <td className="table-cell px-2 py-3 w-48"></td>
+                                            <td className="table-cell px-2 py-3 w-48"></td>
+                                            <td className="table-cell px-2 py-3 w-48 text-center">
+                                            
+                                                {formatBalance(finalRunningBalance)}
+                                            </td>
+                                        </tr>
+
+                                        {/* Account Rows */}
+                                        {accountsData[accountTitle.id]?.map((account) => {
+                                            runningBalance = calculateBalance(
+                                                accountTitle.accountType,
+                                                account.debit,
+                                                account.credit,
+                                                runningBalance
+                                            );
+
+                                            return (
+                                                <tr
+                                                    key={account.id}
+                                                    onContextMenu={(e) => handleRightClick(e, account, accountTitle)}  // Right-click functionality
+                                                    onMouseEnter={() => { 
+                                                        setHoveredRowId(account.id); 
+                                                        handleHoverData(account, accountTitle); 
+                                                    }}
+                                                    onMouseLeave={() => setHoveredRowId(null)}     
+                                                    className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 "
+                                                >
+                                                    {/* Add Row Button */}
+                                                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
+                                                        {hoveredRowId === account.id && (
+                                                            <button
+                                                                className="absolute left-[0px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                                                onClick={handleAddRowBelow}
+                                                            >
+                                                                <IoMdAddCircleOutline />
+                                                            </button>
+                                                        )}
+                                                    </td>
+
+
+                                                    <td className="px-6 py-5 w-72"></td>
+                                                    <td className="px-6 py-5 w-48"></td>
+
+
+                                                    {/* Date Field */}
+                                                    <td className="px-2 py-2 w-24 h-6 text-[12px]">
+                                                        {editingCell === account.id && editValue.field === 'date' ? (
+                                                            <DatePicker
+                                                                selected={editValue.value ? new Date(editValue.value) : null}
+                                                                onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
+                                                                dateFormat="yyyy-MM-dd"
+                                                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                                                placeholderText="Select date"
+                                                                onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
+                                                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                                            >
+                                                                {account.date || '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+
+                                                    {/* Particulars Field */}
+                                                    <td className="px-2 py-2 w-80 h-6">
+                                                        {editingCell === account.id && editValue.field === 'particulars' ? (
+                                                            <input
+                                                                type="text"
+                                                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
+                                                                value={editValue.value}
+                                                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                                                onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
+                                                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                                            >
+                                                                {account.particulars || '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Debit Field */}
+                                                    <td className="px-2 py-2 w-48 h-6">
+                                                        {editingCell === account.id && editValue.field === 'debit' ? (
+                                                            <input
+                                                                type="text"
+                                                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
+                                                                value={editValue.value}
+                                                                onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
+                                                                onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
+                                                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                                            >
+                                                                {formatNumber(account.debit) || '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Credit Field */}
+                                                    <td className="px-2 py-2 w-48 h-6">
+                                                        {editingCell === account.id && editValue.field === 'credit' ? (
+                                                            <input
+                                                                type="text"
+                                                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
+                                                                value={editValue.value}
+                                                                onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
+                                                                onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span
+                                                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
+                                                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                                            >
+                                                                {formatNumber(account.credit) || '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Display Running Balance */}
+                                                    <td className="px-2 py-4 text-center w-48">
+                                                        {formatBalance(runningBalance) || '-'}
+                                                    </td>
+
+                                                    
+                                                </tr>
+                                            );
+                                        })}
+                                    </Fragment>
+                                );
+                            })}
+                        </tbody>
                         
-    
-                        >
-
-                    <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
-                    <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
-                    <td className="table-cell px-2 py-3 w-24"></td>
-                    <td className="table-cell px-2 py-3 w-80"></td>
-                    <td className="table-cell px-2 py-3 w-48"></td>
-                    <td className="table-cell px-2 py-3 w-48"></td>
-                    <td className="table-cell px-2 py-3 w-48 text-center">
-                        {formatBalance(finalRunningBalance)}
-                    </td>
-                </tr>
-
-                {/* Account Rows */}
-                {accountsData[accountTitle.id]?.map((account) => {
-                    runningBalance = calculateBalance(
-                        accountTitle.accountType,
-                        account.debit,
-                        account.credit,
-                        runningBalance
-                    );
-
-                    return (
-                        <tr
-                            key={account.id}
-                            onContextMenu={(e) => handleRightClick(e, account, accountTitle)}  // Right-click functionality
-                            onMouseEnter={() => { 
-                                setHoveredRowId(account.id); 
-                                handleHoverData(account, accountTitle); 
-                            }}
-                            onMouseLeave={() => setHoveredRowId(null)}     
-                            className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                        >
-                            <td className="px-6 py-5 w-72"></td>
-                            <td className="px-6 py-5 w-24"></td>
-
-
-                            {/* Date Field */}
-                            <td className="px-2 py-2 w-36 h-6 text-[12px]">
-                                {editingCell === account.id && editValue.field === 'date' ? (
-                                    <DatePicker
-                                        selected={editValue.value ? new Date(editValue.value) : null}
-                                        onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
-                                        dateFormat="yyyy-MM-dd"
-                                        className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
-                                        placeholderText="Select date"
-                                        onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <span
-                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
-                                        className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
-                                    >
-                                        {account.date || '-'}
-                                    </span>
-                                )}
-                            </td>
-
-
-                            {/* Particulars Field */}
-                            <td className="px-2 py-2 w-72 h-6">
-                                {editingCell === account.id && editValue.field === 'particulars' ? (
-                                    <input
-                                        type="text"
-                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                        value={editValue.value}
-                                        onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
-                                        onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <span
-                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
-                                        className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                                    >
-                                        {account.particulars || '-'}
-                                    </span>
-                                )}
-                            </td>
-
-                            {/* Debit Field */}
-                            <td className="px-2 py-2 w-30 h-6">
-                                {editingCell === account.id && editValue.field === 'debit' ? (
-                                    <input
-                                        type="text"
-                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                        value={editValue.value}
-                                        onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
-                                        onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <span
-                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
-                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8 px-2 py-1"
-                                    >
-                                        {formatNumber(account.debit) || '-'}
-                                    </span>
-                                )}
-                            </td>
-
-                            {/* Credit Field */}
-                            <td className="px-2 py-2 w-30 h-6">
-                                {editingCell === account.id && editValue.field === 'credit' ? (
-                                    <input
-                                        type="text"
-                                        className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                        value={editValue.value}
-                                        onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
-                                        onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <span
-                                        onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
-                                        className="block border border-gray-300 hover:bg-gray-100 w-30 h-8 px-2 py-1"
-                                    >
-                                        {formatNumber(account.credit) || '-'}
-                                    </span>
-                                )}
-                            </td>
-
-                            {/* Display Running Balance */}
-                            <td className="px-2 py-4 text-center ">
-                                {formatBalance(runningBalance) || '-'}
-                            </td>
-
-                            {/* Add Row Button */}
-                            {hoveredRowId === account.id && (
-                                <td className="absolute right-8 mt-9 mr-1">
-                                    <button
-                                        className="bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                        style={{ position: 'absolute', right: '-50px' }}
-                                        onClick={handleAddRowBelow}
-                                    >
-                                        <IoMdAddCircleOutline />
-                                    </button>
-                                </td>
-                            )}
-                        </tr>
-                    );
-                })}
-            </Fragment>
-        );
-    })}
-</tbody>
 
                 </table>
+            </div>
             </div>
 
             

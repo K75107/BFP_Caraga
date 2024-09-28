@@ -76,7 +76,7 @@ const Main = () => {
             </button>
           </div>
         </header>
-        <div className="px-3 py-1.5 flex-1 overflow-auto">
+        <div className="px-3 py-1.5 flex-1 h-screen">
           <Outlet /> {/* Renders nested routes */}
         </div>
       </div>
