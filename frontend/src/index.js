@@ -18,6 +18,8 @@ import IncomeStatement from './routes/Accounting/Admin/IncomeStatement/incomeSta
 import IncomeStatementDetails from './routes/Accounting/Admin/IncomeStatement/incomeStatementDetails';
 import IncomeStatementList from './routes/Accounting/Admin/IncomeStatement/incomeStatementList';
 import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
+import BalanceSheetList from './routes/Accounting/Admin/BalanceSheet/balanceSheetList';
+import BalanceSheetDetails from './routes/Accounting/Admin/BalanceSheet/balanceSheetDetails';
 import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
@@ -30,7 +32,12 @@ import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanc
 import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
 import Deposits from './routes/Accounting/Admin/deposits';
-import Collections from './routes/Accounting/Admin/collections';
+
+//Collections
+import Collections from './routes/Accounting/Admin/collections/collections';
+import CollectionsPerStation from './routes/Accounting/Admin/collections/collectionsPerStation';
+import CollectionsList from './routes/Accounting/Admin/collections/collectionsList';
+
 //FireStations
 import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
 import FireStationCollections from './routes/Accounting/FireStations/fireStationCollections';
@@ -73,8 +80,22 @@ const router = createBrowserRouter([
         ],
       },
       {
-        path: 'balanceSheet',
+        path: 'BalanceSheet',
         element: <BalanceSheet />,
+        children: [
+          {
+          path: '/main/BalanceSheet/balanceSheetList',
+          element: <BalanceSheetList/>,
+          },
+          {
+            path: '/main/BalanceSheet/balanceSheetDetails/:balanceSheetID',
+            element: <BalanceSheetDetails/>
+          },
+          {
+            index: true,
+            element: <Navigate to="balanceSheetList"/>
+          },
+        ],
       },
       {
         path: 'cashflowStatement',
@@ -133,6 +154,22 @@ const router = createBrowserRouter([
       {
         path: 'collections',
         element: <Collections />,
+        children:[
+          {
+            path:'collections/reports',
+            element:<CollectionsPerStation/>
+          },
+          {
+            path:'collectionsList',
+            element:<CollectionsList/>
+          },
+          {
+            index:true,
+            element: <Navigate to = 'collectionsList'/>
+          }
+
+
+        ]
       },
       {
         path: 'fireStation/dashboard',

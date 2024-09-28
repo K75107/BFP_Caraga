@@ -51,7 +51,7 @@ export default function IncomeStatementDetails() {  // Updated component name
     // Function to add a new row below the selected row
     const handleAddEntry = () => {
         const newRows = [...rows];
-        newRows.splice(selectedRowIndex + 1, 0, { description: 'New Account', period: '' });
+        newRows.splice(selectedRowIndex + 1, 0, { description: 'New Row', period: '' });
         setRows(newRows);
         setShowMainAccountRightClick(false); // Close the right-click menu
     };
@@ -102,6 +102,7 @@ export default function IncomeStatementDetails() {  // Updated component name
                                     </td>
                                 </tr>
                             ))}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -136,4 +137,4 @@ export default function IncomeStatementDetails() {  // Updated component name
             )}
         </Fragment>
     );
-}
+}   
