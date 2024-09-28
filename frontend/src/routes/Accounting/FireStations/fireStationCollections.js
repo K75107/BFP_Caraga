@@ -1,7 +1,7 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import { getAuth, onAuthStateChanged} from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc,writeBatch } from 'firebase/firestore';
 import { db } from "../../../config/firebase-config";
 import Modal from "../../../components/Modal"
 
@@ -17,29 +17,34 @@ export default function FireStationCollection() {
 
   const [editingCell,setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [reportData, setReportData] = useState([]);
+
 
   //Modal
   const [showModal, setShowModal] = useState(false);
   const [officersData, setOfficersData] = useState([]);
-
   const [selectedOfficer,setSelectedOfficer] = useState('');
+
+  //Right click Modal
+  const [showRightClickModal, setShowRightClickModal] = useState(false); 
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
   //Loggin User
   const [logginUser, setLogginUser] = useState('');
 
 
+  //loading
+  const [isLoading, setIsLoading] = useState(false);  // New loading state
+
+
   useEffect(() => {
     const checkUserInCollections = async (userEmail, collections) => {
         const userFound = collections.find((collection) => collection.email === userEmail);
-        
+
         if (userFound) {
-            
-            //Set the loggin user to global
+            // Set the logged-in user to global state
             setLogginUser(userFound);
 
             /*--------------------------------------------------Collections------------------------------------------------------------- */
-
             const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userFound.id, 'collections');
             const snapshot = await getDocs(collectionsSubCollectionRef);
 
@@ -48,6 +53,7 @@ export default function FireStationCollection() {
                 console.log('No documents in collections subcollection. Creating default document...');
 
                 const defaultDoc = {
+                    createdAt:serverTimestamp(),
                     fireStationName: userFound.username,
                     collectingOfficer: null,
                     lcNumber: null,
@@ -60,31 +66,33 @@ export default function FireStationCollection() {
                 // Add default document with auto-generated ID
                 const newDocRef = await addDoc(collectionsSubCollectionRef, defaultDoc);
                 console.log('Default document created in collections subcollection:', newDocRef.id);
-                
+
                 // Immediately update the state with the new document
                 const newDocument = { id: newDocRef.id, ...defaultDoc };
                 setCollectionsData([newDocument]); // Update with the new default row
 
                 // Optionally fetch existing documents to merge them
                 const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setCollectionsData(prevData => [newDocument, ...subCollectionDocs]); // Merge new document with any existing ones
+                const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
+
+                setCollectionsData(prevData => [newDocument, ...sortedSubCollectionDocs]); // Merge new document with any existing ones
             } else {
-                // Fetch subcollection documents
+                // Fetch and sort subcollection documents by position
                 const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setCollectionsData(subCollectionDocs); // Update state with existing documents
+                const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
+
+                setCollectionsData(sortedSubCollectionDocs); // Update state with sorted documents
             }
 
             /*------------------------------------------------------------------------------------------------------------------ */
 
-
-            //Collecting Officer
+            // Fetch Collecting Officer data
             const officersSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
             const officerSnapshot = await getDocs(officersSubcollectionRef);
 
-            const officerDocs = officerSnapshot.docs.map(doc =>({id:doc.id, ...doc.data()}));
+            const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setOfficersData(officerDocs);
 
-          
         } else {
             console.log('User not found in unsubmitted collections');
         }
@@ -99,7 +107,7 @@ export default function FireStationCollection() {
         const auth = getAuth();
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // console.log('Current User Email:', user.email);
+                // Check if the logged-in user is part of the collections
                 checkUserInCollections(user.email, listCollections);
             } else {
                 console.log('No user is currently logged in');
@@ -111,6 +119,10 @@ export default function FireStationCollection() {
         unsubscribeUnsubmitCollections(); // Unsubscribe from Firestore snapshot listener
     };
 }, []);
+
+
+
+
 
   
 
@@ -184,84 +196,130 @@ export default function FireStationCollection() {
   };
 
 
-  const handleHoverData = (collections) =>{
-    const collection = collections.id; // Account document ID
- 
+  const handleAddRowBelow = async () => {
+    if (!selectedRowData || !collectionsData || isLoading) return;
 
-     setSelectedRowData(collection);
+    setIsLoading(true);
 
-
-
-}    
-
-const handleAddRowBelow = async () => {
-  if (!selectedRowData || !collectionsData) return;
-
-  try {
-      // Find the selected row data
-      const selectedRow = collectionsData.find(collection => collection.id === selectedRowData);
-
-      // If no selected row found, exit
-      if (!selectedRow) return;
+    try {
+      // Reference the collections data
+      const collectionRef = collection(db, 'firestationReportsCollections', logginUser.id, 'collections');
+      
+      // Fetch and sort existing rows
+      const collectionsDataSnapshot = await getDocs(collectionRef);
+      const sortedRows = collectionsDataSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => a.position - b.position);
 
       // Find the position of the selected row
-      const selectedRowPosition = selectedRow.position;
+      const selectedRowPosition = selectedRowData.position;
 
       // Find the next row after the selected one
-      const nextRow = collectionsData.find(collection => collection.position > selectedRowPosition);
+      const nextRow = sortedRows.find(fireCollections => fireCollections.position > selectedRowPosition);
 
-      // Calculate the new position
-      const newRowPosition = nextRow 
-          ? (selectedRowPosition + nextRow.position) / 2 
-          : selectedRowPosition + 1;
+      // Calculate the new position (midpoint or +1)
+      const newRowPosition = nextRow
+        ? (selectedRowPosition + nextRow.position) / 2
+        : selectedRowPosition + 1;
 
-      // Create the new collection with the calculated position
-      const newCollection = {
-          date: null,
-          lcNumber: null,
-          orNumber: null,
-          amount: null,
-          position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+      // console.log(newRowPosition);
+
+
+      // Create new data with its position
+      const newRowData = {
+        createdAt:serverTimestamp(),
+        fireStationName: logginUser.username,
+        collectingOfficer: null,
+        lcNumber: null,
+        date: null,
+        orNumber: null,
+        amount: null,
+        position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
       };
 
-      // Reference to the user's collections subcollection
-      const auth = getAuth();
-      const user = auth.currentUser;
+      // Add the new row to Firestore
+      const newRowDataRef = await addDoc(collectionRef, newRowData);
 
-      if (!user) {
-          console.error('No logged-in user found.');
-          return;
-      }
-
-      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsCollections'));
-      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
-
-      if (!userDoc) {
-          console.error('No unsubmitted collection found for the logged-in user.');
-          return;
-      }
-
-      const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userDoc.id, 'collections');
-      
-      // Add the new collection to Firestore
-      const newCollectionRef = await addDoc(collectionsSubCollectionRef, newCollection);
-
-      // Fetch the new collection's ID
-      const newCollectionWithId = {
-          ...newCollection,
-          id: newCollectionRef.id,  // Use the Firestore-generated ID
+      // Fetch the new row's ID and add it to the new row data
+      const newRowWithId = {
+        ...newRowData,
+        id: newRowDataRef.id,
       };
 
-      // Update the local state immediately
-      setCollectionsData(prevCollections => {
-          const updatedCollections = [...prevCollections, newCollectionWithId];
-          return updatedCollections.sort((a, b) => a.position - b.position); // Sort by position
-      });
+      // Update the local state by adding the new row and re-sorting
+      setCollectionsData(prevData => 
+        [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
+      );
+
+    } catch (error) {
+        console.error('Error adding row below:', error.message || error);
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+const handleAddRowAbove = async () => {
+  if (!selectedRowData || !collectionsData || isLoading) return;
+
+  setIsLoading(true);
+
+  try {
+    // Reference the collections data
+    const collectionRef = collection(db, 'firestationReportsCollections', logginUser.id, 'collections');
+    
+    // Fetch and sort existing rows
+    const collectionsDataSnapshot = await getDocs(collectionRef);
+    const sortedRows = collectionsDataSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => a.position - b.position);
+
+    // Find the position of the selected row
+    const selectedRowPosition = selectedRowData.position;
+
+    // Find the next row after the selected one
+    const prevRow = sortedRows.find(fireCollections => fireCollections.position < selectedRowPosition);
+
+    // Calculate the new position (midpoint or +1)
+    const newRowPosition = prevRow
+      ? (selectedRowPosition + prevRow.position) / 2
+      : selectedRowPosition - 1;
+
+    // console.log(newRowPosition);
+
+
+    // Create new data with its position
+    const newRowData = {
+      createdAt:serverTimestamp(),
+      fireStationName: logginUser.username,
+      collectingOfficer: null,
+      lcNumber: null,
+      date: null,
+      orNumber: null,
+      amount: null,
+      position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+    };
+
+    // Add the new row to Firestore
+    const newRowDataRef = await addDoc(collectionRef, newRowData);
+
+    // Fetch the new row's ID and add it to the new row data
+    const newRowWithId = {
+      ...newRowData,
+      id: newRowDataRef.id,
+    };
+
+    // Update the local state by adding the new row and re-sorting
+    setCollectionsData(prevData => 
+      [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
+    );
 
   } catch (error) {
       console.error('Error adding row below:', error.message || error);
+  } finally {
+      setIsLoading(false);
   }
 };
+
 
 const handleSubmitDataToRegion = async () => {
   try {
@@ -320,7 +378,24 @@ const handleSubmitDataToRegion = async () => {
       // Wait for all documents to be processed
       await Promise.all(submissionPromises);
 
-      console.log("All documents submitted and deleted successfully");
+      // console.log("All documents submitted and deleted successfully");
+
+      //Show Changes to UI---------------------------------------------------------------------------------------------------
+      
+            const collectionsDataRef = collection(db, "firestationReportsCollections",logginUser.id,'collections');
+            
+            //fetched the updated accounts after deletion
+            const updatedSnapshot = await getDocs(collectionsDataRef);
+            const updatedCollections = updatedSnapshot.docs.map((doc =>({id:doc.id, ...doc.data()})));
+
+            //keep existing positions unless some rows need ajustments
+            const sortedCollections = updatedCollections.sort((a,b) => a.position - b.position);
+
+            setCollectionsData(sortedCollections);
+
+      //Show Changes to UI---------------------------------------------------------------------------------------------------
+
+
     }
 
     // Now, create a new blank row after deleting all the data
@@ -347,7 +422,93 @@ const handleSubmitDataToRegion = async () => {
   }
 };
 
+    //Right Click Functions
+    const handleRightClick = (event,Collections) => {
+      event.preventDefault(); 
 
+
+       setSelectedRowData(Collections);
+
+      
+      // Set the modal position based on the mouse position
+      setModalPosition({ x: event.clientX, y: event.clientY });
+      setShowRightClickModal(true); // Open the modal
+
+
+      
+    };
+
+
+    const handleHoverData = (collections) =>{
+
+        // console.log(collection);
+       setSelectedRowData(collections);
+  
+  }    
+  
+
+    const closeModalOnOutsideClick = (e) => {
+      if (e.target.id === "user-modal-overlay") {
+          setShowRightClickModal(false);
+      }
+    };
+
+
+      //DELETE MAIN ACCOUNT
+      const handleDeleteRow = async () => {
+
+        if (!selectedRowData) return;
+
+        try{
+
+            //Reference directly
+            const collectionsDataRef = collection(db, "firestationReportsCollections",logginUser.id,'collections');
+            const selectedRowRef = doc(db, "firestationReportsCollections",logginUser.id,'collections',selectedRowData.id);
+
+            await deleteDoc(selectedRowRef);
+            
+            //fetched the updated accounts after deletion
+            const updatedSnapshot = await getDocs(collectionsDataRef);
+            const updatedCollections = updatedSnapshot.docs.map((doc =>({id:doc.id, ...doc.data()})));
+
+            //keep existing positions unless some rows need ajustments
+            const sortedCollections = updatedCollections.sort((a,b) => a.position - b.position);
+
+             // Optional: If the position gap between rows becomes too large, reassign positions.
+             const shouldReassign = sortedCollections.some((collectionsData, index) => {
+              const nextCollectionData = sortedCollections[index + 1];
+              return nextCollectionData && (nextCollectionData.position - collectionsData.position) > 1;
+            });
+            
+            if (shouldReassign) {
+              const newCollections = sortedCollections.map((collectionsData, index) => ({
+                  ...collectionsData,
+                  position: parseFloat((index + 1).toFixed(10)), // Reassign positions only if necessary
+              }));
+  
+              // Update Firestore with new positions
+              const batch = writeBatch(db);
+              newCollections.forEach(collectionsData => {
+                  const collectionsRef = doc(collectionsDataRef, collectionsData.id);
+                  batch.update(collectionsRef, { position: collectionsData.position });
+              });
+              await batch.commit();
+            
+          } else {
+
+            setCollectionsData(sortedCollections);
+        }
+
+        setShowRightClickModal(false); // Close the modal
+        }catch(error){
+            console.error(error);
+        }
+
+
+    };
+
+    
+  
 
   return (
     <Fragment>
@@ -368,14 +529,14 @@ const handleSubmitDataToRegion = async () => {
        
 
         {/*TABLE*/}
-        <div className="relative overflow-x-visible shadow-md sm:rounded-lg ">
+        <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
             <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                         <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-3 w-24">DATE</th>
-                            <th scope="col" className="px-2 py-3 w-56">LC NUMBER</th>
-                            <th scope="col" className="px-2 py-3 w-56">OR NUMBER</th>
-                            <th scope="col" className="px-2 py-3 w-56">AMOUNT</th>
+                            <th scope="col" className="px-2 py-3 w-36">DATE</th>
+                            <th scope="col" className="px-2 py-3 w-1/4">LC NUMBER</th>
+                            <th scope="col" className="px-2 py-3 w-1/4">OR NUMBER</th>
+                            <th scope="col" className="px-2 py-3 w-1/4">AMOUNT</th>
                             <th scope="col" className="w-[0px]"></th>
                         </tr>
                   </thead>
@@ -387,10 +548,9 @@ const handleSubmitDataToRegion = async () => {
                           setHoveredRowId(collections.id); 
                           handleHoverData(collections); 
                         }}
-                      onMouseLeave={() => setHoveredRowId(null)} 
-                        
+                      onContextMenu={(e) => handleRightClick(e, collections)}  // Right-click functionality
                         >
-                          <td className="table-cell px-2 py-2 w-24 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'date' ? (
                               <input
                                 type="date"
@@ -412,11 +572,11 @@ const handleSubmitDataToRegion = async () => {
 
                           
 
-                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'lcNumber', editValue.value)}
@@ -425,7 +585,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'lcNumber', value: collections.lcNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
                                 {collections.lcNumber || '-'}
                               </span>
@@ -433,11 +593,11 @@ const handleSubmitDataToRegion = async () => {
                           </td>
 
 
-                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'orNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'orNumber', editValue.value)}
@@ -446,17 +606,17 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'orNumber', value: collections.orNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
                                 {collections.orNumber || '-'}
                               </span>
                             )}
                           </td>
-                          <td className="table-cell px-2 py-2 w-56 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'amount' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-56 h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'amount', editValue.value)}
@@ -465,7 +625,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'amount', value: collections.amount || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-56 px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
                                 {collections.amount || '-'}
                               </span>
@@ -477,6 +637,7 @@ const handleSubmitDataToRegion = async () => {
                                     className="mt-2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
                                     style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
                                     onClick={handleAddRowBelow}
+                                    disabled={isLoading} 
                                 >
                                     <IoMdAddCircleOutline />
                                 </button>
@@ -538,6 +699,42 @@ const handleSubmitDataToRegion = async () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Right-click context modal */}
+            {showRightClickModal && (
+                <div
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
+                >
+                    <div
+                    style={{ top: modalPosition.y, left: modalPosition.x }}
+                    className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={handleAddRowAbove}
+                    >
+                        Add Row Above
+                    </button>
+
+
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={handleAddRowBelow}
+                    >
+                        Add Row Below
+                    </button>
+                    <button
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={handleDeleteRow}
+                    >
+                        Delete Row
+                    </button>
+                    </div>
+                </div>
+                )}
 
 
 
