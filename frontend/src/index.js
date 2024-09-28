@@ -15,6 +15,8 @@ import Main from './routes/main';
 import Dashboard from './routes/Accounting/Admin/dashboard';
 import Users from './routes/Accounting/Admin/users';
 import IncomeStatement from './routes/Accounting/Admin/IncomeStatement/incomeStatement';
+import IncomeStatementDetails from './routes/Accounting/Admin/IncomeStatement/incomeStatementDetails';
+import IncomeStatementList from './routes/Accounting/Admin/IncomeStatement/incomeStatementList';
 import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
 import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
@@ -53,8 +55,22 @@ const router = createBrowserRouter([
         element: <Users />,
       },
       {
-        path: 'incomeStatement',
+        path: 'IncomeStatement',
         element: <IncomeStatement />,
+        children: [
+          {
+          path: '/main/IncomeStatement/incomeStatementList',
+          element: <IncomeStatementList/>,
+          },
+          {
+            path: '/main/IncomeStatement/incomeStatementDetails/:incomeStatementID',
+            element: <IncomeStatementDetails/>
+          },
+          {
+            index: true,
+            element: <Navigate to="incomeStatementList"/>
+          },
+        ],
       },
       {
         path: 'balanceSheet',
