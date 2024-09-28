@@ -612,7 +612,7 @@ const handleAddEntry = async () => {
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
-                            <th scope="col" className=" w-[20px] "></th>
+                            
                             <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
                             <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
                             <th scope="col" className="px-2 py-3 w-24">DATE</th>
@@ -620,7 +620,8 @@ const handleAddEntry = async () => {
                             <th scope="col" className="px-2 py-3 w-48">DEBIT</th>
                             <th scope="col" className="px-2 py-3 w-48">CREDIT</th>
                             <th scope="col" className="px-2 py-3 w-48 text-center">BALANCE</th>
-                            
+                            <th scope="col" className=" w-[20px] "></th>
+
                         </tr>
                     </thead>
                 </table>
@@ -645,15 +646,16 @@ const handleAddEntry = async () => {
                                                 
                             
                                                 >
-                                            <td className=" w-[20px] "></td>
+                                            
                                             <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
                                             <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
                                             <td className="table-cell px-2 py-3 w-24"></td>
                                             <td className="table-cell px-2 py-3 w-80"></td>
                                             <td className="table-cell px-2 py-3 w-48"></td>
                                             <td className="table-cell px-2 py-3 w-48"></td>
-                                            <td className="table-cell px-2 py-3 w-48 text-center">
-                                            
+                                            <td className=" text-center">
+                                            <td className="table-cell px-2 py-3 w-[20px] "></td>
+
                                                 {formatBalance(finalRunningBalance)}
                                             </td>
                                         </tr>
@@ -678,18 +680,7 @@ const handleAddEntry = async () => {
                                                     onMouseLeave={() => setHoveredRowId(null)}     
                                                     className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 "
                                                 >
-                                                    {/* Add Row Button */}
-                                                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
-                                                        {hoveredRowId === account.id && (
-                                                            <button
-                                                                className="absolute left-[0px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                                                onClick={handleAddRowBelow}
-                                                            >
-                                                                <IoMdAddCircleOutline />
-                                                            </button>
-                                                        )}
-                                                    </td>
-
+                                                    
 
                                                     <td className="px-6 py-5 w-72"></td>
                                                     <td className="px-6 py-5 w-48"></td>
@@ -786,7 +777,19 @@ const handleAddEntry = async () => {
                                                         {formatBalance(runningBalance) || '-'}
                                                     </td>
 
-                                                    
+                                                    {/* Add Row Button */}
+                                                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
+                                                        {hoveredRowId === account.id && (
+                                                            <button
+                                                                className="absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                                                onClick={handleAddRowBelow}
+                                                            >
+                                                                <IoMdAddCircleOutline />
+                                                            </button>
+                                                        )}
+                                                    </td>
+
+
                                                 </tr>
                                             );
                                         })}
