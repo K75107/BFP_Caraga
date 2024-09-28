@@ -165,10 +165,59 @@ export default function LedgerDetails() {
       };
 
       
-      //ADD ENTRY UNDER MAIN ACCOUNT
-      const handleAddEntry = async () => {
-        console.log('WALA PAY FUNCTION');
-    };
+//ADD ENTRY UNDER MAIN ACCOUNT
+const handleAddEntry = async () => {
+    if (!selectedMainAccount || !ledgerId) return; // Ensure main account and ledger ID exist
+
+    try {
+        // Reference the selected main account's document
+        const ledgerDocRef = doc(db, 'ledger', ledgerId);
+        const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
+        const accountsSubcollectionRef = collection(doc(accountTitlesCollectionRef, selectedMainAccount), 'accounts');
+
+        // Fetch and sort existing accounts by position
+        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+        const sortedAccounts = accountsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => a.position - b.position);
+
+        // Calculate the new position for the child row
+        const newRowPosition = sortedAccounts.length > 0 
+            ? sortedAccounts[sortedAccounts.length - 1].position + 1 // Increment position
+            : 1; // Default position for the first row
+
+        // Create the new account (child row) with calculated position
+        const newAccount = {
+            date: null,
+            particulars: null,
+            debit: null,
+            credit: null,
+            balance: null,
+            position: parseFloat(newRowPosition.toFixed(10)) // Ensure position is a float
+        };
+
+        // Add the new account to Firestore and get its reference
+        const newAccountRef = await addDoc(accountsSubcollectionRef, newAccount);
+
+        // Fetch the new account's ID
+        const newAccountWithId = {
+            ...newAccount,
+            id: newAccountRef.id, // Use the Firestore-generated ID
+        };
+
+        // Update the local state with the new account row
+        setSelectedAccountsData(prevData => ({
+            ...prevData,
+            [selectedMainAccount]: [...sortedAccounts, newAccountWithId].sort((a, b) => a.position - b.position),
+        }));
+
+        setShowMainAccountRightClick(false); // Close the modal after adding the row
+        console.log("Successfully added a child row below the main account.");
+
+    } catch (error) {
+        console.error('Error adding entry under main account:', error.message || error);
+    }
+};
 
       //DELETE MAIN ACCOUNT
       const handleDeleteAccount = async () => {
