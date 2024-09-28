@@ -6,7 +6,7 @@ export default function GeneralLedger() {
 
     return (
         <Fragment>
-            <div className="bg-white h-full py-5 px-6 w-full rounded-lg">
+            <div className="bg-white h-screen py-5 px-6 w-full rounded-lg">
                 <Outlet/>
             </div>
         </Fragment>
