@@ -18,6 +18,8 @@ import IncomeStatement from './routes/Accounting/Admin/IncomeStatement/incomeSta
 import IncomeStatementDetails from './routes/Accounting/Admin/IncomeStatement/incomeStatementDetails';
 import IncomeStatementList from './routes/Accounting/Admin/IncomeStatement/incomeStatementList';
 import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
+import BalanceSheetList from './routes/Accounting/Admin/BalanceSheet/balanceSheetList';
+import BalanceSheetDetails from './routes/Accounting/Admin/BalanceSheet/balanceSheetDetails';
 import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
@@ -73,8 +75,22 @@ const router = createBrowserRouter([
         ],
       },
       {
-        path: 'balanceSheet',
+        path: 'BalanceSheet',
         element: <BalanceSheet />,
+        children: [
+          {
+          path: '/main/BalanceSheet/balanceSheetList',
+          element: <BalanceSheetList/>,
+          },
+          {
+            path: '/main/BalanceSheet/balanceSheetDetails/:balanceSheetID',
+            element: <BalanceSheetDetails/>
+          },
+          {
+            index: true,
+            element: <Navigate to="balanceSheetList"/>
+          },
+        ],
       },
       {
         path: 'cashflowStatement',
