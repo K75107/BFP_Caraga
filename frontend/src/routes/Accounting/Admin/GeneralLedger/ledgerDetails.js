@@ -139,7 +139,7 @@ export default function LedgerDetails() {
          setSelectedAccountTitleRowData(accountTitle);
         
         // Set the modal position based on the mouse position
-        setModalPosition({ x: event.clientX, y: event.clientY });
+        setModalPosition({ x: event.clientX, y: event.clientY - 50});
         setShowRightClickModal(true); // Open the modal
 
 
