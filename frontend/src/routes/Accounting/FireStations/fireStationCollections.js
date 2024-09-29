@@ -56,10 +56,15 @@ export default function FireStationCollection() {
                     createdAt:serverTimestamp(),
                     fireStationName: userFound.username,
                     collectingOfficer: null,
-                    lcNumber: null,
-                    date: null,
+                    dateCollected: null,
                     orNumber: null,
-                    amount: null,
+                    lcNumber: null,
+                    nameOfPayor:null,
+                    natureOfCollection:null,
+                    collectionAmount: null,
+                    status:null,
+                    depositStatus:null,
+                    depositID:null,
                     position: 1 // Default position for the first row
                 };
 
@@ -230,12 +235,20 @@ export default function FireStationCollection() {
         createdAt:serverTimestamp(),
         fireStationName: logginUser.username,
         collectingOfficer: null,
-        lcNumber: null,
-        date: null,
+        dateCollected: null,
         orNumber: null,
-        amount: null,
+        lcNumber: null,
+        nameOfPayor:null,
+        natureOfCollection:null,
+        collectionAmount: null,
+        status:null,
+        depositStatus:null,
+        depositID:null,
         position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
       };
+
+
+
 
       // Add the new row to Firestore
       const newRowDataRef = await addDoc(collectionRef, newRowData);
@@ -292,12 +305,19 @@ const handleAddRowAbove = async () => {
       createdAt:serverTimestamp(),
       fireStationName: logginUser.username,
       collectingOfficer: null,
-      lcNumber: null,
-      date: null,
+      dateCollected: null,
       orNumber: null,
-      amount: null,
+      lcNumber: null,
+      nameOfPayor:null,
+      natureOfCollection:null,
+      collectionAmount: null,
+      status:null,
+      depositStatus:null,
+      depositID:null,
       position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
     };
+
+
 
     // Add the new row to Firestore
     const newRowDataRef = await addDoc(collectionRef, newRowData);
@@ -400,14 +420,21 @@ const handleSubmitDataToRegion = async () => {
 
     // Now, create a new blank row after deleting all the data
     const newBlankRow = {
+      createdAt:serverTimestamp(),
       fireStationName: logginUser.username,
       collectingOfficer: null,
-      lcNumber: null,
-      date: null,
+      dateCollected: null,
       orNumber: null,
-      amount: null,
+      lcNumber: null,
+      nameOfPayor:null,
+      natureOfCollection:null,
+      collectionAmount: null,
+      status:null,
+      depositStatus:null,
+      depositID:null,
       position: 1 // Default position for the first row
     };
+
 
     // Add the new blank row to the original collections subcollection
     await addDoc(collectionsSubCollectionRef, newBlankRow);
@@ -533,10 +560,14 @@ const handleSubmitDataToRegion = async () => {
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
             <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                         <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-3 w-36">DATE</th>
-                            <th scope="col" className="px-2 py-3 w-1/4">LC NUMBER</th>
-                            <th scope="col" className="px-2 py-3 w-1/4">OR NUMBER</th>
-                            <th scope="col" className="px-2 py-3 w-1/4">AMOUNT</th>
+                            <th scope="col" className="px-2 py-3 w-40">Collecting Officer</th>
+                            <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
+                            <th scope="col" className="px-2 py-3 w-36">OR Number</th>
+                            <th scope="col" className="px-2 py-3 w-36">LC Number</th>
+                            <th scope="col" className="px-2 py-3 w-36">Name of Payor</th>
+                            <th scope="col" className="px-2 py-3 w-36">Nature of Collection</th>
+                            <th scope="col" className="px-2 py-3 w-36">Amount</th>
+                            <th scope="col" className="px-2 py-3 w-36">Status</th>
                             <th scope="col" className="w-[0px]"></th>
                         </tr>
                   </thead>
@@ -550,20 +581,51 @@ const handleSubmitDataToRegion = async () => {
                         }}
                       onContextMenu={(e) => handleRightClick(e, collections)}  // Right-click functionality
                         >
+
+                        <td className="table-cell px-2 w-40 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'collectingOfficer' ? (
+                              <select
+
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'collectingOfficer', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'collectingOfficer', editValue.value)}
+                                autoFocus
+                              >
+                              <option value="" disabled>Select an officer</option>
+                                {/* Dynamically render officers */}
+                                {officersData.map((officer) => (
+                                  <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
+                                    {officer.firstname} {officer.lastname}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectingOfficer', value: collections.collectingOfficer || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                              >
+                                {collections.collectingOfficer || '-'}
+                              </span>
+                            )}
+
+                          </td>
+
+                          
                           <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === collections.id && editValue.field === 'date' ? (
+                            {editingCell === collections.id && editValue.field === 'dateCollected' ? (
                               <input
                                 type="date"
-                                className="border border-gray-400 focus:outline-none w-36 h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'date', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'date', editValue.value)}
+                                onChange={(e) => setEditValue({ field: 'dateCollected', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'dateCollected', editValue.value)}
                                 autoFocus
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'date', value: collections.date || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-36 px-2 py-1"
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'dateCollected', value: collections.date || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
                                 {collections.date || '-'}
                               </span>
@@ -572,7 +634,30 @@ const handleSubmitDataToRegion = async () => {
 
                           
 
-                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
+                          
+
+
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'orNumber' ? (
+                              <input
+                                type="text"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'orNumber', editValue.value)}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'orNumber', value: collections.orNumber || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                              >
+                                {collections.orNumber || '-'}
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
@@ -593,44 +678,74 @@ const handleSubmitDataToRegion = async () => {
                           </td>
 
 
-                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
-                            {editingCell === collections.id && editValue.field === 'orNumber' ? (
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'nameOfPayor' ? (
                               <input
                                 type="text"
                                 className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'orNumber', editValue.value)}
+                                onChange={(e) => setEditValue({ field: 'nameOfPayor', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'nameOfPayor', editValue.value)}
                                 autoFocus
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'orNumber', value: collections.orNumber || '' }) }}
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'nameOfPayor', value: collections.nameOfPayor || '' }) }}
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
-                                {collections.orNumber || '-'}
+                                {collections.nameOfPayor || '-'}
                               </span>
                             )}
                           </td>
-                          <td className="table-cell px-2 py-2 w-1/4 text-[12px]">
-                            {editingCell === collections.id && editValue.field === 'amount' ? (
+
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'nameOfPayor' ? (
                               <input
                                 type="text"
                                 className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'amount', editValue.value)}
+                                onChange={(e) => setEditValue({ field: 'nameOfPayor', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'nameOfPayor', editValue.value)}
                                 autoFocus
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'amount', value: collections.amount || '' }) }}
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'nameOfPayor', value: collections.nameOfPayor || '' }) }}
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
-                                {collections.amount || '-'}
+                                {collections.nameOfPayor || '-'}
                               </span>
                             )}
                           </td>
+
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'collectionAmount' ? (
+                              <input
+                                type="text"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'collectionAmount', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'collectionAmount', editValue.value)}
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectionAmount', value: collections.collectionAmount || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                              >
+                                {collections.collectionAmount || '-'}
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <span className="block  h-8 w-full px-2 py-1">
+                            {collections.status ? 'Deposited' : ''}
+                          </span>
+                        </td>
+
+
+
                           {hoveredRowId === collections.id && (
                                 <td className="relative right-8 mr-1 text-[12px]">  {/* Position the button absolutely */}
                                 <button
