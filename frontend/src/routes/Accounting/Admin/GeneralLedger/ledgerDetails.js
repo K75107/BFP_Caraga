@@ -10,7 +10,7 @@ import { IoMdAddCircleOutline } from "react-icons/io";
 export default function LedgerDetails() {
     const [showModal, setShowModal] = useState(false);
     const { ledgerId } = useParams(); // Get ledgerId from URL
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [ledgerDescription, setLedgerDescription] = useState('');
     
     //Hover on Rows
@@ -85,6 +85,7 @@ export default function LedgerDetails() {
             if (snapshot.empty) {
                 console.log('No account titles found');
                 setAccountTitles([]); // Clear state if no titles
+                setLoading(false); // Stop loading after fetching data
                 return;
             }
             
