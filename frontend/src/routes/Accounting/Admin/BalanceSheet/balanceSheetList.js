@@ -150,7 +150,7 @@ export default function BalanceSheet() {
                             <tr
                                 key={balanceSheet.id}
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                onClick={() => navigate(`/main/BalanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
+                                onClick={() => navigate(`/main/balanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
                             >
                                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.description || "N/A"}
@@ -211,7 +211,11 @@ export default function BalanceSheet() {
                         </form>
 
                         <div className="flex justify-end py-3 px-4">
-                            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5" onClick={() => setCurrentModal(2)}>
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                                onClick={() => selectedLedger && setCurrentModal(2)}
+                                disabled={!selectedLedger} // Disable when no ledger is selected
+                            >
                                 NEXT
                             </button>
                         </div>
@@ -281,10 +285,18 @@ export default function BalanceSheet() {
                         </div>
 
                         <div className="flex justify-end py-3 px-4 flex-row">
-                            <button className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4" onClick={() => setCurrentModal(1)}>
+                            <button
+                                className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4"
+                                onClick={() => setCurrentModal(1)}
+                            >
                                 BACK
                             </button>
-                            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5" onClick={addNewBalanceSheet}>
+
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 ${(!balanceSheetDescription || !startDate || !endDate) && "opacity-50 cursor-not-allowed"}`}
+                                onClick={addNewBalanceSheet}
+                                disabled={!balanceSheetDescription || !startDate || !endDate} // Disable when description, start date, or end date is missing
+                            >
                                 GENERATE
                             </button>
                         </div>
