@@ -165,8 +165,9 @@ const exportToExcel = async () => {
         ...trialBalanceData.map(entry => [
             entry.particulars,
             entry.accountCode,
-            entry.debit,
-            entry.credit
+            // Convert zero values to an empty string for export
+            entry.debit === 0 || entry.debit === "" ? "" : entry.debit,
+            entry.credit === 0 || entry.credit === "" ? "" : entry.credit
         ])
     ];
 
@@ -323,7 +324,8 @@ const exportToExcel = async () => {
                         type: 'pattern',
                         pattern: 'solid',
                         fgColor: { argb: fillColor }
-                    }
+                    },
+                    numFmt: '#,##0.00' // Apply number format for Debit and Credit columns
                 };
                 
                 if (colNumber === 1) {
