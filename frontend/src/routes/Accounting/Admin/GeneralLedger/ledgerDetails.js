@@ -17,9 +17,6 @@ export default function LedgerDetails() {
     const [loading, setLoading] = useState(false);
     const [ledgerDescription, setLedgerDescription] = useState('');
     
-    //FLOWBITE
-    const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
-    const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
 
     //Hover on Rows
     const [hoveredRowId, setHoveredRowId] = useState(null);
@@ -732,7 +729,7 @@ const handleAddEntry = async () => {
                         </tr>
                     </thead>
                 </table>
-                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)]'>
                 <table className='w-full overflow-x-visible'>
                    
                 <tbody>
@@ -763,7 +760,7 @@ const handleAddEntry = async () => {
                                 return (
                                     <Fragment key={accountTitle.id}>
                                         {/* Account Title Header */}
-                                        <tr className="bg-gray-100 font-bold text-[12px]"
+                                        <tr className="bg-gray-100 font-bold text-[12px] w-full"
                                                 key={accountTitle.id}
                                                 onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
                                                 
@@ -777,8 +774,8 @@ const handleAddEntry = async () => {
                                             <td className="table-cell px-2 py-3 w-48"></td>
                                             <td className="table-cell px-2 py-3 w-48"></td>
                                             <td className="table-cell px-2 py-3 w-[20px] text-center">
-  {formatBalance(finalRunningBalance)}
-</td>
+                                            {formatBalance(finalRunningBalance)}
+                                            </td>
 
                                         </tr>
 
