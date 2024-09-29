@@ -27,7 +27,7 @@ import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
 import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
 import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
 
-import TrialBalance from './routes/Accounting/Admin/TrialBalance/TrialBalance';
+import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
 import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
@@ -80,15 +80,15 @@ const router = createBrowserRouter([
         ],
       },
       {
-        path: 'BalanceSheet',
+        path: 'balanceSheet',
         element: <BalanceSheet />,
         children: [
           {
-          path: '/main/BalanceSheet/balanceSheetList',
+          path: '/main/balanceSheet/balanceSheetList',
           element: <BalanceSheetList/>,
           },
           {
-            path: '/main/BalanceSheet/balanceSheetDetails/:balanceSheetID',
+            path: '/main/balanceSheet/balanceSheetDetails/:balanceSheetID',
             element: <BalanceSheetDetails/>
           },
           {

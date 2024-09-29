@@ -66,14 +66,7 @@ const Main = () => {
         <header className="px-4 py-2 flex items-center justify-between">
           <div></div>
           <div className="flex items-center space-x-3">
-            <TbSettings2 className="text-xl text-gray-700 hover:text-gray-900 cursor-pointer" />
-            <button onClick={() => setShowUserModal(true)}>
-              <img
-                className="w-8 h-8 rounded-full"
-                src={profilePicture}
-                alt={`${user?.username || 'User'}'s profile`}
-              />
-            </button>
+            <TbSettings2 className="text-xl text-gray-700 hover:text-gray-900 cursor-pointer" onClick={() => setShowUserModal(true)} />
           </div>
         </header>
         <div className="px-3 py-1.5 flex-1 h-screen">

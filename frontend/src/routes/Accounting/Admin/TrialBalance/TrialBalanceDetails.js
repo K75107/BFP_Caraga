@@ -165,8 +165,9 @@ const exportToExcel = async () => {
         ...trialBalanceData.map(entry => [
             entry.particulars,
             entry.accountCode,
-            entry.debit,
-            entry.credit
+            // Convert zero values to an empty string for export
+            entry.debit === 0 || entry.debit === "" ? "" : entry.debit,
+            entry.credit === 0 || entry.credit === "" ? "" : entry.credit
         ])
     ];
 
@@ -323,7 +324,8 @@ const exportToExcel = async () => {
                         type: 'pattern',
                         pattern: 'solid',
                         fgColor: { argb: fillColor }
-                    }
+                    },
+                    numFmt: '#,##0.00' // Apply number format for Debit and Credit columns
                 };
                 
                 if (colNumber === 1) {
@@ -362,7 +364,7 @@ const exportToExcel = async () => {
 
     return (
         <Fragment>
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+            <div className="bg-white h-full py-2 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{TrialBalanceDescription}</h1>
                     {/* Button to export to Excel */}
@@ -377,7 +379,7 @@ const exportToExcel = async () => {
                 <hr className="border-t border-[#7694D4] my-4" />
 
                 {/* TABLE */}
-                <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <div className="relative overflow-x-auto h-screen overflow-y-auto shadow-md sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
@@ -437,7 +439,7 @@ const exportToExcel = async () => {
                                 </tr>
                             )
                         )}
-</tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
