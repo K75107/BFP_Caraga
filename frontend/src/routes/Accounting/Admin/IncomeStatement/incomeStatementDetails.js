@@ -17,56 +17,51 @@ export default function IncomeStatementDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [editableData, setEditableData] = useState({});
+    const [incomeStatementData, setIncomeStatementData] = useState([]); // State for income statement data
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedRow, setSelectedRow] = useState(null);
+    const totalSurplusDeficit = incomeStatementData.reduce((total, item) => total + (item.amount || 0), 0);
 
     const getIncomeStatementDescription = async () => {
         try {
             const docRef = doc(db, "incomestatement", incomeStatementID);
             const docSnap = await getDoc(docRef);
-    
+
             if (docSnap.exists()) {
                 const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
-    
-                // Check if there's a linked ledger
+
                 if (incomeStatementData.ledgerID) {
                     const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
                     const ledgerSnap = await getDoc(ledgerRef);
-    
+
                     if (ledgerSnap.exists()) {
                         incomeStatementData.ledgerYear = ledgerSnap.data().year;
-    
-                        // Fetch account titles from the ledger
+
                         const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
                         const accountTitlesSnap = await getDocs(accountTitlesRef);
-    
+
                         const accountTitlesData = [];
                         for (const titleDoc of accountTitlesSnap.docs) {
                             const titleData = { id: titleDoc.id, ...titleDoc.data() };
-    
-                            // Fetch accounts associated with each account title
+
                             const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
                             const accountsSnap = await getDocs(accountsRef);
-    
-                            // Structure the accounts and link them to the title
+
                             const accountsData = accountsSnap.docs.map(accountDoc => ({
                                 id: accountDoc.id,
                                 ...accountDoc.data(),
                             }));
-    
-                            // Assign the fetched accounts to the title data
+
                             titleData.accounts = accountsData;
-    
-                            // Add the structured title data to the main array
                             accountTitlesData.push(titleData);
                         }
-    
-                        // Filter for only Revenue account types and update state
-                        const revenueAccountTitles = accountTitlesData.filter(accountTitle => accountTitle.category === "Revenue");
-                        setAccountTitles(revenueAccountTitles);
+
+                        setAccountTitles(accountTitlesData);
                     } else {
                         incomeStatementData.ledgerYear = "N/A";
                     }
                 }
-    
+
                 setIncomeStatement(incomeStatementData);
             } else {
                 setError("No income statement found.");
@@ -78,7 +73,6 @@ export default function IncomeStatementDetails() {
             setLoading(false);
         }
     };
-    
 
     useEffect(() => {
         getIncomeStatementDescription();
@@ -91,6 +85,26 @@ export default function IncomeStatementDetails() {
         }));
     };
 
+    const handleAddRow = () => {
+        const newRow = { name: "New Account", amount: 0 }; // Sample new row
+        setIncomeStatementData((prevData) => [...prevData, newRow]);
+        setModalVisible(false);
+    };
+
+    const handleAddAccount = () => {
+        console.log("Add Account clicked");
+        setModalVisible(false);
+    };
+
+    const handleDeleteRow = () => {
+        if (selectedRow) {
+            setIncomeStatementData((prevData) =>
+                prevData.filter((row) => row.name !== selectedRow.name)
+            );
+        }
+        setModalVisible(false);
+    };
+
     if (loading) {
         return <p>Loading...</p>;
     }
@@ -99,27 +113,27 @@ export default function IncomeStatementDetails() {
         return <p>{error}</p>;
     }
 
-    const incomeStatementData = [
+    const statementData = [
         {
-            name: "Revenues",
+            name: "Revenue",
             children: [
                 {
                     name: "Service and Business Income",
                     children: accountTitles
                         .filter(accountTitle => accountTitle.category === "Service Income")
-                        .flatMap(accountTitle => accountTitle.accounts.map(account => ({
-                            name: account.accountTitle,
-                            amount: editableData[account.accountTitle] || 0,
-                        }))),
+                        .map((accountTitle) => ({
+                            name: accountTitle.accountTitle,
+                            amount: editableData[accountTitle.accountTitle] || 0,
+                        })),
                 },
                 {
                     name: "Other Income",
                     children: accountTitles
                         .filter(accountTitle => accountTitle.category === "Other Income")
-                        .flatMap(accountTitle => accountTitle.accounts.map(account => ({
-                            name: account.accountTitle,
-                            amount: editableData[account.accountTitle] || 200000, 
-                        }))),
+                        .map((accountTitle) => ({
+                            name: accountTitle.accountTitle,
+                            amount: editableData[accountTitle.accountTitle] || 200000,
+                        })),
                 },
             ],
         },
@@ -130,19 +144,19 @@ export default function IncomeStatementDetails() {
                     name: "Operating Expenses",
                     children: accountTitles
                         .filter(accountTitle => accountTitle.category === "Operating Expenses")
-                        .flatMap(accountTitle => accountTitle.accounts.map(account => ({
-                            name: account.accountTitle,
-                            amount: editableData[account.accountTitle] || 300000, // Adjust this as necessary
-                        }))),
+                        .map((accountTitle) => ({
+                            name: accountTitle.accountTitle,
+                            amount: editableData[accountTitle.accountTitle] || 300000,
+                        })),
                 },
                 {
                     name: "Administrative Expenses",
                     children: accountTitles
                         .filter(accountTitle => accountTitle.category === "Administrative Expenses")
-                        .flatMap(accountTitle => accountTitle.accounts.map(account => ({
-                            name: account.accountTitle,
-                            amount: editableData[account.accountTitle] || 150000, // Adjust this as necessary
-                        }))),
+                        .map((accountTitle) => ({
+                            name: accountTitle.accountTitle,
+                            amount: editableData[accountTitle.accountTitle] || 150000,
+                        })),
                 },
             ],
         },
@@ -167,6 +181,11 @@ export default function IncomeStatementDetails() {
                 <tr
                     className="border-t"
                     onClick={() => setIsOpen(!isOpen)} // Left-click for collapse
+                    onContextMenu={(e) => {
+                        e.preventDefault(); // Prevent default right-click menu
+                        setSelectedRow(item);
+                        setModalVisible(true);
+                    }}
                 >
                     <td
                         className="px-6 py-4 cursor-pointer"
@@ -234,12 +253,30 @@ export default function IncomeStatementDetails() {
                         </tr>
                     </thead>
                     <tbody>
-                        {incomeStatementData.map((item, index) => (
+                        {statementData.map((item, index) => (
                             <Row key={index} item={item} depth={1} />
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            {/* Render the Total Surplus/Deficit */}
+            <div className="mt-4 text-lg font-semibold">
+                TOTAL SURPLUS/DEFICIT: {totalSurplusDeficit.toLocaleString()}
+            </div>
+
+            {/* Modal for actions */}
+            {modalVisible && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-lg w-44 p-4 border border-gray-300">
+                        <h2 className="text-lg font-semibold">Actions</h2>
+                        <button onClick={handleAddRow} className="block my-2 px-4 py-2 border border-gray-300 rounded">Add Row</button>
+                        <button onClick={handleAddAccount} className="block my-2 px-4 py-2 border border-gray-300 rounded">Add Account</button>
+                        <button onClick={handleDeleteRow} className="block my-2 px-4 py-2 border border-gray-300 rounded">Delete Row</button>
+                        <button onClick={() => setModalVisible(false)} className="mt-4 px-4 py-2 bg-red-500 text-white rounded">Close</button>
+                    </div>
+                </div>
+            )}
         </Fragment>
     );
 }
