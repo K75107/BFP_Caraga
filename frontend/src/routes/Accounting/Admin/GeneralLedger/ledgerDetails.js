@@ -139,7 +139,7 @@ export default function LedgerDetails() {
          setSelectedAccountTitleRowData(accountTitle);
         
         // Set the modal position based on the mouse position
-        setModalPosition({ x: event.clientX, y: event.clientY });
+        setModalPosition({ x: event.clientX, y: event.clientY - 50});
         setShowRightClickModal(true); // Open the modal
 
 
@@ -615,7 +615,7 @@ const handleAddEntry = async () => {
                             
                             <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
                             <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
-                            <th scope="col" className="px-2 py-3 w-24">DATE</th>
+                            <th scope="col" className="px-2 py-3 w-32">DATE</th>
                             <th scope="col" className="px-2 py-3 w-80">PARTICULARS</th>
                             <th scope="col" className="px-2 py-3 w-48">DEBIT</th>
                             <th scope="col" className="px-2 py-3 w-48">CREDIT</th>
@@ -625,7 +625,7 @@ const handleAddEntry = async () => {
                         </tr>
                     </thead>
                 </table>
-                <div className=' w-full overflow-y-scroll h-[calc(100vh-200px)]'>
+                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
                 <table className='w-full overflow-x-visible'>
                    
                         <tbody>
@@ -649,7 +649,7 @@ const handleAddEntry = async () => {
                                             
                                             <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
                                             <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
-                                            <td className="table-cell px-2 py-3 w-24"></td>
+                                            <td className="table-cell px-2 py-3 w-32"></td>
                                             <td className="table-cell px-2 py-3 w-80"></td>
                                             <td className="table-cell px-2 py-3 w-48"></td>
                                             <td className="table-cell px-2 py-3 w-48"></td>
@@ -687,7 +687,7 @@ const handleAddEntry = async () => {
 
 
                                                     {/* Date Field */}
-                                                    <td className="px-2 py-2 w-24 h-6 text-[12px]">
+                                                    <td className="px-2 py-2 w-32 h-6 text-[12px]">
                                                         {editingCell === account.id && editValue.field === 'date' ? (
                                                             <DatePicker
                                                                 selected={editValue.value ? new Date(editValue.value) : null}

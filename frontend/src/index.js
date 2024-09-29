@@ -27,12 +27,17 @@ import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
 import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
 import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
 
-import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
+import TrialBalance from './routes/Accounting/Admin/TrialBalance/TrialBalance';
 import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
 import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
 import Deposits from './routes/Accounting/Admin/deposits';
-import Collections from './routes/Accounting/Admin/collections';
+
+//Collections
+import Collections from './routes/Accounting/Admin/collections/collections';
+import CollectionsPerStation from './routes/Accounting/Admin/collections/collectionsPerStation';
+import CollectionsList from './routes/Accounting/Admin/collections/collectionsList';
+
 //FireStations
 import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
 import FireStationCollections from './routes/Accounting/FireStations/fireStationCollections';
@@ -149,6 +154,22 @@ const router = createBrowserRouter([
       {
         path: 'collections',
         element: <Collections />,
+        children:[
+          {
+            path:'collections/reports',
+            element:<CollectionsPerStation/>
+          },
+          {
+            path:'collectionsList',
+            element:<CollectionsList/>
+          },
+          {
+            index:true,
+            element: <Navigate to = 'collectionsList'/>
+          }
+
+
+        ]
       },
       {
         path: 'fireStation/dashboard',

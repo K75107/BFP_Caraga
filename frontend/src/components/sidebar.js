@@ -126,7 +126,7 @@ const Sidebar = () => {
         item.section ? (
           <li key={index}>
             <div className={`${isCollapsed ? 'hidden' : 'block'} mt-3`}>
-              <h1 className='font-bold text-[0.75rem] ml-1 whitespace-nowrap'>{item.section}</h1>
+              <h1 className='font-bold text-sm ml-1 whitespace-nowrap'>{item.section}</h1>
             </div>
           </li>
         ) : (
@@ -134,7 +134,7 @@ const Sidebar = () => {
             <Link to={item.path} className={`whitespace-nowrap flex items-center pl-2 py-2 rounded-md font-normal ${isActive(item.path) ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold' : 'hover:bg-color-lighter-gray'}`}>
               {item.icon}
               <div className={`${isCollapsed ? 'hidden' : 'block'} ml-3 py-0.5`}>
-                <span className="text-xs">{item.label}</span>
+                <span className="text-sm">{item.label}</span>
               </div>
             </Link>
           </li>
