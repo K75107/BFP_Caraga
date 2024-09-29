@@ -40,7 +40,10 @@ import CollectionsList from './routes/Accounting/Admin/collections/collectionsLi
 
 //FireStations
 import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
-import FireStationCollections from './routes/Accounting/FireStations/fireStationCollections';
+import FireStationCollectionsUnsubmitted from './routes/Accounting/FireStations/collections/fireStationCollectionsUnsubmitted';
+import FireStationCollections from './routes/Accounting/FireStations/collections/fireStationCollections';
+import FireStationCollectionsSubmitted from './routes/Accounting/FireStations/collections/fireStationCollectionsSubmitted';
+
 import FireStationDeposits from './routes/Accounting/FireStations/fireStationDeposits';
 import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
 
@@ -182,6 +185,21 @@ const router = createBrowserRouter([
       {
         path: 'fireStation/collections',
         element: <FireStationCollections/>,
+        children:[
+          {
+            index:true,
+            element: <Navigate to = 'unsubmitted'/>
+          },
+          {
+            path:'unsubmitted',
+            element:<FireStationCollectionsUnsubmitted/>
+          },
+          {
+            path:'submitted',
+            element:<FireStationCollectionsSubmitted/>
+          },
+
+        ]
       },
       {
         path: 'fireStation/officers',

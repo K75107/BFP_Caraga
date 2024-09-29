@@ -1,13 +1,12 @@
-import React, { useState, Fragment, useEffect } from "react";
-import { FaTimes } from "react-icons/fa";
+import React, { useState, Fragment, useEffect} from "react";
 import { getAuth, onAuthStateChanged} from 'firebase/auth';
 import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc,writeBatch } from 'firebase/firestore';
-import { db } from "../../../config/firebase-config";
-import Modal from "../../../components/Modal"
+import { db } from "../../../../config/firebase-config";
+import Modal from "../../../../components/Modal"
 
 import { IoMdAddCircleOutline } from "react-icons/io";
 
-export default function FireStationCollection() {
+export default function FireStationCollectionsUnsubmitted() {
   const [firestationCollection, setFirestationCollection] = useState([]);
   const [collectionsData, setCollectionsData] = useState([]);
 
@@ -35,6 +34,8 @@ export default function FireStationCollection() {
   //loading
   const [isLoading, setIsLoading] = useState(false);  // New loading state
 
+  //subNavigations
+  const [isPending,setIsPending] =useState(true);
 
   useEffect(() => {
     const checkUserInCollections = async (userEmail, collections) => {
@@ -351,7 +352,7 @@ const handleSubmitDataToRegion = async () => {
     await setDoc(userDocRef, {
       email: logginUser.email,
       username: logginUser.username,
-      date_created: serverTimestamp() // Optional: track when this document was created
+      date_created: serverTimestamp(), // Optional: track when this document was created
     });
 
     console.log('User document created successfully with email and username.');
@@ -368,82 +369,78 @@ const handleSubmitDataToRegion = async () => {
     const collectionsSnapshot = await getDocs(collectionsSubCollectionRef);
 
     if (collectionsSnapshot.empty) {
-      console.log("No documents inside the collections");
+      console.log('No documents inside the collections');
     } else {
       // Create an array of promises for each document to be added and deleted
       const submissionPromises = collectionsSnapshot.docs.map(async (docSnapshot) => {
         const data = docSnapshot.data();
 
-        // Prepare the new data with a submission timestamp
-        const newData = {
-          ...data,
-          date_submitted: serverTimestamp(),
-        };
+        // Check if the row is not empty (you can add more fields to this check if needed)
+        if (data.collectingOfficer || data.collectionAmount || data.orNumber || data.nameOfPayor) {
+          // Prepare the new data with a submission timestamp
+          const newData = {
+            ...data,
+            date_submitted: serverTimestamp(),
+          };
 
-        // Reference the subcollection under the logginUser.id document in submittedReportsCollections
-        const userSubmittedReportsRef = collection(
-          db,
-          'submittedReportsCollections',
-          logginUser.id,
-          'Collections'
-        );
+          // Reference the subcollection under the logginUser.id document in submittedReportsCollections
+          const userSubmittedReportsRef = collection(
+            db,
+            'submittedReportsCollections',
+            logginUser.id,
+            'Collections'
+          );
 
-        // Add the new data to the submitted reports subcollection
-        await addDoc(userSubmittedReportsRef, newData);
+          // Add the new data to the submitted reports subcollection
+          await addDoc(userSubmittedReportsRef, newData);
 
-        // Delete the document from the original collections after it's submitted
-        await deleteDoc(docSnapshot.ref);
+          // Delete the document from the original collections after it's submitted
+          await deleteDoc(docSnapshot.ref);
+        }
       });
 
       // Wait for all documents to be processed
       await Promise.all(submissionPromises);
 
-      // console.log("All documents submitted and deleted successfully");
+      // Show Changes to UI---------------------------------------------------------------------------------------------------
+      const collectionsDataRef = collection(db, 'firestationReportsCollections', logginUser.id, 'collections');
 
-      //Show Changes to UI---------------------------------------------------------------------------------------------------
-      
-            const collectionsDataRef = collection(db, "firestationReportsCollections",logginUser.id,'collections');
-            
-            //fetched the updated accounts after deletion
-            const updatedSnapshot = await getDocs(collectionsDataRef);
-            const updatedCollections = updatedSnapshot.docs.map((doc =>({id:doc.id, ...doc.data()})));
+      // Fetch the updated accounts after deletion
+      const updatedSnapshot = await getDocs(collectionsDataRef);
+      const updatedCollections = updatedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-            //keep existing positions unless some rows need ajustments
-            const sortedCollections = updatedCollections.sort((a,b) => a.position - b.position);
+      // Keep existing positions unless some rows need adjustments
+      const sortedCollections = updatedCollections.sort((a, b) => a.position - b.position);
 
-            setCollectionsData(sortedCollections);
+      setCollectionsData(sortedCollections);
 
-      //Show Changes to UI---------------------------------------------------------------------------------------------------
-
-
+      // Show Changes to UI---------------------------------------------------------------------------------------------------
     }
 
     // Now, create a new blank row after deleting all the data
     const newBlankRow = {
-      createdAt:serverTimestamp(),
+      createdAt: serverTimestamp(),
       fireStationName: logginUser.username,
       collectingOfficer: null,
       dateCollected: null,
       orNumber: null,
       lcNumber: null,
-      nameOfPayor:null,
-      natureOfCollection:null,
+      nameOfPayor: null,
+      natureOfCollection: null,
       collectionAmount: null,
-      status:null,
-      depositStatus:null,
-      depositID:null,
-      position: 1 // Default position for the first row
+      status: null,
+      depositStatus: null,
+      depositID: null,
+      position: 1, // Default position for the first row
     };
-
 
     // Add the new blank row to the original collections subcollection
     await addDoc(collectionsSubCollectionRef, newBlankRow);
 
-    console.log("New blank row created successfully");
+    console.log('New blank row created successfully');
 
     // Hide the modal after completion
     setShowModal(false);
-
   } catch (error) {
     console.log(error);
   }
@@ -539,38 +536,28 @@ const handleSubmitDataToRegion = async () => {
 
   return (
     <Fragment>
-      <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
-        <div className="flex justify-between items-center w-full mb-4">
-          <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
-            Fire Station Reports - Collections
-          </h1>
-          <button
-            type="button"
-            className="bg-[#2196F3] text-white px-4 py-2 rounded hover:bg-[#1976D2]"
-            onClick={handleSubmit}
-          >
-            Submit
-          </button>
-        </div>
-
-       
-
+      
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
+        <button type="button" onClick={handleSubmit} class="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
-                        <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-3 w-40">Collecting Officer</th>
-                            <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
-                            <th scope="col" className="px-2 py-3 w-36">OR Number</th>
-                            <th scope="col" className="px-2 py-3 w-36">LC Number</th>
-                            <th scope="col" className="px-2 py-3 w-36">Name of Payor</th>
-                            <th scope="col" className="px-2 py-3 w-36">Nature of Collection</th>
-                            <th scope="col" className="px-2 py-3 w-36">Amount</th>
-                            <th scope="col" className="px-2 py-3 w-36">Status</th>
-                            <th scope="col" className="w-[0px]"></th>
-                        </tr>
-                  </thead>
+              <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
+                          <tr className="text-[12px]">
+                              <th scope="col" className="px-2 py-3 w-40">Collecting Officer</th>
+                              <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
+                              <th scope="col" className="px-2 py-3 w-36">OR Number</th>
+                              <th scope="col" className="px-2 py-3 w-36">LC Number</th>
+                              <th scope="col" className="px-2 py-3 w-36">Name of Payor</th>
+                              <th scope="col" className="px-2 py-3 w-36">Nature of Collection</th>
+                              <th scope="col" className="px-2 py-3 w-36">Amount</th>
+                              <th scope="col" className=" w-[20px] "></th>
+                          </tr>
+              </thead>
+            </table>
+
+            
+            <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
+            <table className='w-full overflow-x-visible'>
                   <tbody>
                   {collectionsData.map((collections) => (
                       <Fragment key={collections.id}>
@@ -624,10 +611,10 @@ const handleSubmitDataToRegion = async () => {
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'dateCollected', value: collections.date || '' }) }}
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'dateCollected', value: collections.dateCollected || '' }) }}
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
-                                {collections.date || '-'}
+                                {collections.dateCollected || '-'}
                               </span>
                             )}
                           </td>
@@ -699,21 +686,21 @@ const handleSubmitDataToRegion = async () => {
                           </td>
 
                           <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === collections.id && editValue.field === 'nameOfPayor' ? (
+                            {editingCell === collections.id && editValue.field === 'natureOfCollection' ? (
                               <input
                                 type="text"
                                 className="border border-gray-400 focus:outline-none w-full h-8 px-2"
                                 value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'nameOfPayor', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'nameOfPayor', editValue.value)}
+                                onChange={(e) => setEditValue({ field: 'natureOfCollection', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'natureOfCollection', editValue.value)}
                                 autoFocus
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'nameOfPayor', value: collections.nameOfPayor || '' }) }}
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'natureOfCollection', value: collections.natureOfCollection || '' }) }}
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
                               >
-                                {collections.nameOfPayor || '-'}
+                                {collections.natureOfCollection || '-'}
                               </span>
                             )}
                           </td>
@@ -738,34 +725,26 @@ const handleSubmitDataToRegion = async () => {
                             )}
                           </td>
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                          <span className="block  h-8 w-full px-2 py-1">
-                            {collections.status ? 'Deposited' : ''}
-                          </span>
-                        </td>
-
-
-
-                          {hoveredRowId === collections.id && (
-                                <td className="relative right-8 mr-1 text-[12px]">  {/* Position the button absolutely */}
-                                <button
-                                    className="mt-2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                    style={{ position: 'absolute', right: '-50px' }}  // Adjust position as needed
-                                    onClick={handleAddRowBelow}
-                                    disabled={isLoading} 
-                                >
-                                    <IoMdAddCircleOutline />
-                                </button>
-                                </td>
-                            )}
+                          {/* Add Row Button */}
+                                                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
+                                                        {hoveredRowId === collections.id && (
+                                                            <button
+                                                                className="absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                                                onClick={handleAddRowBelow}
+                                                            >
+                                                                <IoMdAddCircleOutline />
+                                                            </button>
+                                                        )}
+                                                    </td>
                         </tr>
                       </Fragment>
                     ))}
 
                   </tbody>
                 </table>
+              </div>
       </div>
-      </div>
+
 
 
                     {/*Submit Modal*/}
@@ -788,20 +767,7 @@ const handleSubmitDataToRegion = async () => {
 
                         <div className="py-2 ">
                           <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
-                          <select
-                              className="mt-1 block w-2/4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                              value={selectedOfficer}
-                              onChange={(e) => setSelectedOfficer(e.target.value)} // Handle change here
-                            >
-                              <option value="" disabled>Select an officer</option>
-
-                              {/* Dynamically render officers */}
-                              {officersData.map((officer) => (
-                                <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
-                                  {officer.firstname} {officer.lastname}
-                                </option>
-                              ))}
-                            </select>
+                          
                         </div>
                        
                     </div>
