@@ -150,7 +150,7 @@ export default function BalanceSheet() {
                             <tr
                                 key={balanceSheet.id}
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                onClick={() => navigate(`/main/BalanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
+                                onClick={() => navigate(`/main/balanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
                             >
                                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.description || "N/A"}

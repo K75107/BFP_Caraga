@@ -80,15 +80,15 @@ const router = createBrowserRouter([
         ],
       },
       {
-        path: 'BalanceSheet',
+        path: 'balanceSheet',
         element: <BalanceSheet />,
         children: [
           {
-          path: '/main/BalanceSheet/balanceSheetList',
+          path: '/main/balanceSheet/balanceSheetList',
           element: <BalanceSheetList/>,
           },
           {
-            path: '/main/BalanceSheet/balanceSheetDetails/:balanceSheetID',
+            path: '/main/balanceSheet/balanceSheetDetails/:balanceSheetID',
             element: <BalanceSheetDetails/>
           },
           {
