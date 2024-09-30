@@ -1,28 +1,21 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import ExcelJS from 'exceljs'; // Ensure you have installed exceljs
 import { db } from "../../../../config/firebase-config";
-import {
-    collection,
-    addDoc,
-    deleteDoc,
-    doc,
-    getDocs,
-    getDoc
-} from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot } from "firebase/firestore";
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
     const { balanceSheetID } = useParams(); // Get the ID from the URL
     const [balanceSheet, setBalanceSheet] = useState(null);
-    const [accountTitles, setAccountTitles] = useState([]);
+    const [accountTitles, setAccountTitles] = useState([]); // Store account titles
+    const [accounts, setAccounts] = useState([]); // Separate state for accounts
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     // Fetch the balance sheet description and its associated ledger year
     const getBalanceSheetDescription = async () => {
         try {
-            const docRef = doc(db, "balancesheet", balanceSheetID); // Create a reference to the balance sheet document
+            const docRef = doc(db, "balancesheet", balanceSheetID); // Reference to the balance sheet document
             const docSnap = await getDoc(docRef); // Get the document snapshot
 
             if (docSnap.exists()) {
@@ -35,46 +28,59 @@ export default function BalanceSheet() {
                     const ledgerSnap = await getDoc(ledgerRef);
 
                     if (ledgerSnap.exists()) {
-                        // Attach the year from the ledger data to the balance sheet data
-                        balanceSheetData.ledgerYear = ledgerSnap.data().year;
+                        balanceSheetData.ledgerYear = ledgerSnap.data().year; // Attach year from ledger
 
-                        // Fetch accounttitles subcollection from the ledger
+                        // Fetch account titles from the ledger
                         const accountTitlesRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles");
                         const accountTitlesSnap = await getDocs(accountTitlesRef);
 
                         const accountTitlesData = [];
+                        const accountsData = [];
+
                         for (const titleDoc of accountTitlesSnap.docs) {
                             const titleData = { id: titleDoc.id, ...titleDoc.data() };
 
-                            // Log account title data
-                            console.log("Account Title Data:", titleData);
-
-                            // Fetch accounts subcollection from each accounttitle document
+                            // Fetch accounts subcollection for each account title
                             const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
                             const accountsSnap = await getDocs(accountsRef);
 
-                            const accountsData = accountsSnap.docs.map(accountDoc => ({
-                                id: accountDoc.id,
-                                ...accountDoc.data(),
-                            }));
+                            // Initialize sums for debit and credit
+                            let totalDebit = 0;
+                            let totalCredit = 0;
 
-                            // Log accounts data
-                            console.log(`Accounts for ${titleDoc.id}:`, accountsData);
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id, // Link to the account title ID
+                                    ...accountDoc.data(),
+                                };
 
-                            // Add accounts data to the accounttitle
-                            titleData.accounts = accountsData;
-                            accountTitlesData.push(titleData);
+                                // Sum up debit and credit for each document
+                                totalDebit += accountData.debit || 0;  // Default to 0 if debit is missing
+                                totalCredit += accountData.credit || 0; // Default to 0 if credit is missing
+
+                                return accountData;
+                            });
+
+                            // After processing all account documents, you can attach the difference (debit - credit) to the account title
+                            titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
+
+                            // Continue to add this account title to the list
+                            accountTitlesData.push(titleData);  // Add account title to state
+
+                            // Add accounts to a separate state for accounts
+                            accountsData.push(...titleAccounts);
                         }
 
-                        setAccountTitles(accountTitlesData); // Store the accounttitles and accounts
-                        console.log("Data Inside:", accountTitles);
+                        setAccountTitles(accountTitlesData); // Set account titles
+                        setAccounts(accountsData); // Set accounts separately
 
                     } else {
                         balanceSheetData.ledgerYear = "N/A"; // Handle missing ledger case
                     }
                 }
 
-                setBalanceSheet(balanceSheetData); // Store the balance sheet data with ledger year
+                setBalanceSheet(balanceSheetData); // Set balance sheet data with ledger year
             } else {
                 setError("No balance sheet found.");
             }
@@ -114,17 +120,17 @@ export default function BalanceSheet() {
                                         .filter(accountTitle => accountTitle.assetType === "Cash on Hand")  // Filter for "Cash on Hand" assets
                                         .map((accountTitle) => ({
                                             name: accountTitle.accountTitle,
-                                            amount: 200000,
+                                            amount: accountTitle.difference,
                                         })),
                                 },
                                 {
                                     name: "Treasury/Agency Cash Accounts",
                                     children: accountTitles
-                                    .filter(accountTitle => accountTitle.assetType === "Treasury/Agency Cash Accounts")  // Filter for "Treasury/Agency Cash Accounts" assets
-                                    .map((accountTitle) => ({
-                                        name: accountTitle.accountTitle,
-                                        amount: 200000,
-                                    })),
+                                        .filter(accountTitle => accountTitle.assetType === "Treasury/Agency Cash Accounts")  // Filter for "Treasury/Agency Cash Accounts" assets
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
                                 },
                             ],
 
@@ -160,7 +166,7 @@ export default function BalanceSheet() {
         return (
             <>
                 <tr className="border-t">
-                    {/* Toggle icon and account name with indentation */}
+                    {/* Account name with indentation */}
                     <td
                         className="px-6 py-4 cursor-pointer"
                         onClick={() => setIsOpen(!isOpen)}
@@ -174,24 +180,23 @@ export default function BalanceSheet() {
                             <span>{item.name}</span>
                         )}
                     </td>
-                    {/* Amount */}
+
+                    {/* Amount in the second column */}
                     <td className="px-6 py-4 text-right font-semibold">
                         {item.amount ? item.amount.toLocaleString() : ''}
                     </td>
+
+                    {/* Empty column for the "View" or other action */}
+                    <td className="px-6 py-4 text-right font-semibold"></td>
                 </tr>
-                {/* If the row has children and is open, recursively render the child rows */}
+
+                {/* If the row has children and is open, render child rows directly without nested tables */}
                 {isOpen && item.children && (
-                    <tr>
-                        <td colSpan="2">
-                            <table className="w-full">
-                                <tbody>
-                                    {item.children.map((childItem, index) => (
-                                        <Row key={index} item={childItem} depth={depth + 1} /> // Increment depth for children
-                                    ))}
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
+                    <>
+                        {item.children.map((childItem, index) => (
+                            <Row key={index} item={childItem} depth={depth + 1} /> // Increment depth for children
+                        ))}
+                    </>
                 )}
             </>
         );
@@ -218,9 +223,8 @@ export default function BalanceSheet() {
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
-                            <th scope="col" className="px-6 py-3"></th>
-                            <th scope="col" className="px-6 py-3 text-2">{`Period -  ${balanceSheet?.ledgerYear || "N/A"}`}</th>
-                            <th scope="col" className="px-6 py-3"><span className="sr-only">View</span></th>
+                            <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheet?.ledgerYear || "N/A"}`}</th>
+                            <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -230,7 +234,7 @@ export default function BalanceSheet() {
                     </tbody>
                 </table>
             </div>
-
         </Fragment>
     );
+
 }
