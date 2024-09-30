@@ -3,6 +3,8 @@ import { getAuth, onAuthStateChanged} from 'firebase/auth';
 import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc,writeBatch } from 'firebase/firestore';
 import { db } from "../../../../config/firebase-config";
 import Modal from "../../../../components/Modal"
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 import { IoMdAddCircleOutline } from "react-icons/io";
 
