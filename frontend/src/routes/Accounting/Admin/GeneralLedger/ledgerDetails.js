@@ -12,7 +12,7 @@ import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 
 
 export default function LedgerDetails() {
-    const [showModal, setShowModal] = useState(false);
+
     const { ledgerId } = useParams(); // Get ledgerId from URL
     const [loading, setLoading] = useState(false);
     const [ledgerDescription, setLedgerDescription] = useState('');
@@ -46,6 +46,8 @@ export default function LedgerDetails() {
     const [showMainAccountRightClick, setShowMainAccountRightClick] = useState(false); 
     const [selectedMainAccount, setSelectedMainAccount] = useState(null);
 
+    //Modal
+    const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
         if (!ledgerId) {

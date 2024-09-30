@@ -4,8 +4,36 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../../config/firebase-config";
 import { Timestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
+import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
+import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 
 export default function FireStationCollectionsSubmitted() {
+
+
+    //FOR FILTERS -------------------------------------------------------------------------------------------
+      // State to track selected category
+        const [selectedCategory, setSelectedCategory] = useState(null);
+
+        // Handlers for toggling the checkboxes
+        const handleYearChange = () => {
+            setSelectedCategory((prev) => (prev === "year" ? null : "year"));
+        };
+
+        const handleMonthChange = () => {
+            setSelectedCategory((prev) => (prev === "month" ? null : "month"));
+        };
+        const handleDayChange = () => {
+            setSelectedCategory((prev) => (prev === "day" ? null : "day"));
+        };
+    //FOR FILTERS -------------------------------------------------------------------------------------------
+
+    //Modal
+    const [showModal, setShowModal] = useState(false);
+
+    const navigate = useNavigate();
+    
     // Define state for firestation collections
     const [logUserID, setlogUserID] = useState(null);  // Set initial value to null
     const [firestationCollection, setFirestationCollection] = useState([]);
@@ -51,7 +79,7 @@ export default function FireStationCollectionsSubmitted() {
             const unsubscribeSubmittedCollectionsDataRef = onSnapshot(submittedSubCollectionsDataRef, (snapshot) => {
                 const submittedCollectionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                console.log(submittedCollectionsList);
+                // console.log(submittedCollectionsList);
                 setFirestationCollection(submittedCollectionsList);
             });
 
@@ -62,24 +90,44 @@ export default function FireStationCollectionsSubmitted() {
         }
     }, [logUserID]);  // This effect runs only when logUserID changes
 
-    // For timestamp
-    const formatTimestamp = (timestamp) => {
-        if (!timestamp) return "";
-        const date = new Date(timestamp.seconds * 1000);  // Convert Firestore Timestamp to JS Date
-        return date.toISOString().split("T")[0];  // Format the date as yyyy-MM-dd
-    };
+    // Convert Firestore Timestamp to JavaScript Date
+const formatTimestamp = (timestamp) => {
+    if (!timestamp || !timestamp.seconds) return null;  // Check if timestamp is valid
+    return new Date(timestamp.seconds * 1000);  // Convert Firestore Timestamp to JS Date
+};
 
-    // For groupings and Toggle of view
-    const groupByDate = (collections) => {
-        return collections.reduce((grouped, collection) => {
-            const dateKey = collection.createdAt ? formatTimestamp(collection.createdAt) : "N/A";
-            if (!grouped[dateKey]) {
-                grouped[dateKey] = [];
+// For groupings and Toggle of view
+const groupByDate = (collections, selectedCategory) => {
+    return collections.reduce((grouped, collection) => {
+        const createdAt = collection.createdAt ? formatTimestamp(collection.createdAt) : null;
+        let groupKey;
+
+        if (createdAt) {
+            if (selectedCategory === 'month') {
+                // Format as "Month Year", e.g. "January 2024"
+                groupKey = createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            } else if (selectedCategory === 'year') {
+                // Format as "Year", e.g. "2024"
+                groupKey = createdAt.toLocaleDateString('en-US', { year: 'numeric' });
+            } else {
+                // Format as "Month Day, Year", e.g. "January 7, 2024"
+                groupKey = createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             }
-            grouped[dateKey].push(collection);
-            return grouped;
-        }, {});
-    };
+        } else {
+            groupKey = "N/A";
+        }
+
+        if (!grouped[groupKey]) {
+            grouped[groupKey] = [];
+        }
+        grouped[groupKey].push(collection);
+        return grouped;
+    }, {});
+};
+    
+    // Usage
+    const groupedCollections = groupByDate(firestationCollection, selectedCategory);
+
 
 
         // State to manage which groups are expanded/collapsed
@@ -93,19 +141,179 @@ export default function FireStationCollectionsSubmitted() {
             }));
         };
 
-        const groupedCollections = groupByDate(firestationCollection);
 
-    
+
     return (
         <div>
+            {/* Page Title */}
+                <div className="flex flex-col space-y-6 w-full mb-6">
+                <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-semibold text-gray-800">
+                    Fire Station Reports - Collections
+                </h1>
+                </div>
+            </div>
+            {/* Unsubmitted and Submitted */}
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                <ul
+                className="flex flex-wrap -mb-px text-sm font-medium text-center"
+                id="default-styled-tab"
+                role="tablist"
+                >
+                <li className="me-2" role="presentation">
+                    <button
+                    onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    className="inline-block p-4 border-b-2 rounded-t-lg"
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Unsubmitted
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    onClick={() => navigate("/main/firestation/collections/submitted")}
+                    className="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                    id="dashboard-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="dashboard"
+                    aria-selected="false"
+                    >
+                    Submitted
+                    </button>
+                </li>
+                </ul>
+            </div>
+
+
+          {/* Table Header */}
+
+          <div className="flex flex-col items-center justify-between p-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+            {/* Search Form */}
+            <div className="w-full md:w-1/2">
+              <form className="flex items-center">
+                <label htmlFor="simple-search" className="sr-only">Search</label>
+                <div className="relative w-full">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg
+                      aria-hidden="true"
+                      className="w-5 h-5 text-gray-500 dark:text-gray-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    id="simple-search"
+                    className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                    placeholder="Search"
+                    required
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Buttons and Dropdowns */}
+            <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
+
+
+              {/* Actions Dropdown */}
+              <Dropdown
+                label={
+                  <div className="flex items-center">
+                    <span className="mr-2">Actions</span>
+                    <BsChevronDown className="w-4 h-4" /> {/* Chevron Down Icon */}
+                  </div>
+                }
+                dismissOnClick={false}
+                inline={true}
+                arrowIcon={false} // Disabled default arrow icon
+                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+              >
+                <Dropdown.Item>Mass Edit</Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item>Delete all</Dropdown.Item>
+              </Dropdown>
+
+              {/* Filter Dropdown */}
+              <Dropdown
+                label={
+                  <div className="flex items-center">
+                    <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
+                    <span className="mr-2">Filter</span>
+                    <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                  </div>
+                }
+                dismissOnClick={false}
+                inline={true}
+                arrowIcon={false} // Disabled default arrow icon
+                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+              >
+
+            {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}                
+                <div className="p-3">
+                    <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                        Category
+                    </h6>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center">
+                        <Checkbox
+                            id="year"
+                            label="Year"
+                            checked={selectedCategory === "year"}
+                            onChange={handleYearChange} // Toggle year
+                        />
+                        <span className="ml-2">Year</span>
+                        </li>
+                        <li className="flex items-center">
+                        <Checkbox
+                            id="month"
+                            label="Month"
+                            checked={selectedCategory === "month"}
+                            onChange={handleMonthChange} // Toggle month
+                        />
+                        <span className="ml-2">Month</span>
+                        </li>
+                        <li className="flex items-center">
+                        <Checkbox
+                            id="day"
+                            label="day"
+                            checked={selectedCategory === "day"}
+                            onChange={handleDayChange} // Toggle month
+                        />
+                        <span className="ml-2">Day</span>
+                        </li>
+                    </ul>
+                    </div>
+            {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}   
+
+              </Dropdown>
+              
+            </div>
+          </div>
+
+            <hr className="border-t border-[#7694D4] mt-1 mb-6" />
+
+        
+
+          
+
+
+
             {/* TABLE */}
             <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
-                <button
-                    type="button"
-                    className="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
-                >
-                    Submit
-                </button>
+                
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr className="text-[12px]">
