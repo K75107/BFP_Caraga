@@ -154,7 +154,7 @@ const groupByDate = (collections, selectedCategory) => {
     return (
         <div>
             {/* Page Title */}
-                <div className="flex flex-col space-y-6 w-full mb-6">
+                <div className="flex flex-col space-y-6 w-full mb-2">
                 <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-semibold text-gray-800">
                     Fire Station Reports - Collections
@@ -171,7 +171,7 @@ const groupByDate = (collections, selectedCategory) => {
                 <li className="me-2" role="presentation">
                     <button
                     onClick={() => navigate("/main/firestation/collections/unsubmitted")}
-                    className="inline-block p-4 border-b-2 rounded-t-lg"
+                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
                     id="profile-styled-tab"
                     type="button"
                     role="tab"
@@ -184,7 +184,7 @@ const groupByDate = (collections, selectedCategory) => {
                 <li className="me-2" role="presentation">
                     <button
                     onClick={() => navigate("/main/firestation/collections/submitted")}
-                    className="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100 "
                     id="dashboard-styled-tab"
                     type="button"
                     role="tab"
@@ -200,7 +200,7 @@ const groupByDate = (collections, selectedCategory) => {
 
           {/* Table Header */}
 
-          <div className="flex flex-col items-center justify-between p-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+          <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
             {/* Search Form */}
             <div className="w-full md:w-1/2">
               <form className="flex items-center">
