@@ -1,67 +1,81 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import {
-    collection,
-    getDocs,
-    getDoc,
-    doc,
-} from "firebase/firestore";
+import { collection, doc, getDocs, getDoc } from "firebase/firestore";
+import Modal from "../../../../components/Modal"; // Assuming you have a reusable Modal component
+import DatePicker from "react-datepicker"; // Assuming you are using react-datepicker
 
-export default function IncomeStatementDetails() {
+export default function IncomeStatement() {
     const navigate = useNavigate();
-    const { incomeStatementID } = useParams();
-
+    const { incomeStatementID } = useParams(); // Get the ID from the URL
     const [incomeStatement, setIncomeStatement] = useState(null);
     const [accountTitles, setAccountTitles] = useState([]);
+    const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [editableData, setEditableData] = useState({});
-    const [incomeStatementData, setIncomeStatementData] = useState([]); // State for income statement data
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedRow, setSelectedRow] = useState(null);
-    const totalSurplusDeficit = incomeStatementData.reduce((total, item) => total + (item.amount || 0), 0);
+    const [balanceSheetData, setBalanceSheetData] = useState({
+        ledgerYear: "", // Placeholder for ledger year
+    });
+    const [showModal, setShowModal] = useState(false);
+    const [selectedLedger, setSelectedLedger] = useState("");
+    const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
 
+    // Fetch the income statement description and its associated data
     const getIncomeStatementDescription = async () => {
         try {
-            const docRef = doc(db, "incomestatement", incomeStatementID);
-            const docSnap = await getDoc(docRef);
+            const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the income statement document
+            const docSnap = await getDoc(docRef); // Get the document snapshot
 
             if (docSnap.exists()) {
                 const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
 
+                // Fetch ledger information if it exists
                 if (incomeStatementData.ledgerID) {
                     const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
                     const ledgerSnap = await getDoc(ledgerRef);
 
                     if (ledgerSnap.exists()) {
-                        incomeStatementData.ledgerYear = ledgerSnap.data().year;
-
-                        const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
-                        const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                        const accountTitlesData = [];
-                        for (const titleDoc of accountTitlesSnap.docs) {
-                            const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                            const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            const accountsSnap = await getDocs(accountsRef);
-
-                            const accountsData = accountsSnap.docs.map(accountDoc => ({
-                                id: accountDoc.id,
-                                ...accountDoc.data(),
-                            }));
-
-                            titleData.accounts = accountsData;
-                            accountTitlesData.push(titleData);
-                        }
-
-                        setAccountTitles(accountTitlesData);
-                    } else {
-                        incomeStatementData.ledgerYear = "N/A";
+                        balanceSheetData.ledgerYear = ledgerSnap.data().year; // Attach year from ledger
                     }
                 }
 
+                // Fetch account titles and accounts from Firestore for the income statement
+                const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
+                const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                const accountTitlesData = [];
+                const accountsData = [];
+
+                for (const titleDoc of accountTitlesSnap.docs) {
+                    const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                    // Fetch accounts subcollection for each account title
+                    const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
+                    const accountsSnap = await getDocs(accountsRef);
+
+                    let totalDebit = 0;
+                    let totalCredit = 0;
+
+                    const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                        const accountData = {
+                            id: accountDoc.id,
+                            accountTitleID: titleDoc.id,
+                            ...accountDoc.data(),
+                        };
+
+                        totalDebit += accountData.debit || 0;
+                        totalCredit += accountData.credit || 0;
+
+                        return accountData;
+                    });
+
+                    titleData.difference = totalDebit - totalCredit;
+                    accountTitlesData.push(titleData);
+                    accountsData.push(...titleAccounts);
+                }
+
+                setAccountTitles(accountTitlesData);
+                setAccounts(accountsData);
                 setIncomeStatement(incomeStatementData);
             } else {
                 setError("No income statement found.");
@@ -74,36 +88,24 @@ export default function IncomeStatementDetails() {
         }
     };
 
+    // Fetching ledger list from Firestore
+    const getLedgerList = async () => {
+        try {
+            const data = await getDocs(collection(db, "ledger"));
+            const filteredData = data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+            }));
+            setIncomeStatementLedgerList(filteredData);
+        } catch (err) {
+            console.error("Error fetching ledger data:", err);
+        }
+    };
+
     useEffect(() => {
+        getLedgerList();
         getIncomeStatementDescription();
     }, [incomeStatementID]);
-
-    const handleAmountChange = (name, value) => {
-        setEditableData(prev => ({
-            ...prev,
-            [name]: parseFloat(value) || 0,
-        }));
-    };
-
-    const handleAddRow = () => {
-        const newRow = { name: "New Account", amount: 0 }; // Sample new row
-        setIncomeStatementData((prevData) => [...prevData, newRow]);
-        setModalVisible(false);
-    };
-
-    const handleAddAccount = () => {
-        console.log("Add Account clicked");
-        setModalVisible(false);
-    };
-
-    const handleDeleteRow = () => {
-        if (selectedRow) {
-            setIncomeStatementData((prevData) =>
-                prevData.filter((row) => row.name !== selectedRow.name)
-            );
-        }
-        setModalVisible(false);
-    };
 
     if (loading) {
         return <p>Loading...</p>;
@@ -113,27 +115,24 @@ export default function IncomeStatementDetails() {
         return <p>{error}</p>;
     }
 
-    const statementData = [
+    // Income statement data structure with integration
+    const incomeStatementData = [
         {
-            name: "Revenue",
+            name: "Revenues",
             children: [
                 {
                     name: "Service and Business Income",
-                    children: accountTitles
-                        .filter(accountTitle => accountTitle.category === "Service Income")
-                        .map((accountTitle) => ({
-                            name: accountTitle.accountTitle,
-                            amount: editableData[accountTitle.accountTitle] || 0,
-                        })),
-                },
-                {
-                    name: "Other Income",
-                    children: accountTitles
-                        .filter(accountTitle => accountTitle.category === "Other Income")
-                        .map((accountTitle) => ({
-                            name: accountTitle.accountTitle,
-                            amount: editableData[accountTitle.accountTitle] || 200000,
-                        })),
+                    children: [
+                        {
+                            name: "Service Income",
+                            children: accountTitles
+                                .filter(accountTitle => accountTitle.accountType === "Revenue") // Filter for revenue
+                                .map(accountTitle => ({
+                                    name: accountTitle.accountTitle,
+                                    amount: accountTitle.difference,
+                                })),
+                        },
+                    ],
                 },
             ],
         },
@@ -141,54 +140,42 @@ export default function IncomeStatementDetails() {
             name: "Expenses",
             children: [
                 {
-                    name: "Operating Expenses",
+                    name: "Maintenance and Other Operating Expenses",
                     children: accountTitles
-                        .filter(accountTitle => accountTitle.category === "Operating Expenses")
-                        .map((accountTitle) => ({
+                        .filter(accountTitle => accountTitle.accountType === "Expenses")
+                        .map(accountTitle => ({
                             name: accountTitle.accountTitle,
-                            amount: editableData[accountTitle.accountTitle] || 300000,
-                        })),
-                },
-                {
-                    name: "Administrative Expenses",
-                    children: accountTitles
-                        .filter(accountTitle => accountTitle.category === "Administrative Expenses")
-                        .map((accountTitle) => ({
-                            name: accountTitle.accountTitle,
-                            amount: editableData[accountTitle.accountTitle] || 150000,
+                            amount: accountTitle.difference,
                         })),
                 },
             ],
         },
     ];
 
+    // Calculate total surplus/deficit using the new formula
+    const totalRevenues = incomeStatementData.find(item => item.name === "Revenues")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
+    const totalExpenses = incomeStatementData.find(item => item.name === "Expenses")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
+
+    const totalSurplusDeficit = totalRevenues - totalExpenses;
+
+    // Determine surplus or deficit
+    const surplusOrDeficit = totalSurplusDeficit > 0 ? "Total Surplus" : totalSurplusDeficit < 0 ? "Total Deficit" : "Break-even";
+
+    // Recursive component to render rows with editable amount fields
     const Row = ({ item, depth = 0 }) => {
         const [isOpen, setIsOpen] = useState(false);
-        const [isEditing, setIsEditing] = useState(false);
-        const [amount, setAmount] = useState(item.amount);
+        const [editableAmount, setEditableAmount] = useState(item.amount);
 
-        const handleDoubleClick = () => {
-            setIsEditing(true);
-        };
-
-        const handleBlur = () => {
-            handleAmountChange(item.name, amount);
-            setIsEditing(false);
+        const handleAmountChange = (event) => {
+            setEditableAmount(event.target.value);
         };
 
         return (
             <>
-                <tr
-                    className="border-t"
-                    onClick={() => setIsOpen(!isOpen)} // Left-click for collapse
-                    onContextMenu={(e) => {
-                        e.preventDefault(); // Prevent default right-click menu
-                        setSelectedRow(item);
-                        setModalVisible(true);
-                    }}
-                >
+                <tr className="border-t">
                     <td
                         className="px-6 py-4 cursor-pointer"
+                        onClick={() => setIsOpen(!isOpen)}
                         style={{ paddingLeft: `${depth * 20}px` }}
                     >
                         {item.children ? (
@@ -199,33 +186,27 @@ export default function IncomeStatementDetails() {
                             <span>{item.name}</span>
                         )}
                     </td>
-                    <td className="px-6 py-4 text-right font-semibold" onDoubleClick={handleDoubleClick}>
-                        {item.children ? null : isEditing ? (
+
+                    <td className="px-6 py-4 text-right font-semibold">
+                        {item.amount !== undefined ? (
                             <input
                                 type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                onBlur={handleBlur}
-                                autoFocus
-                                className="border p-1 rounded"
+                                value={editableAmount}
+                                onChange={handleAmountChange}
+                                className="text-right border rounded px-2"
                             />
-                        ) : (
-                            item.amount.toLocaleString()
-                        )}
+                        ) : null}
                     </td>
+
+                    <td className="px-6 py-4 text-right font-semibold"></td>
                 </tr>
+
                 {isOpen && item.children && (
-                    <tr>
-                        <td colSpan="2">
-                            <table className="w-full">
-                                <tbody>
-                                    {item.children.map((childItem, index) => (
-                                        <Row key={index} item={childItem} depth={depth + 1} />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
+                    <>
+                        {item.children.map((childItem, index) => (
+                            <Row key={index} item={childItem} depth={depth + 1} />
+                        ))}
+                    </>
                 )}
             </>
         );
@@ -237,45 +218,103 @@ export default function IncomeStatementDetails() {
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
                     {incomeStatement.description}
                 </h1>
-                <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                    EXPORT TO EXCEL
-                </button>
+                <div className="flex space-x-4">
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
+                        EXPORT TO EXCEL
+                    </button>
+                    <button
+                        className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
+                        onClick={() => setShowModal(true)}
+                    >
+                        ADD PERIOD
+                    </button>
+                </div>
             </div>
 
             <hr className="border-t border-[#7694D4] my-4" />
 
+            {/* TABLE */}
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" className="px-6 py-3">Account Description</th>
-                            <th scope="col" className="px-6 py-3 text-2">{`Period - ${incomeStatement?.ledgerYear || ""}`}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {statementData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} />
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto"> {/* Adjust 200px based on your layout */}
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" className="px-6 py-3">Account Description</th>
+                                <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheetData.ledgerYear || "N/A"}`}</th>
+                                <th scope="col" className="px-6 py-3 text-right">
+                                    <span className="sr-only">View</span>
+                                </th>
+                            </tr>
+                        </thead>
 
-            {/* Render the Total Surplus/Deficit */}
-            <div className="mt-4 text-lg font-semibold">
-                TOTAL SURPLUS/DEFICIT: {totalSurplusDeficit.toLocaleString()}
-            </div>
-
-            {/* Modal for actions */}
-            {modalVisible && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-lg w-44 p-4 border border-gray-300">
-                        <h2 className="text-lg font-semibold">Actions</h2>
-                        <button onClick={handleAddRow} className="block my-2 px-4 py-2 border border-gray-300 rounded">Add Row</button>
-                        <button onClick={handleAddAccount} className="block my-2 px-4 py-2 border border-gray-300 rounded">Add Account</button>
-                        <button onClick={handleDeleteRow} className="block my-2 px-4 py-2 border border-gray-300 rounded">Delete Row</button>
-                        <button onClick={() => setModalVisible(false)} className="mt-4 px-4 py-2 bg-red-500 text-white rounded">Close</button>
-                    </div>
+                        <tbody>
+                            {incomeStatementData.map((item, index) => (
+                                <Row key={index} item={item} depth={1} />
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            {/* Display total surplus/deficit below the table */}
+            <div className="font-semibold text-right mt-4">
+                <h1 className="text-[20px] font-semibold text-[#1E1E1E] font-poppins">
+                    {surplusOrDeficit}:
+                    <span className="ml-2">
+                        {Math.abs(totalSurplusDeficit).toLocaleString()}
+                    </span>
+                </h1>
+            </div>
+
+            {showModal && (
+                <Modal isVisible={showModal}>
+                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                        <div className="flex justify-between">
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Ledger</h1>
+                            <button
+                                className="font-poppins text-[27px] text-[#1E1E1E]"
+                                onClick={() => setShowModal(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        <form className="max-w-sm mt-5">
+                            <select
+                                id="ledgerselect"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                value={selectedLedger}
+                                onChange={(e) => setSelectedLedger(e.target.value)}
+                            >
+                                <option value="">Select Ledger</option>
+                                {incomeStatementLedgerList.map((ledger) => (
+                                    <option key={ledger.id} value={ledger.id}>
+                                        {ledger.description}
+                                    </option>
+                                ))}
+                            </select>
+                        </form>
+
+                        <div className="flex justify-end py-3 px-4">
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"
+                                    }`}
+                                onClick={() => {
+                                    // Handle selection
+                                    if (selectedLedger) {
+                                        console.log("Selected Ledger ID:", selectedLedger);
+                                        setShowModal(false); // Close modal after selection
+                                    }
+                                }}
+                                disabled={!selectedLedger}
+                            >
+                                ADD PERIOD
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
         </Fragment>
     );

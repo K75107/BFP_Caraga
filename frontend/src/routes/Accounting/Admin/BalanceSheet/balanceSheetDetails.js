@@ -42,7 +42,7 @@ export default function BalanceSheet() {
 
                             // Fetch accounts subcollection for each account title
                             const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            const accountsSnap = await getDocs(accountsRef);
+                            const accountsSnap = await getDocs(accountsRef);    
 
                             // Initialize sums for debit and credit
                             let totalDebit = 0;
@@ -55,15 +55,24 @@ export default function BalanceSheet() {
                                     ...accountDoc.data(),
                                 };
 
+
+
                                 // Sum up debit and credit for each document
                                 totalDebit += accountData.debit || 0;  // Default to 0 if debit is missing
                                 totalCredit += accountData.credit || 0; // Default to 0 if credit is missing
 
+                                console.log('total credit',totalCredit);
+                                console.log('total debit',totalDebit)
+
                                 return accountData;
                             });
 
+
+
                             // After processing all account documents, you can attach the difference (debit - credit) to the account title
                             titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
+
+
 
                             // Continue to add this account title to the list
                             accountTitlesData.push(titleData);  // Add account title to state

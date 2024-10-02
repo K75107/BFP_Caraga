@@ -103,37 +103,42 @@ export default function Accounts() {
 
     return (
         <Fragment>
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+        <div className="bg-white h-[calc(92vh)] py-5 px-6 w-full rounded-lg">
                 <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Ledger Accounts</h1>
+                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Saved Account Titles</h1>
                     <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>ADD ACCOUNT</button>
                 </div>
 
                 <hr className="border-t border-[#7694D4] my-4" />
 
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
-                            <th scope="col" className="px-6 py-3">ACCOUNT TITLE</th>
-                            <th scope="col" className="px-6 py-3">ACCOUNT CODE</th>
-                            <th scope="col" className="px-6 py-3">ACCOUNT TYPE</th>
-                            <th scope="col" className="px-6 py-3">ACTIONS</th>
+                            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
+                            <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
+                            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TYPE</th>
+                            <th scope="col" className="px-2 py-3 w-72">ACTIONS</th>
                         </tr>
                     </thead>
-                    <tbody>
+                </table>
+                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                <table className='w-full overflow-x-visible'>
+                   
+                <tbody>
                         {accountsData.map((account) => (
                             <tr
                                 key={account.id}  
-                                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                             >
-                                <th
-                                    scope="row"
-                                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                {/*ACCOUNT TITLE*/}
+                                <td
+                                    className="table-cell px-2 py-3 w-72"
                                 >
                                     {account["AccountTitle"] || "No Title"}
-                                </th>
+                                </td>
+
                                 {/* Editable Account Code */}
-                                <td className="px-6 py-4">
+                                <td className="table-cell px-2 py-3 w-48">
                                     {editing.id === account.id && editing.field === "AccountCode" ? (
                                         <input
                                             type="text"
@@ -151,8 +156,9 @@ export default function Accounts() {
                                         </span>
                                     )}
                                 </td>
+
                                 {/* Editable Account Type */}
-                                <td className="px-6 py-4">
+                                <td className="table-cell px-2 py-3 w-72">
                                     {editing.id === account.id && editing.field === "AccountType" ? (
                                         <select
                                             value={editing.value}
@@ -176,7 +182,7 @@ export default function Accounts() {
                                     )}
                                 </td>
                                 {/* Action buttons */}
-                                <td className="px-6 py-4">
+                                <td className="table-cell px-2 py-3 w-72">
                                     {editing.id === account.id ? (
                                         <Fragment>
                                             <button
@@ -201,7 +207,9 @@ export default function Accounts() {
                     </tbody>
 
                 </table>
-            </div>
+                </div>
+
+                </div>
 
             {/*MODAL*/}
             <Modal isVisible={showModal}>

@@ -133,24 +133,26 @@ export default function TrialBalanceList(){
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-2 py-3 w-72">
                                 DESCRIPTION
                             </th>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-2 py-3 w-72">
                                 Start Date
                             </th>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-2 py-3 w-72">
                                 End Date
                             </th>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-2 py-3 w-72">
                                 <span className="sr-only">View</span>
                             </th>
                         </tr>
-                    </thead>
+                        </thead>
+                    </table>
+                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                    <table className='w-full overflow-x-visible'>
                     <tbody>
                         {trialBalanceList.map((trialbalance) => (
                             <tr
@@ -159,19 +161,18 @@ export default function TrialBalanceList(){
                                 // Uncomment and implement navigation if needed
                                 onClick={() => navigate(`/main/TrialBalance/TrialBalanceDetails/${trialbalance.id}`)}
                             >
-                                <th
-                                    scope="row"
-                                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                <td
+                                    className="table-cell px-2 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                 >
                                     {trialbalance.description || "No Description"}
-                                </th>
-                                <td className="px-6 py-4">
+                                </td>
+                                <td className="table-cell px-2 py-3 w-72">
                                     {trialbalance.start_date ? new Date(trialbalance.start_date.seconds * 1000).toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="table-cell px-2 py-3 w-72">
                                     {trialbalance.end_date ? new Date(trialbalance.end_date.seconds * 1000).toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="table-cell px-2 py-3 w-72 text-right">
                                     <span
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
                                         onClick={(e) => {
