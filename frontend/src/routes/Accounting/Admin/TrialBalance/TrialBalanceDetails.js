@@ -14,7 +14,7 @@ export default function TrialBalanceDetails() {
     // Helper function to filter accounts by date range
     const isWithinDateRange = (accountDate, startDate, endDate) => {
         let accountTimestamp;
-
+    
         // Check if accountDate is a Firestore Timestamp, a string, or a JS Date object
         if (accountDate && accountDate.toDate) {
             accountTimestamp = accountDate.toDate(); // Firestore Timestamp
@@ -26,9 +26,14 @@ export default function TrialBalanceDetails() {
             console.log('Invalid account date:', accountDate); // Log invalid date
             return false;
         }
-
-        return accountTimestamp >= startDate && accountTimestamp <= endDate;
+    
+        // Ensure endDate is the last moment of the day (23:59:59)
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+    
+        return accountTimestamp >= startDate && accountTimestamp <= endOfDay;
     };
+    
 
     useEffect(() => {
         setLoading(true); // Start loading before fetching data
