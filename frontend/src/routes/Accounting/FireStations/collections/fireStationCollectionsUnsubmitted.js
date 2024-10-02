@@ -3,10 +3,18 @@ import { getAuth, onAuthStateChanged} from 'firebase/auth';
 import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc,writeBatch } from 'firebase/firestore';
 import { db } from "../../../../config/firebase-config";
 import Modal from "../../../../components/Modal"
+import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
+import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
+import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
+import 'react-datepicker/dist/react-datepicker.css';
+import { useNavigate } from "react-router-dom";
 
 import { IoMdAddCircleOutline } from "react-icons/io";
 
 export default function FireStationCollectionsUnsubmitted() {
+
+  const navigate = useNavigate();
+
   const [firestationCollection, setFirestationCollection] = useState([]);
   const [collectionsData, setCollectionsData] = useState([]);
 
@@ -536,7 +544,52 @@ const handleSubmitDataToRegion = async () => {
 
   return (
     <Fragment>
-      
+             
+             <div className="flex flex-col space-y-6 w-full mb-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                Fire Station Reports - Collections
+              </h1>
+            </div>
+          </div>
+
+          <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+            <ul
+              className="flex flex-wrap -mb-px text-sm font-medium text-center"
+              id="default-styled-tab"
+              role="tablist"
+            >
+              <li className="me-2" role="presentation">
+                <button
+                  onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+
+                  className="inline-block p-4 border-b-2 rounded-t-lg"
+                  id="profile-styled-tab"
+                  type="button"
+                  role="tab"
+                  aria-controls="profile"
+                  aria-selected="false"
+                >
+                  Unsubmitted
+                </button>
+              </li>
+              <li className="me-2" role="presentation">
+                <button
+                  onClick={() => navigate("/main/firestation/collections/submitted")}
+                  className="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                  id="dashboard-styled-tab"
+                  type="button"
+                  role="tab"
+                  aria-controls="dashboard"
+                  aria-selected="false"
+                >
+                  Submitted
+                </button>
+              </li>
+            </ul>
+          </div>
+
+
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
         <button type="button" onClick={handleSubmit} class="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>

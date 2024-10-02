@@ -379,24 +379,26 @@ const exportToExcel = async () => {
                 <hr className="border-t border-[#7694D4] my-4" />
 
                 {/* TABLE */}
-                <div className="relative overflow-x-auto h-screen overflow-y-auto shadow-md sm:rounded-lg">
-                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                             <tr>
-                                <th scope="col" className="px-6 py-3">
+                                <th scope="col" className="px-2 py-3 w-72">
                                     PARTICULARS
                                 </th>
-                                <th scope="col" className="px-6 py-3">
+                                <th scope="col" className="px-2 py-3 w-48">
                                     ACCOUNT CODE
                                 </th>
-                                <th scope="col" className="px-6 py-3">
+                                <th scope="col" className="px-2 py-3 w-48">
                                     DEBIT
                                 </th>
-                                <th scope="col" className="px-6 py-3">
+                                <th scope="col" className="px-2 py-3 w-48">
                                     CREDIT
                                 </th>
                             </tr>
                         </thead>
+                  </table>
+                <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)]'>
+                    <table className='w-full overflow-x-visible'>
                         <tbody>
                     {loading ? (
                         <tr>
@@ -416,17 +418,17 @@ const exportToExcel = async () => {
                     ) : (
                             trialBalanceData.length > 0 ? (
                                 trialBalanceData.map((entry, index) => (
-                                    <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                        <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                    <tr key={index} className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        <td className="table-cell px-2 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                             {entry.particulars}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="table-cell px-2 py-3 w-48">
                                             {entry.accountCode}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="table-cell px-2 py-3 w-48">
                                             {entry.debit > 0 ? entry.debit.toLocaleString() : '-'}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="table-cell px-2 py-3 w-48">
                                             {entry.credit > 0 ? entry.credit.toLocaleString() : '-'}
                                         </td>
                                     </tr>
