@@ -125,7 +125,7 @@ const groupByDate = (collections, selectedCategory) => {
         return grouped;
     }, {});
 };
-    
+
     // Usage
     const groupedCollections = groupByDate(firestationCollection, selectedCategory);
 

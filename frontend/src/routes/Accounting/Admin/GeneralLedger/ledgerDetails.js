@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../../../config/firebase-config'; // Firestore configuration
-import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc,writeBatch } from 'firebase/firestore';
+import { doc, collection, onSnapshot, addDoc, updateDoc, arrayRemove,deleteDoc,where,query,getDocs,getDoc,writeBatch, orderBy } from 'firebase/firestore';
 import Modal from "../../../../components/Modal";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -54,29 +54,29 @@ export default function LedgerDetails() {
             console.error('ledgerId is not provided.');
             return;
         }
-
+    
         const ledgerDocRef = doc(db, 'ledger', ledgerId); 
         setLoading(true); // Start loading before fetching data
-
+    
         // Fetch ledger description from Firestore
         const fetchLedgerDescription = async () => {
             const docSnap = await getDoc(ledgerDocRef);
-
+    
             if (docSnap.exists()) {
                 setLedgerDescription(docSnap.data().description || 'No Description');
             } else {
                 console.error('No such document!');
             }
         };
-
+    
         fetchLedgerDescription();
-
+    
         // Fetch ledger data with onSnapshot for real-time updates
         const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-    
+        
         let unsubscribeLedger;
         let unsubscribeAccountTitles;
-    
+        
         // Function to fetch accounts for each account title
         const fetchAccounts = async (accountTitleId) => {
             const accountsSubcollectionRef = collection(ledgerDocRef, `accounttitles/${accountTitleId}/accounts`);
@@ -86,43 +86,42 @@ export default function LedgerDetails() {
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .sort((a, b) => a.position - b.position);
         };
-    
+        
         // Fetch account titles and their subcollection accounts
-        unsubscribeLedger = onSnapshot(accountTitlesCollectionRef, async (snapshot) => {
-            if (snapshot.empty) {
-                console.log('No account titles found');
-                setAccountTitles([]); // Clear state if no titles
+        unsubscribeLedger = onSnapshot(
+            query(accountTitlesCollectionRef, orderBy('position', 'asc')), // Sort accountTitles by position ascending
+            async (snapshot) => {
+                if (snapshot.empty) {
+                    console.log('No account titles found');
+                    setAccountTitles([]); // Clear state if no titles
+                    setLoading(false); // Stop loading after fetching data
+                    return;
+                }
+                
+                const fetchedAccountTitles = [];
+                const fetchedAccounts = {};
+    
+                // Loop through each account title and fetch its accounts
+                for (const accountTitleDoc of snapshot.docs) {
+                    const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
+                    fetchedAccountTitles.push(accountTitleData);
+    
+                    // Fetch accounts for this account title
+                    const accounts = await fetchAccounts(accountTitleDoc.id);
+                    fetchedAccounts[accountTitleDoc.id] = accounts;
+                }
+                
+                // Set sorted account titles and accounts
+                setAccountTitles(fetchedAccountTitles);
+                setSelectedAccountsData(fetchedAccounts);
                 setLoading(false); // Stop loading after fetching data
-                return;
+            },
+            (error) => {
+                console.error('Error fetching ledger data:', error);
+                setLoading(false); // Stop loading on error
             }
-            
-            
-
-            const fetchedAccountTitles = [];
-            const fetchedAccounts = {};
-    
-            // Loop through each account title and fetch its accounts
-            for (const accountTitleDoc of snapshot.docs) {
-                const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
-                fetchedAccountTitles.push(accountTitleData);
-    
-                // Fetch accounts for this account title
-                const accounts = await fetchAccounts(accountTitleDoc.id);
-                fetchedAccounts[accountTitleDoc.id] = accounts;
-            }
-            
-            
-            setAccountTitles(fetchedAccountTitles);
-            setSelectedAccountsData(fetchedAccounts);
-            setLoading(false); // Stop loading after fetching data
-
-    
-        }, (error) => {
-            console.error('Error fetching ledger data:', error);
-            setLoading(false); // Stop loading on error
-
-        });
-    
+        );
+        
         // Fetch list of all account titles (assuming these are used elsewhere)
         const listAccountTitlesRef = collection(db, 'accountTitle');
         unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
@@ -131,13 +130,14 @@ export default function LedgerDetails() {
         }, (error) => {
             console.error('Error fetching account titles:', error);
         });
-    
+        
         // Clean up the snapshot listeners
         return () => {
             if (unsubscribeLedger) unsubscribeLedger();
             if (unsubscribeAccountTitles) unsubscribeAccountTitles();
         };
     }, [ledgerId]);
+    
     
     
     //Right Click Functions
@@ -472,24 +472,39 @@ const handleAddEntry = async () => {
         try {
             const ledgerDocRef = doc(db, 'ledger', ledgerId);
             const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-    
+            
             // Check if the selected account title already exists
             const accountTitlesQuery = query(accountTitlesCollectionRef, where("accountTitle", "==", selectedAccountTitle));
             const accountTitlesSnapshot = await getDocs(accountTitlesQuery);
-    
+            
             let accountTitleDocRef;
             if (accountTitlesSnapshot.empty) {
-                // Add the new account title if it doesn't exist
+            
+                // Fetch all account titles to find the minimum position, sorted by position in ascending order
+                const allAccountTitlesSnapshot = await getDocs(query(accountTitlesCollectionRef, orderBy('position', 'asc')));
+                const existingAccountTitles = allAccountTitlesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Find the minimum position or default to 0 if no titles exist
+                const minPosition = existingAccountTitles.length > 0
+                    ? Math.min(...existingAccountTitles.map(title => title.position || 0))
+                    : 0; // Default to 0 if no account titles exist
+            
+                // Set the new position as minPosition - 1 to make it appear on top
+                const newPosition = minPosition - 1;
+            
+                // Add the new account title with the calculated position
                 accountTitleDocRef = await addDoc(accountTitlesCollectionRef, {
                     accountTitle: selectedAccountTitle,
                     accountCode: accountCode || null,
-                    accountType: accountType || null
+                    accountType: accountType || null,
+                    position: parseFloat(newPosition.toFixed(10)), // Ensure position is a float
                 });
             } else {
                 // Use the existing account title document reference
                 accountTitleDocRef = accountTitlesSnapshot.docs[0].ref;
             }
-    
+            
+
             const accountsSubcollectionRef = collection(accountTitleDocRef, 'accounts');
     
             // Fetch existing accounts and find the max position
@@ -955,6 +970,7 @@ const handleAddEntry = async () => {
                                 if (selectedAccount) {
                                     setAccountCode(selectedAccount.AccountCode);
                                     setAccountType(selectedAccount.AccountType);
+
                                 } else {
                                     setAccountCode('');
                                     setAccountType('');
