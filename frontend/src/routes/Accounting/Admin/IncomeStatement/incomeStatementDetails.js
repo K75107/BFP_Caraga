@@ -142,7 +142,7 @@ export default function IncomeStatement() {
                 {
                     name: "Maintenance and Other Operating Expenses",
                     children: accountTitles
-                        .filter(accountTitle => accountTitle.accountType === "Expenses") 
+                        .filter(accountTitle => accountTitle.accountType === "Expenses")
                         .map(accountTitle => ({
                             name: accountTitle.accountTitle,
                             amount: accountTitle.difference,
@@ -152,25 +152,14 @@ export default function IncomeStatement() {
         },
     ];
 
-    // Function to calculate total deficit/surplus
-    const calculateTotalDeficitSurplus = () => {
-        // Calculate total revenue by traversing through grandchildren
-        const totalRevenue = incomeStatementData
-            .flatMap(item => item.children) 
-            .flatMap(item => item.children) 
-            .reduce((sum, child) => sum + (child.children?.reduce((childSum, grandChild) => childSum + (grandChild.amount || 0), 0) || 0), 0); // Sum up grandchildren amounts
+    // Calculate total surplus/deficit using the new formula
+    const totalRevenues = incomeStatementData.find(item => item.name === "Revenues")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
+    const totalExpenses = incomeStatementData.find(item => item.name === "Expenses")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
 
-        // Calculate total expenses in the same way
-        const totalExpenses = incomeStatementData
-            .flatMap(item => item.children) // Get the children (e.g., "Service and Business Income", "Expenses")
-            .flatMap(item => item.children) // Get the next level of children (e.g., "Maintenance and Other Operating Expenses")
-            .reduce((sum, child) => sum + (child.children?.reduce((childSum, grandChild) => childSum + (grandChild.amount || 0), 0) || 0), 0); // Sum up grandchildren amounts
+    const totalSurplusDeficit = totalRevenues - totalExpenses;
 
-        return totalRevenue - totalExpenses; // Calculate surplus or deficit
-    };
-
-    // Use the updated calculateTotalDeficitSurplus function in your component
-    const totalDeficitSurplus = calculateTotalDeficitSurplus();
+    // Determine surplus or deficit
+    const surplusOrDeficit = totalSurplusDeficit > 0 ? "Total Surplus" : totalSurplusDeficit < 0 ? "Total Deficit" : "Break-even";
 
     // Recursive component to render rows with editable amount fields
     const Row = ({ item, depth = 0 }) => {
@@ -246,27 +235,35 @@ export default function IncomeStatement() {
 
             {/* TABLE */}
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" className="px-6 py-3">Account Description</th>
-                            <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheetData.ledgerYear || "N/A"}`}</th>
-                            <th scope="col" className="px-6 py-3 text-right">
-                                <span className="sr-only">View</span>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {incomeStatementData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} />
-                        ))}
-                    </tbody>
-                </table>
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto"> {/* Adjust 200px based on your layout */}
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" className="px-6 py-3">Account Description</th>
+                                <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheetData.ledgerYear || "N/A"}`}</th>
+                                <th scope="col" className="px-6 py-3 text-right">
+                                    <span className="sr-only">View</span>
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {incomeStatementData.map((item, index) => (
+                                <Row key={index} item={item} depth={1} />
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Display total deficit/surplus below the table */}
+            {/* Display total surplus/deficit below the table */}
             <div className="font-semibold text-right mt-4">
-                Total Deficit/Surplus: {totalDeficitSurplus.toFixed(2)}
+                <h1 className="text-[20px] font-semibold text-[#1E1E1E] font-poppins">
+                    {surplusOrDeficit}:
+                    <span className="ml-2">
+                        {Math.abs(totalSurplusDeficit).toLocaleString()}
+                    </span>
+                </h1>
             </div>
 
             {showModal && (
@@ -302,9 +299,8 @@ export default function IncomeStatement() {
 
                         <div className="flex justify-end py-3 px-4">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${
-                                    !selectedLedger && "opacity-50 cursor-not-allowed"
-                                }`}
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"
+                                    }`}
                                 onClick={() => {
                                     // Handle selection
                                     if (selectedLedger) {
