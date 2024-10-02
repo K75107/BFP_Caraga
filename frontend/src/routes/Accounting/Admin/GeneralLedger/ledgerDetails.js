@@ -714,7 +714,6 @@ const handleAddEntry = async () => {
             <hr className="border-t border-[#7694D4] mt-1 mb-6" />
 
             {/*TABLE*/}
-            <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-screen ">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
@@ -918,12 +917,11 @@ const handleAddEntry = async () => {
                                 );
                             })
                         )}
-</tbody>
-                        
+                    </tbody>             
 
                 </table>
             </div>
-            </div>
+
 
             
              {/*MODAL*/}
