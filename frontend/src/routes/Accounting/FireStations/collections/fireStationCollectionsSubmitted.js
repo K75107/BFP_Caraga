@@ -8,7 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
-
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdKeyboardArrowDown } from "react-icons/md";
 export default function FireStationCollectionsSubmitted() {
 
 
@@ -98,33 +99,39 @@ const formatTimestamp = (timestamp) => {
 
 // For groupings and Toggle of view
 const groupByDate = (collections, selectedCategory) => {
-    return collections.reduce((grouped, collection) => {
-        const createdAt = collection.createdAt ? formatTimestamp(collection.createdAt) : null;
-        let groupKey;
-        
+    // First, sort the collections by date_submitted
+    const sortedCollections = collections.sort((a, b) => {
+        const dateA = a.date_submitted ? a.date_submitted.toDate() : new Date(0); // Fallback to epoch if date_submitted is missing
+        const dateB = b.date_submitted ? b.date_submitted.toDate() : new Date(0);
+        return dateA - dateB; // Ascending order (use dateB - dateA for descending)
+    });
 
-        if (createdAt) {
-            if (selectedCategory === 'month') {
-                // Format as "Month Year", e.g. "January 2024"
-                groupKey = createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            } else if (selectedCategory === 'year') {
-                // Format as "Year", e.g. "2024"
-                groupKey = createdAt.toLocaleDateString('en-US', { year: 'numeric' });
+    return sortedCollections.reduce((grouped, collection) => {
+            const date_submitted = collection.date_submitted ? formatTimestamp(collection.date_submitted) : null;
+            let groupKey;
+            
+            if (date_submitted) {
+                if (selectedCategory === 'month') {
+                    // Format as "Month Year", e.g. "January 2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                } else if (selectedCategory === 'year') {
+                    // Format as "Year", e.g. "2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { year: 'numeric' });
+                } else {
+                    // Format as "Month Day, Year", e.g. "January 7, 2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                }
             } else {
-                // Format as "Month Day, Year", e.g. "January 7, 2024"
-                groupKey = createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                groupKey = "N/A";
             }
-        } else {
-            groupKey = "N/A";
-        }
 
-        if (!grouped[groupKey]) {
-            grouped[groupKey] = [];
-        }
-        grouped[groupKey].push(collection);
-        return grouped;
-    }, {});
-};
+            if (!grouped[groupKey]) {
+                grouped[groupKey] = [];
+            }
+            grouped[groupKey].push(collection);
+            return grouped;
+        }, {});
+    };
 
     // Usage
     const groupedCollections = groupByDate(firestationCollection, selectedCategory);
@@ -316,80 +323,96 @@ const groupByDate = (collections, selectedCategory) => {
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-3 w-36">Date Submitted</th>
-                            <th scope="col" className="px-2 py-3 w-40">Collecting Officer</th>
-                            <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
-                            <th scope="col" className="px-2 py-3 w-36">OR Number</th>
-                            <th scope="col" className="px-2 py-3 w-36">LC Number</th>
-                            <th scope="col" className="px-2 py-3 w-36">Name of Payor</th>
-                            <th scope="col" className="px-2 py-3 w-36">Nature of Collection</th>
-                            <th scope="col" className="px-2 py-3 w-36">Amount</th>
-                            
+                            <th scope="col" className="px-2 py-2 w-40">Date Submitted</th>
+                            <th scope="col" className="px-2 py-2 w-40">Collecting Officer</th>
+                            <th scope="col" className="px-2 py-2 w-36">Date Collected</th>
+                            <th scope="col" className="px-2 py-2 w-36">OR Number</th>
+                            <th scope="col" className="px-2 py-2 w-36">LC Number</th>
+                            <th scope="col" className="px-2 py-2 w-36">Name of Payor</th>
+                            <th scope="col" className="px-2 py-2 w-36">Nature of Collection</th>
+                            <th scope="col" className="px-2 py-2 w-36">Amount</th>
+                            <th scope="col" className="w-4"></th>
                         </tr>
                     </thead>
                 </table>
 
                 <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
                 <table className="w-full overflow-x-visible">
-            <tbody>
-                {/* Iterate over grouped collections by createdAt date */}
-                {Object.keys(groupedCollections).map((date) => (
-                    <React.Fragment key={date}>
-                        {/* Render clickable header row for the date */}
-                        <tr 
-                            className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                            onClick={() => toggleGroup(date)}
-                        >
-                            <td className="table-cell px-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
-                                {date}
-                            </td>
-                            {/* Empty cells for alignment */}
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                        </tr>
+                <tbody>
+                    {/* Iterate over grouped collections by date_submitted date */}
+                    {Object.keys(groupedCollections).map((date) => {
+                        // Calculate the total amount for each date group
+                        const totalAmount = groupedCollections[date].reduce(
+                            (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
+                            0
+                        );
 
-                        {/* Conditionally render rows under the current date header */}
-                        {expandedGroups[date] &&
-                        groupedCollections[date].map((collection) => {
+                        return (
+                            <React.Fragment key={date}>
+                                {/* Render clickable header row for the date */}
+                                <tr
+                                    className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                    onClick={() => toggleGroup(date)}
+                                >
+                                    <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative">
+                                        {date}
+                                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                            {expandedGroups[date] ? (
+                                                <MdKeyboardArrowDown size={20} style={{ display: 'inline' }} />
+                                            ) : (
+                                                <MdKeyboardArrowRight size={20} style={{ display: 'inline' }} />
+                                            )}
+                                        </span>
+                                    </td>
 
-                            // Convert Firestore Timestamp to JavaScript Date and format it
-                            const submittedDate = collection.createdAt?.toDate();
-                            let formattedDate;
+                                    {/* Empty cells for alignment */}
+                                    <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
+                                        {/* Display the total amount */}
+                                        {totalAmount.toFixed(2)}
+                                    </td>
+                                </tr>
 
-                            //Change the display in submitted Date
-                            if(selectedCategory=== 'year'){
-                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric'});
-                            } else if(selectedCategory ==='month'){
-                                formattedDate = submittedDate.toLocaleDateString('en-US', {day: 'numeric',});
-                            } else{
-                                formattedDate = '';
-                            }
+                                {/* Conditionally render rows under the current date header */}
+                                {expandedGroups[date] &&
+                                    groupedCollections[date].map((collection) => {
+                                        const submittedDate = collection.date_submitted?.toDate();
+                                        let formattedDate;
 
+                                        if (selectedCategory === 'year') {
+                                            formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                        } else if (selectedCategory === 'month') {
+                                            formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
+                                        } else {
+                                            formattedDate = '';
+                                        }
 
-                            return (
-                            <tr
-                                key={collection.id}
-                                className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                            >
-                                <td className="table-cell px-2 w-40 text-[12px] pl-10">{formattedDate}</td>
-                                <td className="table-cell px-2 w-40 text-[12px]">{collection.collectingOfficer}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
-                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
-                            </tr>
-                            );
-                        })}
-                    </React.Fragment>
-                ))}
-            </tbody>
+                                        return (
+                                            <tr
+                                                key={collection.id}
+                                                className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                                            >
+                                                <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectingOfficer}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
+                                            </tr>
+                                        );
+                                    })}
+                            </React.Fragment>
+                        );
+                    })}
+                </tbody>
+
         </table>
                 </div>
             </div>
