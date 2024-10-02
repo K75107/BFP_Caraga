@@ -37,7 +37,7 @@ export default function FireStationCollectionsSubmitted() {
     // Define state for firestation collections
     const [logUserID, setlogUserID] = useState(null);  // Set initial value to null
     const [firestationCollection, setFirestationCollection] = useState([]);
-    
+
     useEffect(() => {
         // Setup listener for the submitted data
         const submittedCollectionRef = collection(db, 'submittedReportsCollections');
@@ -101,6 +101,7 @@ const groupByDate = (collections, selectedCategory) => {
     return collections.reduce((grouped, collection) => {
         const createdAt = collection.createdAt ? formatTimestamp(collection.createdAt) : null;
         let groupKey;
+        
 
         if (createdAt) {
             if (selectedCategory === 'month') {
@@ -228,11 +229,11 @@ const groupByDate = (collections, selectedCategory) => {
             <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
 
-              {/* Actions Dropdown */}
+              {/* Sort By Dropdown */}
               <Dropdown
                 label={
                   <div className="flex items-center">
-                    <span className="mr-2">Actions</span>
+                    <span className="mr-2">Sort</span>
                     <BsChevronDown className="w-4 h-4" /> {/* Chevron Down Icon */}
                   </div>
                 }
@@ -307,8 +308,6 @@ const groupByDate = (collections, selectedCategory) => {
 
         
 
-          
-
 
 
             {/* TABLE */}
@@ -355,20 +354,39 @@ const groupByDate = (collections, selectedCategory) => {
                         </tr>
 
                         {/* Conditionally render rows under the current date header */}
-                        {expandedGroups[date] && (
-                            groupedCollections[date].map((collection) => (
-                                <tr key={collection.id} className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50">
-                                    <td className="table-cell px-2 w-40 text-[12px]"></td>
-                                    <td className="table-cell px-2 w-40 text-[12px]">{collection.collectingOfficer}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
-                                </tr>
-                            ))
-                        )}
+                        {expandedGroups[date] &&
+                        groupedCollections[date].map((collection) => {
+
+                            // Convert Firestore Timestamp to JavaScript Date and format it
+                            const submittedDate = collection.createdAt?.toDate();
+                            let formattedDate;
+
+                            //Change the display in submitted Date
+                            if(selectedCategory=== 'year'){
+                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric'});
+                            } else if(selectedCategory ==='month'){
+                                formattedDate = submittedDate.toLocaleDateString('en-US', {day: 'numeric',});
+                            } else{
+                                formattedDate = '';
+                            }
+
+
+                            return (
+                            <tr
+                                key={collection.id}
+                                className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                            >
+                                <td className="table-cell px-2 w-40 text-[12px] pl-10">{formattedDate}</td>
+                                <td className="table-cell px-2 w-40 text-[12px]">{collection.collectingOfficer}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
+                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
+                            </tr>
+                            );
+                        })}
                     </React.Fragment>
                 ))}
             </tbody>
