@@ -30,11 +30,48 @@ export default function CollectionsList(){
     return(
         <Fragment>
             
-            <div className="flex justify-between w-full">
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Collections Report</h1>
-
+            <div className="flex flex-col space-y-6 w-full mb-2">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                Fire Station Reports - Collections
+              </h1>
             </div>
-
+          </div>
+        {/* Unsubmitted and Submitted */}
+        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                <ul
+                className="flex flex-wrap -mb-px text-sm font-medium text-center"
+                id="default-styled-tab"
+                role="tablist"
+                >
+                <li className="me-2" role="presentation">
+                    <button
+                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Unsubmitted
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    // onClick={() => navigate("/main/firestation/collections/submitted")}
+                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
+                    id="dashboard-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="dashboard"
+                    aria-selected="false"
+                    >
+                    Submitted
+                    </button>
+                </li>
+                </ul>
+            </div>
             <hr className="border-t border-[#7694D4] my-4" />
             
             <div className="flex flex-row">
