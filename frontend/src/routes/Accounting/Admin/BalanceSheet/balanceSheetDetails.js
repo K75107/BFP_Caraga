@@ -42,7 +42,7 @@ export default function BalanceSheet() {
 
                             // Fetch accounts subcollection for each account title
                             const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            const accountsSnap = await getDocs(accountsRef);    
+                            const accountsSnap = await getDocs(accountsRef);
 
                             // Initialize sums for debit and credit
                             let totalDebit = 0;
@@ -58,11 +58,15 @@ export default function BalanceSheet() {
 
 
                                 // Sum up debit and credit for each document
-                                totalDebit += accountData.debit || 0;  // Default to 0 if debit is missing
-                                totalCredit += accountData.credit || 0; // Default to 0 if credit is missing
+                                // totalDebit += accountData.debit || 0;  // Default to 0 if debit is missing
+                                // totalCredit += accountData.credit || 0; // Default to 0 if credit is missing
 
-                                console.log('total credit',totalCredit);
-                                console.log('total debit',totalDebit)
+                                totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+
+
+                                console.log('total credit', totalCredit);
+                                console.log('total debit', totalDebit)
 
                                 return accountData;
                             });
@@ -144,6 +148,163 @@ export default function BalanceSheet() {
                             ],
 
                         },
+                        {
+                            name: "Receivables",
+                            children: [
+                                {
+                                    name: "Inter-Agency Receivables",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Inter-Agency Receivables")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Other Receivables",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Other Receivables")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                            ],
+                        },
+                        {
+                            name: "Inventories",
+                            children: [
+                                {
+                                    name: "Inventory Held For Consumption",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Inventory Held For Consumption")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Semi-Expendable Machinery and Equipment",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Semi-Expendable Machinery and Equipment")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                            ],
+                        },
+                        {
+                            name: "Other Current Assets",
+                            children: [
+                                {
+                                    name: "Advances",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Advances")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Prepayments",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Prepayments")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    name: "Non-Current Assets",
+                    children: [
+                        {
+                            name: "Property, Plant and Equipment",
+                            children: [
+                                {
+                                    name: "Land",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Land")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Building and Other Structures",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Building and Other Structures")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Machinery and Equipment",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Machinery and Equipment")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Transportation Equipment",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Transportation Equipment")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Furniture, Fixture, and Books",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Furniture, Fixture, and Books")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Other Property, Plant and Equipment",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Other Property, Plant and Equipment")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                                {
+                                    name: "Construction in Progress",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Construction in Progress")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                            ],
+
+                        },
+                        {
+                            name: "Other Non-Current Assets",
+                            children: [
+                                {
+                                    name: "Prepayments",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Prepayments")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+                                },
+                            ],
+                        },
                     ],
                 },
             ],
@@ -152,21 +313,97 @@ export default function BalanceSheet() {
             name: "Liabilities",
             children: [
                 {
-                    name: "Financial Liabilities",
+                    name: "Current Liabilities",
                     children: [
                         {
-                            name: "Payables",
-                            amount: 200000,
+                            name: "Financial Liabilities",
                             children: [
-                                { name: "Accounts Payable", amount: 100000 },
-                                { name: "Due to Officers & Employees", amount: 100000 },
+                                {
+                                    name: "Payables",
+                                    children: accountTitles
+                                        .filter(accountTitle => accountTitle.assetType === "Payables")
+                                        .map((accountTitle) => ({
+                                            name: accountTitle.accountTitle,
+                                            amount: accountTitle.difference,
+                                        })),
+
+                                },
                             ],
                         },
                     ],
                 },
+                {
+                    name: "Non-Current Liabilities",
+                    children: accountTitles
+                        .filter(accountTitle => accountTitle.assetType === "Non-Current Liabilities")
+                        .map((accountTitle) => ({
+                            name: accountTitle.accountTitle,
+                            amount: accountTitle.difference,
+                        })),
+                },
+            ],
+        },
+        {
+            name: "Net Assets/Equity",
+            children: [
+                {
+                    name: "Equity",
+                    children: [
+                        {
+                            name: "Government Equity",
+                            children: accountTitles
+                                .filter(accountTitle => accountTitle.assetType === "Government Equity")
+                                .map((accountTitle) => ({
+                                    name: accountTitle.accountTitle,
+                                    amount: accountTitle.difference,
+                                })),
+                        },
+                    ],
+                },
+
             ],
         },
     ];
+
+    // Group data for the cards
+    const groupData = [
+        {
+            //GROUP 2
+            items: [
+                { label: "Total Current Assets", value: "100,000" },
+                { label: "Total Non-Current Assets", value: "200,000" },
+                { label: "TOTAL ASSETS", value: "300,000" }
+            ]
+        },
+        {
+            // GROUP 2
+            items: [
+                { label: "Total Current Liabilities", value: "50,000" },
+                { label: "Total Non-Current Liabilities", value: "80,000" },
+                { label: "TOTAL LIABILITIES", value: "130,000" }
+            ]
+        },
+        {
+            // GROUP 3
+            items: [
+                { label: "Total Assets Less Total Liabilities", value: "170,000" },
+                { label: "Total Net Assets/Equity", value: "170,000" }
+            ]
+        }
+    ];
+
+    // Card component for group data
+    const Card = ({ title, items }) => (
+        <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-4">{title}</h3>
+            {items.map((item, index) => (
+                <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
+                    <span className="font-medium">{item.label}: </span>
+                    {item.value}
+                </p>
+            ))}
+        </div>
+    );
 
     // Recursive component to render rows
     const Row = ({ item, depth = 0 }) => {
@@ -227,7 +464,7 @@ export default function BalanceSheet() {
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
@@ -238,10 +475,17 @@ export default function BalanceSheet() {
                     </thead>
                     <tbody>
                         {balanceSheetData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> // Start with depth 0 for main categories
+                            <Row key={index} item={item} depth={1} /> // Start with depth 1 for main categories
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Group Data Cards */}
+            <div className="flex flex-wrap justify-evenly mt-8">    
+                {groupData.map((group, index) => (
+                    <Card key={index} title={group.title} items={group.items} />
+                ))}
             </div>
         </Fragment>
     );
