@@ -254,6 +254,10 @@ const groupByDate = (collections, selectedCategory) => {
                 <Dropdown.Item>Delete all</Dropdown.Item>
               </Dropdown>
 
+
+
+
+ {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}         
               {/* Filter Dropdown */}
               <Dropdown
                 label={
@@ -266,16 +270,16 @@ const groupByDate = (collections, selectedCategory) => {
                 dismissOnClick={false}
                 inline={true}
                 arrowIcon={false} // Disabled default arrow icon
-                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto  hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
               >
 
-            {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}                
-                <div className="p-3">
-                    <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+
+                <div className="p-3 w-40">
+                    <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white ">
                         Category
                     </h6>
-                    <ul className="space-y-2 text-sm">
-                        <li className="flex items-center">
+                    <ul className="space-y-2 text-sm ">
+                        <li className="flex items-center hover:bg-gray-100 p-1">
                         <Checkbox
                             id="year"
                             label="Year"
@@ -284,7 +288,7 @@ const groupByDate = (collections, selectedCategory) => {
                         />
                         <span className="ml-2">Year</span>
                         </li>
-                        <li className="flex items-center">
+                        <li className="flex items-center hover:bg-gray-100 p-1">
                         <Checkbox
                             id="month"
                             label="Month"
@@ -293,7 +297,7 @@ const groupByDate = (collections, selectedCategory) => {
                         />
                         <span className="ml-2">Month</span>
                         </li>
-                        <li className="flex items-center">
+                        <li className="flex items-center hover:bg-gray-100 p-1">
                         <Checkbox
                             id="day"
                             label="day"

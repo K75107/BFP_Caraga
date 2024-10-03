@@ -86,8 +86,11 @@ const Sidebar = () => {
       { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
       { path: '/main/changesInEquity', icon: isActive('/main/changesInEquity') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
       { section: 'Reports' },
-      { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits' },
-      { path: '/main/collections', icon: isActive('/main/collections') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections' },
+      { path: '/main/reports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Deposits and Collections' },
+        // Subcategories
+        { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
+        { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
+
     ],
     "fire-stations": [
       { path: '/main/firestation/dashboard', icon: isActive('/main/firestation/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
@@ -132,12 +135,13 @@ const Sidebar = () => {
               </li>
             ) : (
               <li key={item.path}>
-                <Link to={item.path} className={`whitespace-nowrap flex items-center pl-2 py-2 rounded-md font-normal ${isActive(item.path) ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold' : 'hover:bg-color-lighter-gray'}`}>
-                  {item.icon}
-                  <div className={`${isCollapsed ? 'hidden' : 'block'} ml-3 py-0.5`}>
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                </Link>
+                <Link to={item.path} className={`whitespace-nowrap flex items-center ${item.indent ? 'pl-6' : 'pl-2'} py-2 rounded-md font-normal ${isActive(item.path) ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold' : 'hover:bg-color-lighter-gray'}`}>
+                {item.icon}
+                <div className={`${isCollapsed ? 'hidden' : 'block'} ml-3 py-0.5`}>
+                  <span className="text-sm">{item.label}</span>
+                </div>
+              </Link>
+
               </li>
             )
           )}
