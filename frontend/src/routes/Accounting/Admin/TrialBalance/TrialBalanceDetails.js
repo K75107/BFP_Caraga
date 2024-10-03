@@ -11,6 +11,9 @@ export default function TrialBalanceDetails() {
     const { trialbalanceID } = useParams(); 
     const [loading, setLoading] = useState(false);
 
+    const [totalDebit, setTotalDebit] = useState(0);
+    const [totalCredit, setTotalCredit] = useState(0);
+
     // Helper function to filter accounts by date range
     const isWithinDateRange = (accountDate, startDate, endDate) => {
         let accountTimestamp;
@@ -43,88 +46,87 @@ export default function TrialBalanceDetails() {
                 console.error('trialbalanceID is not provided.');
                 return;
             }
-
+        
             try {
-                // Fetch the trial balance document to get the ledgerID, start_date, and end_date
                 const trialBalanceDocRef = doc(db, 'trialbalance', trialbalanceID);
                 const trialBalanceDoc = await getDoc(trialBalanceDocRef);
-
+        
                 if (!trialBalanceDoc.exists()) {
                     console.error("Trial balance document not found");
                     setLoading(false); // Stop loading on error
                     return;
                 }
-
+        
                 const trialBalanceData = trialBalanceDoc.data();
                 const ledgerID = trialBalanceData.ledger;
                 const startDate = trialBalanceData.start_date.toDate(); // Firestore Timestamp to JS Date
                 const endDate = trialBalanceData.end_date.toDate(); // Firestore Timestamp to JS Date
-
+        
                 if (!ledgerID) {
                     console.error('Ledger ID is missing from the trial balance document.');
                     return;
                 }
-
-                // Fetch account titles from the ledger using ledgerID
+        
                 const ledgerDocRef = doc(db, 'ledger', ledgerID);
                 const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
                 const accountTitlesSnapshot = await getDocs(accountTitlesCollectionRef);
-
+        
                 let trialData = [];
-
-                // Loop through each account title
+                let debitSum = 0; // For summing total debit
+                let creditSum = 0; // For summing total credit
+        
                 for (const accountTitleDoc of accountTitlesSnapshot.docs) {
                     const accountTitleData = accountTitleDoc.data();
                     const accountsCollectionRef = collection(accountTitleDoc.ref, 'accounts');
                     const accountsSnapshot = await getDocs(accountsCollectionRef);
-
+        
                     let totalDebit = 0;
                     let totalCredit = 0;
                     let hasValidAccounts = false;
-
-                    // Sum debit and credit for accounts within the date range
+        
                     accountsSnapshot.forEach(accountDoc => {
                         const accountData = accountDoc.data();
                         const accountDate = accountData.date;
-
-                        // Check if the account date is within the start and end dates
+        
                         if (isWithinDateRange(accountDate, startDate, endDate)) {
-                            const debit = parseFloat(accountData.debit) || 0; // Parse as float
-                            const credit = parseFloat(accountData.credit) || 0; // Parse as float
-
+                            const debit = parseFloat(accountData.debit) || 0;
+                            const credit = parseFloat(accountData.credit) || 0;
+        
                             totalDebit += debit;
                             totalCredit += credit;
-                            hasValidAccounts = true; // Flag that this account title has valid accounts
+                            hasValidAccounts = true;
                         }
                     });
-
-                    // Only add this account title to the trialData if it has valid accounts
+        
                     if (hasValidAccounts) {
-                        // Calculate total debit and credit using the existing logic
                         const debitBalance = totalDebit - totalCredit > 0 ? totalDebit - totalCredit : 0;
                         const creditBalance = totalCredit - totalDebit > 0 ? totalCredit - totalDebit : 0;
-
+        
                         trialData.push({
-                            particulars: accountTitleData.accountTitle, // Account title
-                            accountCode: accountTitleData.accountCode, // Account code
-                            debit: debitBalance, // Show calculated debit balance
-                            credit: creditBalance, // Show calculated credit balance
+                            particulars: accountTitleData.accountTitle,
+                            accountCode: accountTitleData.accountCode,
+                            debit: debitBalance,
+                            credit: creditBalance,
                         });
-                    } else {
-                        // Debugging: Log if no valid accounts found for the account title
-                        console.log('No valid accounts for Account Title:', accountTitleData.accountTitle);
+        
+                        // Sum up the total debit and credit
+                        debitSum += debitBalance;
+                        creditSum += creditBalance;
                     }
                 }
-
+        
                 // Update state with the summarized trial balance data
                 setTrialBalanceData(trialData);
                 setTrialBalanceDescription(trialBalanceData.description || 'Trial Balance');
+                setTotalDebit(debitSum); // Set total debit state
+                setTotalCredit(creditSum); // Set total credit state
                 setLoading(false); // Stop loading after fetching data
             } catch (error) {
                 console.error("Error fetching trial balance data:", error);
                 setLoading(false); // Stop loading on error
             }
         };
+        
 
         fetchTrialBalanceData();
     }, [trialbalanceID]);
@@ -173,7 +175,8 @@ const exportToExcel = async () => {
             // Convert zero values to an empty string for export
             entry.debit === 0 || entry.debit === "" ? "" : entry.debit,
             entry.credit === 0 || entry.credit === "" ? "" : entry.credit
-        ])
+        ]),
+        ["TOTAL", "", totalDebit, totalCredit],
     ];
 
     // Append the rows to the worksheet
@@ -346,6 +349,39 @@ const exportToExcel = async () => {
         }
     });
 
+    const totalRowIndex = addedRows.length; // Get the index of the last added row (total row)
+    const totalRow = worksheet.getRow(totalRowIndex); // Access the total row
+
+    totalRow.eachCell((cell, colNumber) => {
+        // Apply bold font and center alignment for the total row
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Apply specific styles based on the column
+        if (colNumber === 3 || colNumber === 4) { // Debit and Credit columns
+            cell.numFmt = '#,##0.00'; // Number format with commas and two decimal places
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'double' }, // Double border for total row
+                right: { style: 'thin' }
+            };
+        } else {
+            // For other columns (e.g., particulars and account code)
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '95B3D7' }
+            };
+        }
+    });
+
     // Add the logo to the worksheet at a specific position
     worksheet.addImage(logoId, {
         tl: { col: 0.2, row: 0 }, // Top-left corner of the image (adjust as needed)
@@ -450,27 +486,26 @@ const exportToExcel = async () => {
                     </table>
                 </div>
                 
-                {/*TOTAL*/}
+                {/* TOTAL */}
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-[18px] font-bold font-poppins text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
-                            <tr>
-                                <th scope="col" className="px-2 py-3 w-72">
-                                    TOTAL
-                                </th>
-                                <th scope="col" className="px-2 py-3 w-48">
+                        <tr>
+                            <th scope="col" className="px-2 py-3 w-72">
+                                TOTAL
+                            </th>
+                            <th scope="col" className="px-2 py-3 w-48"></th>
+                            {/* TOTAL DEBIT */}
+                            <th scope="col" className="px-2 py-3 w-48">
+                                {totalDebit.toLocaleString()}
+                            </th>
+                            {/* TOTAL CREDIT */}
+                            <th scope="col" className="px-2 py-3 w-48">
+                                {totalCredit.toLocaleString()}
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
 
-                                </th>
-                                {/*TOTAL DEBIT*/}
-                                <th scope="col" className="px-2 py-3 w-48">
-                                    0
-                                </th>
-                                {/*TOTAL CREDIT*/}
-                                <th scope="col" className="px-2 py-3 w-48">
-                                    0
-                                </th>
-                            </tr>
-                        </thead>
-                  </table>
                 
             </div>
         </Fragment>
