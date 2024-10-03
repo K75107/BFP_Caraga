@@ -12,6 +12,31 @@ export default function BalanceSheet() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Spinner Component
+    const Spinner = () => (
+        <div className="flex justify-center items-center h-screen">
+            <div role="status">
+                <svg
+                    aria-hidden="true"
+                    className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" // Set to w-8 h-8 to match original
+                    viewBox="0 0 100 101"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                        fill="currentColor"
+                    />
+                    <path
+                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                        fill="currentFill"
+                    />
+                </svg>
+                <span className="sr-only">Loading...</span>
+            </div>
+        </div>
+    );
+
     // Fetch the balance sheet description and its associated ledger year
     const getBalanceSheetDescription = async () => {
         try {
@@ -55,12 +80,6 @@ export default function BalanceSheet() {
                                     ...accountDoc.data(),
                                 };
 
-
-
-                                // Sum up debit and credit for each document
-                                // totalDebit += accountData.debit || 0;  // Default to 0 if debit is missing
-                                // totalCredit += accountData.credit || 0; // Default to 0 if credit is missing
-
                                 totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
                                 totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
 
@@ -71,10 +90,9 @@ export default function BalanceSheet() {
                                 return accountData;
                             });
 
-
-
                             // After processing all account documents, you can attach the difference (debit - credit) to the account title
                             titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
+                            titleData.differenceContra = totalCredit - totalDebit;
 
 
 
@@ -110,258 +128,85 @@ export default function BalanceSheet() {
     }, [balanceSheetID]);
 
     if (loading) {
-        return <p>Loading...</p>;
+        return <Spinner />;
     }
 
     if (error) {
         return <p>{error}</p>;
     }
+
+    // Calculate total amount for Assets
+    const totalAssets = accountTitles
+        .filter(accountTitle =>
+            accountTitle.accountType === "Assets" ||
+            accountTitle.accountType === "Contra Assets"
+        )
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.accountType === "Contra Assets"
+                ? -accountTitle.differenceContra // Subtract differenceContra for Contra Assets
+                : accountTitle.difference;        // Use difference for regular Assets
+            return total + amount; // Sum the amounts
+        }, 0);
+
+    // Calculate total amount for Liabilities
+    const totalLiabilities = accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Liabilities")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.differenceContra;
+            return total + amount;
+        }, 0);
+
+    // Calculate base equity as Assets - Liabilities
+    let totalEquity = totalAssets - totalLiabilities;
+
+    // Add any Equity accounts to the calculated equity
+    totalEquity += accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Equity")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.differenceContra; // Use differenceContra for Equity accounts if applicable
+            return total + amount; // Sum equity amounts
+        }, 0);
+
     // Data structure for balance sheet (you can replace this with your actual data from Firebase)
     const balanceSheetData = [
         {
             name: "Assets",
-            children: [
-                {
-                    name: "Current Assets",
-                    children: [
-                        {
-                            name: "Cash and Cash Equivalents",
-                            children: [
-                                {
-                                    name: "Cash on Hand",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Cash on Hand")  // Filter for "Cash on Hand" assets
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Treasury/Agency Cash Accounts",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Treasury/Agency Cash Accounts")  // Filter for "Treasury/Agency Cash Accounts" assets
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-
-                        },
-                        {
-                            name: "Receivables",
-                            children: [
-                                {
-                                    name: "Inter-Agency Receivables",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Inter-Agency Receivables")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Other Receivables",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Other Receivables")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-                        },
-                        {
-                            name: "Inventories",
-                            children: [
-                                {
-                                    name: "Inventory Held For Consumption",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Inventory Held For Consumption")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Semi-Expendable Machinery and Equipment",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Semi-Expendable Machinery and Equipment")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-                        },
-                        {
-                            name: "Other Current Assets",
-                            children: [
-                                {
-                                    name: "Advances",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Advances")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Prepayments",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Prepayments")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    name: "Non-Current Assets",
-                    children: [
-                        {
-                            name: "Property, Plant and Equipment",
-                            children: [
-                                {
-                                    name: "Land",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Land")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Building and Other Structures",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Building and Other Structures")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Machinery and Equipment",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Machinery and Equipment")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Transportation Equipment",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Transportation Equipment")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Furniture, Fixture, and Books",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Furniture, Fixture, and Books")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Other Property, Plant and Equipment",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Other Property, Plant and Equipment")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                                {
-                                    name: "Construction in Progress",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Construction in Progress")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-
-                        },
-                        {
-                            name: "Other Non-Current Assets",
-                            children: [
-                                {
-                                    name: "Prepayments",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Prepayments")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-                                },
-                            ],
-                        },
-                    ],
-                },
-            ],
+            children: accountTitles
+                .filter(accountTitle =>
+                    accountTitle.accountType === "Assets" ||
+                    accountTitle.accountType === "Contra Assets" // Filter for "Assets/Contra Assets" 
+                )
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.accountType === "Contra Assets"
+                        ? accountTitle.differenceContra // Use differenceContra for Contra Assets
+                        : accountTitle.difference,      // Use difference for regular Assets
+                })),
+            amount: totalAssets // Add the calculated total amount for Assets
         },
         {
             name: "Liabilities",
-            children: [
-                {
-                    name: "Current Liabilities",
-                    children: [
-                        {
-                            name: "Financial Liabilities",
-                            children: [
-                                {
-                                    name: "Payables",
-                                    children: accountTitles
-                                        .filter(accountTitle => accountTitle.assetType === "Payables")
-                                        .map((accountTitle) => ({
-                                            name: accountTitle.accountTitle,
-                                            amount: accountTitle.difference,
-                                        })),
-
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    name: "Non-Current Liabilities",
-                    children: accountTitles
-                        .filter(accountTitle => accountTitle.assetType === "Non-Current Liabilities")
-                        .map((accountTitle) => ({
-                            name: accountTitle.accountTitle,
-                            amount: accountTitle.difference,
-                        })),
-                },
-            ],
+            children: accountTitles
+                .filter(accountTitle =>
+                    accountTitle.accountType === "Liabilities"
+                )
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.differenceContra,
+                })),
+            amount: totalLiabilities
         },
         {
-            name: "Net Assets/Equity",
-            children: [
-                {
-                    name: "Equity",
-                    children: [
-                        {
-                            name: "Government Equity",
-                            children: accountTitles
-                                .filter(accountTitle => accountTitle.assetType === "Government Equity")
-                                .map((accountTitle) => ({
-                                    name: accountTitle.accountTitle,
-                                    amount: accountTitle.difference,
-                                })),
-                        },
-                    ],
-                },
-
-            ],
+            name: "Equity",
+            children: accountTitles
+                .filter(accountTitle =>
+                    accountTitle.accountType === "Equity"
+                )
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.differenceContra,
+                })),
+            amount: totalEquity // Display the updated equity (Assets - Liabilities + any Equity accounts)
         },
     ];
 
@@ -482,7 +327,7 @@ export default function BalanceSheet() {
             </div>
 
             {/* Group Data Cards */}
-            <div className="flex flex-wrap justify-evenly mt-8">    
+            <div className="flex flex-wrap justify-evenly mt-8">
                 {groupData.map((group, index) => (
                     <Card key={index} title={group.title} items={group.items} />
                 ))}
