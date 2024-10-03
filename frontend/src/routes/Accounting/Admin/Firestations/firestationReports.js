@@ -3,7 +3,7 @@ import { Fragment } from "react/jsx-runtime"
 import { db } from "../../../../config/firebase-config";
 import { doc,getDocs,collection } from "firebase/firestore";
 
-export default function CollectionsList(){
+export default function FirestationReports(){
     
     const [collectionsReport, setCollectionsReport] = useState([]);
 
@@ -33,7 +33,7 @@ export default function CollectionsList(){
             <div className="flex flex-col space-y-6 w-full mb-2">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-semibold text-gray-800">
-                Fire Station Reports - Collections
+                Fire Station Reports
               </h1>
             </div>
           </div>
@@ -54,7 +54,20 @@ export default function CollectionsList(){
                     aria-controls="profile"
                     aria-selected="false"
                     >
-                    Unsubmitted
+                    Overview
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Collections
                     </button>
                 </li>
                 <li className="me-2" role="presentation">
@@ -67,12 +80,12 @@ export default function CollectionsList(){
                     aria-controls="dashboard"
                     aria-selected="false"
                     >
-                    Submitted
+                    Deposits
                     </button>
                 </li>
                 </ul>
             </div>
-            <hr className="border-t border-[#7694D4] my-4" />
+                <hr className="border-t border-[#7694D4] my-4" />
             
             <div className="flex flex-row">
             
