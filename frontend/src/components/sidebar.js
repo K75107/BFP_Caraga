@@ -27,7 +27,8 @@ const Sidebar = () => {
   const isActive = (path) => {
     const currentPath = location.pathname;
     if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger') || path === '/main/TrialBalance' && currentPath.startsWith('/main/TrialBalance') ||
-      (path === '/main/balanceSheet' && currentPath.startsWith('/main/balanceSheet'))) {
+      (path === '/main/balanceSheet' && currentPath.startsWith('/main/balanceSheet')) || (path === '/main/incomeStatement' && currentPath.startsWith('/main/incomeStatement')) 
+      || (path === '/main/collections' && currentPath.startsWith('/main/collections'))) {
       return true;
     }
     return currentPath === path;
