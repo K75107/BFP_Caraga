@@ -15,7 +15,7 @@ export default function CollectionsPerStation() {
             <div className="flex flex-col space-y-6 w-full mb-2">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-semibold text-gray-800">
-                Fire Station Reports - Collections
+                Fire Station Reports
               </h1>
             </div>
           </div>
@@ -36,7 +36,20 @@ export default function CollectionsPerStation() {
                     aria-controls="profile"
                     aria-selected="false"
                     >
-                    Unsubmitted
+                    Overview
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Collections
                     </button>
                 </li>
                 <li className="me-2" role="presentation">
@@ -49,7 +62,7 @@ export default function CollectionsPerStation() {
                     aria-controls="dashboard"
                     aria-selected="false"
                     >
-                    Submitted
+                    Deposits
                     </button>
                 </li>
                 </ul>
