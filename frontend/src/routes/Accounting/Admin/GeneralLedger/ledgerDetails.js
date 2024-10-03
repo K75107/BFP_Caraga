@@ -225,7 +225,7 @@ const handleAddEntry = async () => {
         }));
 
         setShowMainAccountRightClick(false); // Close the modal after adding the row
-        console.log("Successfully added a child row below the main account.");
+        // console.log("Successfully added a child row below the main account.");
 
     } catch (error) {
         console.error('Error adding entry under main account:', error.message || error);

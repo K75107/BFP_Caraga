@@ -384,7 +384,14 @@ const handleSubmitDataToRegion = async () => {
         const data = docSnapshot.data();
 
         // Check if the row is not empty (you can add more fields to this check if needed)
-        if (data.collectingOfficer || data.collectionAmount || data.orNumber || data.nameOfPayor) {
+        if (
+          data.collectingOfficer &&
+          data.dateCollected &&
+          data.collectionAmount &&
+          data.nameOfPayor &&
+          data.natureOfCollection &&
+          (data.orNumber || data.lcNumber)
+        ){
           // Prepare the new data with a submission timestamp
           const newData = {
             ...data,
@@ -545,49 +552,48 @@ const handleSubmitDataToRegion = async () => {
   return (
     <Fragment>
              
-             <div className="flex flex-col space-y-6 w-full mb-6">
+             <div className="flex flex-col space-y-6 w-full mb-2">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-semibold text-gray-800">
                 Fire Station Reports - Collections
               </h1>
             </div>
           </div>
-
-          <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-            <ul
-              className="flex flex-wrap -mb-px text-sm font-medium text-center"
-              id="default-styled-tab"
-              role="tablist"
-            >
-              <li className="me-2" role="presentation">
-                <button
-                  onClick={() => navigate("/main/firestation/collections/unsubmitted")}
-
-                  className="inline-block p-4 border-b-2 rounded-t-lg"
-                  id="profile-styled-tab"
-                  type="button"
-                  role="tab"
-                  aria-controls="profile"
-                  aria-selected="false"
+        {/* Unsubmitted and Submitted */}
+        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                <ul
+                className="flex flex-wrap -mb-px text-sm font-medium text-center"
+                id="default-styled-tab"
+                role="tablist"
                 >
-                  Unsubmitted
-                </button>
-              </li>
-              <li className="me-2" role="presentation">
-                <button
-                  onClick={() => navigate("/main/firestation/collections/submitted")}
-                  className="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
-                  id="dashboard-styled-tab"
-                  type="button"
-                  role="tab"
-                  aria-controls="dashboard"
-                  aria-selected="false"
-                >
-                  Submitted
-                </button>
-              </li>
-            </ul>
-          </div>
+                <li className="me-2" role="presentation">
+                    <button
+                    onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Unsubmitted
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    onClick={() => navigate("/main/firestation/collections/submitted")}
+                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
+                    id="dashboard-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="dashboard"
+                    aria-selected="false"
+                    >
+                    Submitted
+                    </button>
+                </li>
+                </ul>
+            </div>
 
 
         {/*TABLE*/}
@@ -626,7 +632,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'collectingOfficer' ? (
                               <select
 
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'collectingOfficer', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'collectingOfficer', editValue.value)}
@@ -643,7 +649,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectingOfficer', value: collections.collectingOfficer || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.collectingOfficer || '-'}
                               </span>
@@ -656,7 +662,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'dateCollected' ? (
                               <input
                                 type="date"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] "
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'dateCollected', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'dateCollected', editValue.value)}
@@ -665,7 +671,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'dateCollected', value: collections.dateCollected || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] "
                               >
                                 {collections.dateCollected || '-'}
                               </span>
@@ -681,7 +687,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'orNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'orNumber', editValue.value)}
@@ -690,7 +696,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'orNumber', value: collections.orNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.orNumber || '-'}
                               </span>
@@ -701,7 +707,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'lcNumber', editValue.value)}
@@ -710,7 +716,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'lcNumber', value: collections.lcNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.lcNumber || '-'}
                               </span>
@@ -722,7 +728,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'nameOfPayor' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'nameOfPayor', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'nameOfPayor', editValue.value)}
@@ -731,7 +737,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'nameOfPayor', value: collections.nameOfPayor || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.nameOfPayor || '-'}
                               </span>
@@ -742,7 +748,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'natureOfCollection' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'natureOfCollection', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'natureOfCollection', editValue.value)}
@@ -751,7 +757,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'natureOfCollection', value: collections.natureOfCollection || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.natureOfCollection || '-'}
                               </span>
@@ -762,7 +768,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'collectionAmount' ? (
                               <input
                                 type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'collectionAmount', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'collectionAmount', editValue.value)}
@@ -771,7 +777,7 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectionAmount', value: collections.collectionAmount || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {collections.collectionAmount || '-'}
                               </span>
