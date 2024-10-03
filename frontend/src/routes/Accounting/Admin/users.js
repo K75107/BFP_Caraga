@@ -239,20 +239,6 @@ export default function Users() {
               <label htmlFor="usertype" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">User Type</label>
             </div>
 
-            <div className="relative">
-              <input
-                type="file"
-                id="profilePicture"
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
-                onChange={(e) => setProfilePicture(e.target.files[0])}
-              />
-                           <label 
-                htmlFor="profilePicture" 
-                className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2"
-              >
-                Profile Picture
-              </label>
-            </div>
           </div>
 
           <div className="flex justify-end py-3 px-4">

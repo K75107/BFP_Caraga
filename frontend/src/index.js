@@ -34,11 +34,11 @@ import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 
 import Deposits from './routes/Accounting/Admin/deposits';
 
-//Collections
+//Collections and Deposit admin side
 import Reports from './routes/Accounting/Admin/Firestations/reports';
 import CollectionsPerStation from './routes/Accounting/Admin/Firestations/collectionsPerStation';
-import CollectionsList from './routes/Accounting/Admin/Firestations/collectionsList';
 import FirestationReports from './routes/Accounting/Admin/Firestations/firestationReports';
+import ReportsOverview from './routes/Accounting/Admin/Firestations/reportsOverview';
 
 //FireStations
 import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
@@ -161,24 +161,24 @@ const router = createBrowserRouter([
         element: <Reports />,
         children:[
           {
-            path:'collections/reports',
+            path:'/main/reports/collections/:collectionsId',
             element:<CollectionsPerStation/>
           },
-          {
-            path:'collectionsList',
-            element:<CollectionsList/>
-          },
+
           {
             path: 'firestationReports',
             element: <FirestationReports/>
           },
-
+          {
+            path: '/main/reports/overview/:collectionsId',
+            element: <ReportsOverview/>
+          },
           {
             index:true,
             element: <Navigate to = 'firestationReports'/>
           },
 
-
+  
         ]
       },
       {

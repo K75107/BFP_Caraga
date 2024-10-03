@@ -14,6 +14,7 @@ import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 export default function LedgerDetails() {
 
     const { ledgerId } = useParams(); // Get ledgerId from URL
+    console.log(ledgerId);
     const [loading, setLoading] = useState(false);
     const [ledgerDescription, setLedgerDescription] = useState('');
     

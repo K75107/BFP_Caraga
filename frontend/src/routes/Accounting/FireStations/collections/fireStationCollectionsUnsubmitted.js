@@ -47,93 +47,92 @@ export default function FireStationCollectionsUnsubmitted() {
 
   useEffect(() => {
     const checkUserInCollections = async (userEmail, collections) => {
-        const userFound = collections.find((collection) => collection.email === userEmail);
+      const userFound = collections.find((collection) => collection.email === userEmail);
 
-        if (userFound) {
-            // Set the logged-in user to global state
-            setLogginUser(userFound);
+      if (userFound) {
+          // Set the logged-in user to global state
+          setLogginUser(userFound);
 
-            /*--------------------------------------------------Collections------------------------------------------------------------- */
-            const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userFound.id, 'collections');
-            const snapshot = await getDocs(collectionsSubCollectionRef);
+          /*--------------------------------------------------Collections------------------------------------------------------------- */
+          const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userFound.id, 'collections');
+          const snapshot = await getDocs(collectionsSubCollectionRef);
 
-            // If there are no documents, create a default document
-            if (snapshot.empty) {
-                console.log('No documents in collections subcollection. Creating default document...');
+          // If there are no documents, create a default document
+          if (snapshot.empty) {
+              console.log('No documents in collections subcollection. Creating default document...');
 
-                const defaultDoc = {
-                    createdAt:serverTimestamp(),
-                    fireStationName: userFound.username,
-                    collectingOfficer: null,
-                    dateCollected: null,
-                    orNumber: null,
-                    lcNumber: null,
-                    nameOfPayor:null,
-                    natureOfCollection:null,
-                    collectionAmount: null,
-                    status:null,
-                    depositStatus:null,
-                    depositID:null,
-                    position: 1 // Default position for the first row
-                };
+              const defaultDoc = {
+                  createdAt:serverTimestamp(),
+                  fireStationName: userFound.username,
+                  collectingOfficer: null,
+                  dateCollected: null,
+                  orNumber: null,
+                  lcNumber: null,
+                  nameOfPayor:null,
+                  natureOfCollection:null,
+                  collectionAmount: null,
+                  status:null,
+                  depositStatus:null,
+                  depositID:null,
+                  position: 1 // Default position for the first row
+              };
 
-                // Add default document with auto-generated ID
-                const newDocRef = await addDoc(collectionsSubCollectionRef, defaultDoc);
-                console.log('Default document created in collections subcollection:', newDocRef.id);
+              // Add default document with auto-generated ID
+              const newDocRef = await addDoc(collectionsSubCollectionRef, defaultDoc);
+              console.log('Default document created in collections subcollection:', newDocRef.id);
 
-                // Immediately update the state with the new document
-                const newDocument = { id: newDocRef.id, ...defaultDoc };
-                setCollectionsData([newDocument]); // Update with the new default row
+              // Immediately update the state with the new document
+              const newDocument = { id: newDocRef.id, ...defaultDoc };
+              setCollectionsData([newDocument]); // Update with the new default row
 
-                // Optionally fetch existing documents to merge them
-                const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
+              // Optionally fetch existing documents to merge them
+              const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-                setCollectionsData(prevData => [newDocument, ...sortedSubCollectionDocs]); // Merge new document with any existing ones
-            } else {
-                // Fetch and sort subcollection documents by position
-                const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
+              setCollectionsData(prevData => [newDocument, ...sortedSubCollectionDocs]); // Merge new document with any existing ones
+          } else {
+              // Fetch and sort subcollection documents by position
+              const subCollectionDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              const sortedSubCollectionDocs = subCollectionDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-                setCollectionsData(sortedSubCollectionDocs); // Update state with sorted documents
-            }
+              setCollectionsData(sortedSubCollectionDocs); // Update state with sorted documents
+          }
 
-            /*------------------------------------------------------------------------------------------------------------------ */
+          /*------------------------------------------------------------------------------------------------------------------ */
 
-            // Fetch Collecting Officer data
-            const officersSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
-            const officerSnapshot = await getDocs(officersSubcollectionRef);
+          // Fetch Collecting Officer data
+          const officersSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
+          const officerSnapshot = await getDocs(officersSubcollectionRef);
 
-            const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setOfficersData(officerDocs);
+          const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setOfficersData(officerDocs);
 
-        } else {
-            console.log('User not found in unsubmitted collections');
-        }
-    };
+      } else {
+          console.log('User not found in unsubmitted collections');
+      }
+  };
 
-    // Set up a listener for the unsubmitted collections
-    const unsubmitCollectionRef = collection(db, 'firestationReportsCollections');
-    const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
-        const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setFirestationCollection(listCollections); // Update state with fetched data
+  // Set up a listener for the unsubmitted collections
+  const unsubmitCollectionRef = collection(db, 'firestationReportsCollections');
+  const unsubscribeUnsubmitCollections = onSnapshot(unsubmitCollectionRef, (snapshot) => {
+      const listCollections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFirestationCollection(listCollections); // Update state with fetched data
 
-        const auth = getAuth();
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Check if the logged-in user is part of the collections
-                checkUserInCollections(user.email, listCollections);
-            } else {
-                console.log('No user is currently logged in');
-            }
-        });
-    });
+      const auth = getAuth();
+      onAuthStateChanged(auth, (user) => {
+          if (user) {
+              // Check if the logged-in user is part of the collections
+              checkUserInCollections(user.email, listCollections);
+          } else {
+              console.log('No user is currently logged in');
+          }
+      });
+  });
 
-    return () => {
-        unsubscribeUnsubmitCollections(); // Unsubscribe from Firestore snapshot listener
-    };
+  return () => {
+      unsubscribeUnsubmitCollections(); // Unsubscribe from Firestore snapshot listener
+  };
 }, []);
-
 
 
 

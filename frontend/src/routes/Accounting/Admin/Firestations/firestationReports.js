@@ -2,9 +2,10 @@ import { useEffect, useState } from "react"
 import { Fragment } from "react/jsx-runtime"
 import { db } from "../../../../config/firebase-config";
 import { doc,getDocs,collection } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function FirestationReports(){
-    
+    const navigate = useNavigate();
     const [collectionsReport, setCollectionsReport] = useState([]);
 
     useEffect(()=>{
@@ -37,116 +38,48 @@ export default function FirestationReports(){
               </h1>
             </div>
           </div>
-        {/* Unsubmitted and Submitted */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                <ul
-                className="flex flex-wrap -mb-px text-sm font-medium text-center"
-                id="default-styled-tab"
-                role="tablist"
-                >
-                <li className="me-2" role="presentation">
-                    <button
-                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
-                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                    id="profile-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    >
-                    Overview
-                    </button>
-                </li>
-                <li className="me-2" role="presentation">
-                    <button
-                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
-                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                    id="profile-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    >
-                    Collections
-                    </button>
-                </li>
-                <li className="me-2" role="presentation">
-                    <button
-                    // onClick={() => navigate("/main/firestation/collections/submitted")}
-                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
-                    id="dashboard-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="dashboard"
-                    aria-selected="false"
-                    >
-                    Deposits
-                    </button>
-                </li>
-                </ul>
-            </div>
+       
                 <hr className="border-t border-[#7694D4] my-4" />
             
             <div className="flex flex-row">
             
-                <div className="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700 flex-none">
-                    <div className="flex items-center justify-between mb-4">
-                        <h5 className="text-xl font-bold leading-none text-gray-900 dark:text-white">Fire Stations</h5>
-                        <a href="#" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500">
-                            View all
-                        </a>
-                    </div>
-                    <div className="flow-root">
-                        {collectionsReport.map((collection) => (
-                            <ul role="list" className="divide-y divide-gray-200 dark:divide-gray-700" key={collection.id}>
-                                <li className="py-3 sm:py-4 hover:bg-gray-50">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            {/* Add an image/icon if needed */}
-                                        </div>
-                                        <div className="flex-1 min-w-0 ms-4">
-                                            <p className="text-sm font-medium text-gray-900 truncate dark:text-white">
-                                                {collection.username}
-                                            </p>
-                                            <p className="text-sm text-gray-500 truncate dark:text-gray-400">
-                                                {/* {collection.email} */}
-                                            </p>
-                                        </div>
-                                        <div className="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                                            {/* ${collection.amount} Assuming amount is a property */}
-                                        </div>
-                                    </div>
-                                </li>   
-                            </ul>
-                        ))}
-                    </div>
-                </div>
-            
-            <div className="ml-8 grow bg-white">
+                
+           
+            <div className="grow bg-white">
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+           
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    
                         <tr>
-                            <th scope="col" className="px-6 py-3">Date Submitted</th>
-                            <th scope="col" className="px-6 py-3">Number Of Collections</th>
+                            <th scope="col" className="px-6 py-3">Firestation</th>
+                            <th scope="col" className="px-6 py-3">Location</th>
                             <th scope="col" className="px-6 py-3">Collecting Officer</th>
                             <th scope="col" className="px-6 py-3">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">
+                    {collectionsReport.map((collection) => (
+                        <tr
+                        key={collection.id} 
+                        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                        onClick={() => navigate(`/main/reports/overview/${collection.id}`)}
+                        >
                             <th
                                 scope="row"
                                 className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                             >
-                                January 2021
+                                {collection.username}
                             </th>
-                            <td className="px-6 py-4">5</td>
-                            <td className="px-6 py-4">Kent Divinagracia</td>
-                            <td className="px-6 py-4">Reviewed</td>
+                            <td className="px-6 py-4">{collection.region + ', ' + collection.province + ', ' + collection.municipality}</td>
+                            <td className="px-6 py-4"></td>
+                            <td className="px-6 py-4"></td>
                         </tr>
+                         ))}
                     </tbody>
+                    
                 </table>
+           
             </div>
 
             </div>
