@@ -449,6 +449,29 @@ const exportToExcel = async () => {
                         </tbody>
                     </table>
                 </div>
+                
+                {/*TOTAL*/}
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead className="text-[18px] font-bold font-poppins text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
+                            <tr>
+                                <th scope="col" className="px-2 py-3 w-72">
+                                    TOTAL
+                                </th>
+                                <th scope="col" className="px-2 py-3 w-48">
+
+                                </th>
+                                {/*TOTAL DEBIT*/}
+                                <th scope="col" className="px-2 py-3 w-48">
+                                    0
+                                </th>
+                                {/*TOTAL CREDIT*/}
+                                <th scope="col" className="px-2 py-3 w-48">
+                                    0
+                                </th>
+                            </tr>
+                        </thead>
+                  </table>
+                
             </div>
         </Fragment>
     );

@@ -928,6 +928,7 @@ const handleAddEntry = async () => {
                                                 </tr>
                                             );
                                         })}
+                                        
                                     </Fragment>
                                 );
                             })
