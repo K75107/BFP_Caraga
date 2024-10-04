@@ -28,8 +28,8 @@ import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails
 import LedgerList from './routes/Accounting/Admin/GeneralLedger/legderList';
 
 import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
-import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/trialBalanceList';
-import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/trialBalanceDetails';
+import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
+import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
 
 import Deposits from './routes/Accounting/Admin/deposits';
