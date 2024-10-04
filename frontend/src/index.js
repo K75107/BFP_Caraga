@@ -39,6 +39,11 @@ import Reports from './routes/Accounting/Admin/Firestations/reports';
 import CollectionsPerStation from './routes/Accounting/Admin/Firestations/collectionsPerStation';
 import FirestationReports from './routes/Accounting/Admin/Firestations/firestationReports';
 import ReportsOverview from './routes/Accounting/Admin/Firestations/reportsOverview';
+import DepositsPerStation from './routes/Accounting/Admin/Firestations/depositsPerStation';
+
+
+import FireStationDepositsSubmitted from './routes/Accounting/FireStations/deposits/fireStationDepositsSubmitted';
+import FireStationDepositsUnsubmitted from './routes/Accounting/FireStations/deposits/fireStationsDepositsUnsubmitted';
 
 //FireStations
 import FireStationOfficers from './routes/Accounting/FireStations/fireStationOfficers';
@@ -46,7 +51,7 @@ import FireStationCollectionsUnsubmitted from './routes/Accounting/FireStations/
 import FireStationCollections from './routes/Accounting/FireStations/collections/fireStationCollections';
 import FireStationCollectionsSubmitted from './routes/Accounting/FireStations/collections/fireStationCollectionsSubmitted';
 
-import FireStationDeposits from './routes/Accounting/FireStations/fireStationDeposits';
+import FireStationDeposits from './routes/Accounting/FireStations/deposits/fireStationDeposits';
 import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
 
 const router = createBrowserRouter([
@@ -161,7 +166,7 @@ const router = createBrowserRouter([
         element: <Reports />,
         children:[
           {
-            path:'/main/reports/collections/:collectionsId',
+            path:'/main/reports/collections/:userId',
             element:<CollectionsPerStation/>
           },
 
@@ -170,8 +175,12 @@ const router = createBrowserRouter([
             element: <FirestationReports/>
           },
           {
-            path: '/main/reports/overview/:collectionsId',
+            path: '/main/reports/overview/:userId',
             element: <ReportsOverview/>
+          },
+          {
+            path: '/main/reports/deposits/:userId',
+            element: <DepositsPerStation/>
           },
           {
             index:true,
@@ -188,6 +197,21 @@ const router = createBrowserRouter([
       {
         path: 'fireStation/deposits',
         element: <FireStationDeposits/>,
+        children:[
+          {
+            index:true,
+            element: <Navigate to = 'unsubmitted'/>
+          },
+          {
+            path:'unsubmitted',
+            element:<FireStationDepositsUnsubmitted/>
+          },
+          {
+            path:'submitted',
+            element:<FireStationDepositsSubmitted/>
+          },
+
+        ]
       },
       {
         path: 'fireStation/collections',

@@ -1,17 +1,21 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { FaFilter, FaCog, FaSortDown, FaSortUp } from 'react-icons/fa'; // Ensure react-icons is installed
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 export default function ReportsOverview() {
     
-    const {collectionsId} = useParams();
+    const {userId} = useParams();
     const navigate = useNavigate();
-    const [isSortedAsc, setIsSortedAsc] = useState(true);
 
-    const handleSortClick = () => {
-        setIsSortedAsc(!isSortedAsc);
-        // Add sorting logic here
-    };
+    useEffect(()=>{
+    
+
+
+
+
+
+
+    })
     
 
     return (
@@ -33,7 +37,7 @@ export default function ReportsOverview() {
                 >
                 <li className="me-2" role="presentation">
                     <button
-                    // onClick={() => navigate("/main/firestation/collections/unsubmitted")}
+                    onClick={() => navigate(`/main/reports/overview/${userId}`)}
                     className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
                     id="profile-styled-tab"
                     type="button"
@@ -46,7 +50,7 @@ export default function ReportsOverview() {
                 </li>
                 <li className="me-2" role="presentation">
                     <button
-                    onClick={() => navigate(`/main/reports/collections/${collectionsId}`)}
+                    onClick={() => navigate(`/main/reports/collections/${userId}`)}
                     className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
                     id="profile-styled-tab"
                     type="button"
@@ -59,7 +63,7 @@ export default function ReportsOverview() {
                 </li>
                 <li className="me-2" role="presentation">
                     <button
-                    // onClick={() => navigate("/main/firestation/collections/submitted")}
+                    onClick={() => navigate(`/main/reports/deposits/${userId}`)}
                     className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
                     id="dashboard-styled-tab"
                     type="button"

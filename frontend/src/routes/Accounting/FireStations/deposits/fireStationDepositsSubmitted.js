@@ -1,177 +1,169 @@
-import React, { Fragment, useState,useEffect} from "react";
-import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../../config/firebase-config";
 import { Timestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 
+export default function FireStationDepositsSubmitted() {
 
-
-export default function CollectionsPerStation() {
-    const {userId} = useParams();
-
-    const [isSortedAsc, setIsSortedAsc] = useState(true);
-    const handleSortClick = () => {
-        setIsSortedAsc(!isSortedAsc);
-        // Add sorting logic here
-    };
-
-
-
-    //From firestations Code -------------------------------------------------------------------------------------------------------------------------
 
     //FOR FILTERS -------------------------------------------------------------------------------------------
       // State to track selected category
-      const [selectedCategory, setSelectedCategory] = useState(null);
+        const [selectedCategory, setSelectedCategory] = useState(null);
 
-      // Handlers for toggling the checkboxes
-      const handleYearChange = () => {
-          setSelectedCategory((prev) => (prev === "year" ? null : "year"));
-      };
+        // Handlers for toggling the checkboxes
+        const handleYearChange = () => {
+            setSelectedCategory((prev) => (prev === "year" ? null : "year"));
+        };
 
-      const handleMonthChange = () => {
-          setSelectedCategory((prev) => (prev === "month" ? null : "month"));
-      };
-      const handleDayChange = () => {
-          setSelectedCategory((prev) => (prev === "day" ? null : "day"));
-      };
-  //FOR FILTERS -------------------------------------------------------------------------------------------
+        const handleMonthChange = () => {
+            setSelectedCategory((prev) => (prev === "month" ? null : "month"));
+        };
+        const handleDayChange = () => {
+            setSelectedCategory((prev) => (prev === "day" ? null : "day"));
+        };
+    //FOR FILTERS -------------------------------------------------------------------------------------------
 
-  //Modal
-  const [showModal, setShowModal] = useState(false);
+    //Modal
+    const [showModal, setShowModal] = useState(false);
 
-  const navigate = useNavigate();
-  
-  // Define state for firestation collections
-  const [logUserID, setlogUserID] = useState(null);  // Set initial value to null
-  const [firestationCollection, setFirestationCollection] = useState([]);
+    const navigate = useNavigate();
+    
+    // Define state for firestation deposits
+    const [logUserID, setlogUserID] = useState(null);  // Set initial value to null
+    const [firestationdeposit, setFirestationdeposit] = useState([]);
 
-  useEffect(() => {
-      // Setup listener for the submitted data
-      const submittedCollectionRef = collection(db, 'submittedReportsCollections');
-      const unsubscribeSubmittedCollections = onSnapshot(submittedCollectionRef, (snapshot) => {
-          const submittedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    useEffect(() => {
+        // Setup listener for the submitted data
+        const submitteddepositRef = collection(db, 'submittedReportsDeposits');
+        const unsubscribeSubmitteddeposits = onSnapshot(submitteddepositRef, (snapshot) => {
+            const submittedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-          const auth = getAuth();
-          onAuthStateChanged(auth, (user) => {
-              if (user) {
-                 
-                setlogUserID(userId);
+            const auth = getAuth();
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // Find the current user in the submitted data by matching their email
+                    const currentUser = submittedData.find((doc) => doc.email === user.email);
 
-              } else {
-                  console.log('No user is currently logged in');
-              }
-          });
-      });
+                    if (currentUser) {
+                        // Set the current user ID in the state if found in the submitted deposits
+                        setlogUserID(currentUser.id);
+                        // console.log('User found in submittedReportsDeposits:', currentUser);
+                    } else {
+                        console.log('User not found in submittedReportsDeposits');
+                    }
+                } else {
+                    console.log('No user is currently logged in');
+                }
+            });
+        });
 
-      // Return the unsubscribe function to clean up the listener on unmount
-      return () => {
-          unsubscribeSubmittedCollections();
-      };
-  }, []);  // Only runs once on mount
+        // Return the unsubscribe function to clean up the listener on unmount
+        return () => {
+            unsubscribeSubmitteddeposits();
+        };
+    }, []);  // Only runs once on mount
 
-  useEffect(() => {
-      // Only run the listener if logUserID is set (i.e., user is found)
-      if (logUserID) {
-          // Reference the collections subcollection
-          const submittedSubCollectionsDataRef = collection(db, 'submittedReportsCollections', logUserID, 'Collections');
-          
-          // Listener for the collections subcollections
-          const unsubscribeSubmittedCollectionsDataRef = onSnapshot(submittedSubCollectionsDataRef, (snapshot) => {
-              const submittedCollectionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    useEffect(() => {
+        // Only run the listener if logUserID is set (i.e., user is found)
+        if (logUserID) {
+            // Reference the deposits subdeposit
+            const submittedSubdepositsDataRef = collection(db, 'submittedReportsDeposits', logUserID, 'deposits');
+            
+            // Listener for the deposits subdeposits
+            const unsubscribeSubmitteddepositsDataRef = onSnapshot(submittedSubdepositsDataRef, (snapshot) => {
+                const submitteddepositsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-              // console.log(submittedCollectionsList);
-              setFirestationCollection(submittedCollectionsList);
-          });
+                // console.log(submitteddepositsList);
+                setFirestationdeposit(submitteddepositsList);
+            });
 
-          // Clean up the listener when the component unmounts or when logUserID changes
-          return () => {
-              unsubscribeSubmittedCollectionsDataRef();
-          };
-      }
-  }, [logUserID]);  // This effect runs only when logUserID changes
+            // Clean up the listener when the component unmounts or when logUserID changes
+            return () => {
+                unsubscribeSubmitteddepositsDataRef();
+            };
+        }
+    }, [logUserID]);  // This effect runs only when logUserID changes
 
-  // Convert Firestore Timestamp to JavaScript Date
+    // Convert Firestore Timestamp to JavaScript Date
 const formatTimestamp = (timestamp) => {
-  if (!timestamp || !timestamp.seconds) return null;  // Check if timestamp is valid
-  return new Date(timestamp.seconds * 1000);  // Convert Firestore Timestamp to JS Date
+    if (!timestamp || !timestamp.seconds) return null;  // Check if timestamp is valid
+    return new Date(timestamp.seconds * 1000);  // Convert Firestore Timestamp to JS Date
 };
 
 // For groupings and Toggle of view
-const groupByDate = (collections, selectedCategory) => {
-  // First, sort the collections by date_submitted
-  const sortedCollections = collections.sort((a, b) => {
-      const dateA = a.date_submitted ? a.date_submitted.toDate() : new Date(0); // Fallback to epoch if date_submitted is missing
-      const dateB = b.date_submitted ? b.date_submitted.toDate() : new Date(0);
-      return dateA - dateB; // Ascending order (use dateB - dateA for descending)
-  });
+const groupByDate = (deposits, selectedCategory) => {
+    // First, sort the deposits by date_submitted
+    const sorteddeposits = deposits.sort((a, b) => {
+        const dateA = a.date_submitted ? a.date_submitted.toDate() : new Date(0); // Fallback to epoch if date_submitted is missing
+        const dateB = b.date_submitted ? b.date_submitted.toDate() : new Date(0);
+        return dateA - dateB; // Ascending order (use dateB - dateA for descending)
+    });
 
-  return sortedCollections.reduce((grouped, collection) => {
-          const date_submitted = collection.date_submitted ? formatTimestamp(collection.date_submitted) : null;
-          let groupKey;
-          
-          if (date_submitted) {
-              if (selectedCategory === 'month') {
-                  // Format as "Month Year", e.g. "January 2024"
-                  groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-              } else if (selectedCategory === 'year') {
-                  // Format as "Year", e.g. "2024"
-                  groupKey = date_submitted.toLocaleDateString('en-US', { year: 'numeric' });
-              } else {
-                  // Format as "Month Day, Year", e.g. "January 7, 2024"
-                  groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-              }
-          } else {
-              groupKey = "N/A";
-          }
+    return sorteddeposits.reduce((grouped, deposit) => {
+            const date_submitted = deposit.date_submitted ? formatTimestamp(deposit.date_submitted) : null;
+            let groupKey;
+            
+            if (date_submitted) {
+                if (selectedCategory === 'month') {
+                    // Format as "Month Year", e.g. "January 2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                } else if (selectedCategory === 'year') {
+                    // Format as "Year", e.g. "2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { year: 'numeric' });
+                } else {
+                    // Format as "Month Day, Year", e.g. "January 7, 2024"
+                    groupKey = date_submitted.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                }
+            } else {
+                groupKey = "N/A";
+            }
 
-          if (!grouped[groupKey]) {
-              grouped[groupKey] = [];
-          }
-          grouped[groupKey].push(collection);
-          return grouped;
-      }, {});
-  };
+            if (!grouped[groupKey]) {
+                grouped[groupKey] = [];
+            }
+            grouped[groupKey].push(deposit);
+            return grouped;
+        }, {});
+    };
 
-  // Usage
-  const groupedCollections = groupByDate(firestationCollection, selectedCategory);
-
-
-
-      // State to manage which groups are expanded/collapsed
-      const [expandedGroups, setExpandedGroups] = useState({});
-
-      // Toggle function to expand/collapse groups
-      const toggleGroup = (date) => {
-          setExpandedGroups((prevExpandedGroups) => ({
-              ...prevExpandedGroups,
-              [date]: !prevExpandedGroups[date],
-          }));
-      };
+    // Usage
+    const groupeddeposits = groupByDate(firestationdeposit, selectedCategory);
 
 
-    //From firestations Code -------------------------------------------------------------------------------------------------------------------------
+
+        // State to manage which groups are expanded/collapsed
+        const [expandedGroups, setExpandedGroups] = useState({});
+
+        // Toggle function to expand/collapse groups
+        const toggleGroup = (date) => {
+            setExpandedGroups((prevExpandedGroups) => ({
+                ...prevExpandedGroups,
+                [date]: !prevExpandedGroups[date],
+            }));
+        };
 
 
 
     return (
-        <Fragment>
-            
-            <div className="flex flex-col space-y-6 w-full mb-2">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-semibold text-gray-800">
-                Fire Station Reports
-              </h1>
+        <div>
+            {/* Page Title */}
+                <div className="flex flex-col space-y-6 w-full mb-2">
+                <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-semibold text-gray-800">
+                    Fire Station Reports - Deposits
+                </h1>
+                </div>
             </div>
-          </div>
-        {/* Unsubmitted and Submitted */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+            {/* Unsubmitted and Submitted */}
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
                 <ul
                 className="flex flex-wrap -mb-px text-sm font-medium text-center"
                 id="default-styled-tab"
@@ -179,48 +171,35 @@ const groupByDate = (collections, selectedCategory) => {
                 >
                 <li className="me-2" role="presentation">
                     <button
-                    onClick={() => navigate(`/main/reports/overview/${userId}`)}
-                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                    id="profile-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    >
-                    Overview
-                    </button>
-                </li>
-                <li className="me-2" role="presentation">
-                    <button
-                    onClick={() => navigate(`/main/reports/collections/${userId}`)}
-                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                    id="profile-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    >
-                    Collections
-                    </button>
-                </li>
-                <li className="me-2" role="presentation">
-                    <button
-                    onClick={() => navigate(`/main/reports/deposits/${userId}`)}s
+                    onClick={() => navigate("/main/firestation/deposits/unsubmitted")}
                     className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
+                    id="profile-styled-tab"
+                    type="button"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    >
+                    Unsubmitted
+                    </button>
+                </li>
+                <li className="me-2" role="presentation">
+                    <button
+                    onClick={() => navigate("/main/firestation/deposits/submitted")}
+                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100 "
                     id="dashboard-styled-tab"
                     type="button"
                     role="tab"
                     aria-controls="dashboard"
                     aria-selected="false"
                     >
-                    Deposits
+                    Submitted
                     </button>
                 </li>
                 </ul>
             </div>
-                <hr className="border-t border-[#7694D4] my-4" />
 
-                {/* Table Header */}
+
+          {/* Table Header */}
 
           <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
             {/* Search Form */}
@@ -275,6 +254,8 @@ const groupByDate = (collections, selectedCategory) => {
                 <Dropdown.Divider />
                 <Dropdown.Item>Delete all</Dropdown.Item>
               </Dropdown>
+
+
 
 
  {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}         
@@ -341,20 +322,21 @@ const groupByDate = (collections, selectedCategory) => {
 
 
 
-                      {/* TABLE */}
-                      <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
+            {/* TABLE */}
+            <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
                 
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr className="text-[12px]">
                             <th scope="col" className="px-2 py-2 w-40">Date Submitted</th>
-                            <th scope="col" className="px-2 py-2 w-40">Collecting Officer</th>
+                            <th scope="col" className="px-2 py-2 w-40">Collecting Agent</th>
                             <th scope="col" className="px-2 py-2 w-36">Date Collected</th>
+                            <th scope="col" className="px-2 py-2 w-36">Date Deposited</th>
                             <th scope="col" className="px-2 py-2 w-36">OR Number</th>
                             <th scope="col" className="px-2 py-2 w-36">LC Number</th>
-                            <th scope="col" className="px-2 py-2 w-36">Name of Payor</th>
-                            <th scope="col" className="px-2 py-2 w-36">Nature of Collection</th>
+                            <th scope="col" className="px-2 py-2 w-36">Particulars</th>
                             <th scope="col" className="px-2 py-2 w-36">Amount</th>
+                            <th scope="col" className="px-2 py-2 w-36">Total</th>
                             <th scope="col" className="w-4"></th>
                         </tr>
                     </thead>
@@ -363,11 +345,11 @@ const groupByDate = (collections, selectedCategory) => {
                 <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
                 <table className="w-full overflow-x-visible">
                 <tbody>
-                    {/* Iterate over grouped collections by date_submitted date */}
-                    {Object.keys(groupedCollections).map((date) => {
+                    {/* Iterate over grouped deposits by date_submitted date */}
+                    {Object.keys(groupeddeposits).map((date) => {
                         // Calculate the total amount for each date group
-                        const totalAmount = groupedCollections[date].reduce(
-                            (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
+                        const totalAmount = groupeddeposits[date].reduce(
+                            (sum, deposit) => sum + parseFloat(deposit.depositAmount || 0),
                             0
                         );
 
@@ -396,6 +378,7 @@ const groupByDate = (collections, selectedCategory) => {
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
                                         {/* Display the total amount */}
                                         {totalAmount.toFixed(2)}
@@ -404,8 +387,8 @@ const groupByDate = (collections, selectedCategory) => {
 
                                 {/* Conditionally render rows under the current date header */}
                                 {expandedGroups[date] &&
-                                    groupedCollections[date].map((collection) => {
-                                        const submittedDate = collection.date_submitted?.toDate();
+                                    groupeddeposits[date].map((deposit) => {
+                                        const submittedDate = deposit.date_submitted?.toDate();
                                         let formattedDate;
 
                                         if (selectedCategory === 'year') {
@@ -418,17 +401,18 @@ const groupByDate = (collections, selectedCategory) => {
 
                                         return (
                                             <tr
-                                                key={collection.id}
+                                                key={deposit.id}
                                                 className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                                             >
                                                 <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectingOfficer}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.collectingAgent}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateCollected}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateDeposited}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.orNumber}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.lcNumber}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.nameOfPayor}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.natureOfdeposit}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.depositAmount}</td>
                                             </tr>
                                         );
                                     })}
@@ -440,6 +424,6 @@ const groupByDate = (collections, selectedCategory) => {
         </table>
                 </div>
             </div>
-        </Fragment>
+        </div>
     );
 }
