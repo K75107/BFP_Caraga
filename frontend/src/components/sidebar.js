@@ -87,7 +87,7 @@ const Sidebar = () => {
       { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
       { path: '/main/changesInEquity', icon: isActive('/main/changesInEquity') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
       { section: 'Reports' },
-      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'firestationReports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections and Deposits' },
         // Subcategories
         // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
