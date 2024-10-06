@@ -440,6 +440,42 @@ const groupByDate = (deposits, selectedCategory) => {
 
         </table>
                 </div>
+                <div className="container mx-auto my-8 p-4">
+      <h2 className="text-2xl font-semibold mb-6">Quick Stats</h2>
+      <div className="flex flex-wrap gap-4">
+        {/* Placeholder for Card 1 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+        
+        {/* Placeholder for Card 2 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+
+        {/* Placeholder for Card 3 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+
+        {/* Placeholder for Card 4 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+
+        {/* Placeholder for Card 5 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+
+        {/* Placeholder for Card 6 */}
+        <div className="flex-1 min-w-[250px] p-4 bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="h-24 bg-gray-100 rounded-lg"></div>
+        </div>
+      </div>
+    </div>
+
+
             </div>
       
         </Fragment>
