@@ -8,38 +8,22 @@ import { MdArrowForwardIos, MdOutlineHelpOutline, MdLogout } from "react-icons/m
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './Authentication/authActions';
-import { auth,db } from "../config/firebase-config";
+
+import { auth, db } from "../config/firebase-config";
+import { getAuth,onAuthStateChanged } from "firebase/auth";
+import { collection,onSnapshot } from "firebase/firestore";
 
 import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDocs } from "firebase/firestore";
 
 const Main = () => {
   const user = useSelector((state) => state.auth.user);
-  const [profilePicture, setProfilePicture] = useState('/path/to/default/profilePicture.jpg');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+
   const [showUserModal, setShowUserModal] = useState(false);
-
-  useEffect(() => {
-    const fetchProfilePicture = async () => {
-      if (user?.uid) {
-        try {
-          const userDoc = doc(db, "users", user.uid); // Adjust collection and document path if needed
-          const docSnapshot = await getDoc(userDoc);
-
-          if (docSnapshot.exists()) {
-            const userData = docSnapshot.data();
-            setProfilePicture(userData.profilePicture || '/path/to/default/profilePicture.jpg');
-          }
-        } catch (error) {
-          console.error("Error fetching user profile picture: ", error);
-        }
-      }
-    };
-
-    fetchProfilePicture();
-  }, [user?.uid]);
+  const [logUserData,setLogUserData] = useState({});
 
   // Logout function using Firebase Authentication
   const handleLogout = async () => {
@@ -58,6 +42,38 @@ const Main = () => {
     }
   };
 
+
+  useEffect(() => {
+    // Setup listener for the submitted data
+    const usersRef = collection(db, 'users');
+    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+        const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const auth = getAuth();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Find the current user in the submitted data by matching their email
+                const currentUser = usersList.find((doc) => doc.email === user.email);
+
+                if (currentUser) {
+                    // Set the current user ID in the state if found in the submitted deposits
+                    setLogUserData(currentUser);
+                    // console.log('User found in submittedReportsDeposits:', currentUser);
+                } else {
+                    console.log('User not found in users');
+                }
+            } else {
+                console.log('No user is currently logged in');
+            }
+        });
+    });
+
+    // Return the unsubscribe function to clean up the listener on unmount
+    return () => {
+      unsubscribeUsers();
+    };
+}, []);  // Only runs once on mount
+
   return (
     <Fragment>
     <div className="bg-color-lighter-gray flex h-screen">
@@ -66,7 +82,21 @@ const Main = () => {
         <header className="px-4 py-2 flex items-center justify-between">
           <div></div>
           <div className="flex items-center space-x-3">
-            <TbSettings2 className="text-xl text-gray-700 hover:text-gray-900 cursor-pointer" onClick={() => setShowUserModal(true)} />
+            <div
+                    className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold hover:cursor-pointer"
+                    onClick={() => setShowUserModal(true)}
+                    style={{
+                      backgroundColor: 
+                      logUserData?.province === 'Agusan del Norte' ? 'blue' : 
+                      logUserData?.province === 'Agusan del Sur' ? 'red' : 
+                      logUserData?.province === 'Dinagat Islands' ? 'brown' :
+                      logUserData?.province === 'Surigao del Norte' ? 'orange' :
+                      logUserData?.province === 'Surigao del Sur' ? 'violet' :   
+                        'gray' // Default color
+                    }}
+                  >
+                    {logUserData?.username?.charAt(0).toUpperCase()}
+              </div>
           </div>
         </header>
         <div className="px-3 py-1.5 flex-1 h-screen">
@@ -87,13 +117,8 @@ const Main = () => {
             
             {/* USER DETAILS */}
             <div className="text-center">
-              <img
-                className="w-12 h-12 rounded-full mx-auto mb-2"
-                src={profilePicture}
-                alt={`${user?.username || 'User'}'s profile`}
-              />
-              <h3 className="text-base font-medium">{user?.username || 'Username'}</h3>
-              <p className="text-gray-600 text-sm">{user?.email || 'Email'}</p>
+              <h3 className="text-base font-medium">{logUserData?.username || 'Username'}</h3>
+              <p className="text-gray-600 text-sm">{logUserData?.email || 'Email'}</p>
             </div>
             
             {/* BUTTON */}

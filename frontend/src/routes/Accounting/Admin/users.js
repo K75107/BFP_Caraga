@@ -24,7 +24,26 @@ export default function Users() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [usertype, setUsertype] = useState('');
-  const [profilePicture, setProfilePicture] = useState('');
+
+  
+
+  //Location
+  var philippines = require('philippines');
+  var regions = require('philippines/regions');
+  var provinces = require('philippines/provinces');
+  var cities = require('philippines/cities');
+
+// Get the Caraga region
+var caragaProvinces = provinces.filter(province => province.region === 'XIII');
+var AgusanMunicipalitis = cities.filter(cities => cities.province ==='AGN')
+
+
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedRegionCode, setSelectedRegionCode] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
+  const [selectedCityMunicipality, setSelectedCityMunicipality] = useState('');
+
 
   //Get User Data from firebase
   
@@ -43,8 +62,10 @@ export default function Users() {
     };
   
     getUserList();
+
+
+
   }, []);
-  
 
   const handleAddUser = async () => {
     try {
@@ -53,21 +74,16 @@ export default function Users() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
 
-      // Upload profile picture to Firebase Storage
-      let profilePictureUrl = '';
-      if (profilePicture) {
-        const storageRef = ref(storage, `profilePictures/${userId}`);
-        await uploadBytes(storageRef, profilePicture);
-        profilePictureUrl = await getDownloadURL(storageRef);
-      }
 
       // Create a new document in Firestore with the user's ID as the document ID
         const docRef = doc(db, "users", userId);
         await setDoc(docRef, {
             email: email,
             username: username,
+            region:selectedRegion,
+            province:selectedProvince,
+            municipalityCity: selectedCityMunicipality,
             usertype: usertype,
-            profilePicture: profilePictureUrl,
             isActive: true, // Assuming new users are active by default
         });
 
@@ -79,6 +95,9 @@ export default function Users() {
             await setDoc(unsubmitCollectionRef, {
                 email: email,
                 username: username,
+                region:selectedRegion,
+                province:selectedProvince,
+                municipalityCity: selectedCityMunicipality,
             });
 
             // console.log("User added to firestationReportsDeposits!");
@@ -89,6 +108,9 @@ export default function Users() {
           await setDoc(unsubmitCollectionRef, {
               email: email,
               username: username,
+              region:selectedRegion,
+              province:selectedProvince,
+              municipalityCity: selectedCityMunicipality,
           });
 
           // console.log("User added to firestationReportsCollections!");
@@ -99,6 +121,9 @@ export default function Users() {
           await setDoc(unsubmitCollectionRef, {
               email: email,
               username: username,
+              region:selectedRegion,
+              province:selectedProvince,
+              municipalityCity: selectedCityMunicipality,
           });
 
           // console.log("User added to firestationReportsOfficers!");
@@ -107,6 +132,15 @@ export default function Users() {
     } catch (err) {
       console.error("Error adding user: ", err);
     }
+    setShowModal(false);
+    setEmail('');
+    setPassword('');
+    setUsername('');
+    setSelectedRegion('');
+    setSelectedProvince('');
+    setSelectedCityMunicipality('');
+    setUsertype('');
+
   };
 
   return (
@@ -125,6 +159,7 @@ export default function Users() {
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" className="px-6 py-3">USER</th>
+                <th scope="col" className="px-6 py-3">LOCATION</th>
                 <th scope="col" className="px-6 py-3">EMAIL</th>
                 <th scope="col" className="px-6 py-3">USERTYPE</th>
                 <th scope="col" className="px-6 py-3">ACTIVE</th>
@@ -135,20 +170,24 @@ export default function Users() {
             {usersList.map((user, index) => (
               <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                 <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center">
-                  <div
-                    className="w-8 h-8 rounded-full mr-3 flex items-center justify-center bg-gray-300"
-                    style={{
-                      backgroundImage: user?.profilePicture ? `url(${user.profilePicture})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
-                    }}
-                  >
-                    {!user?.profilePicture && (
-                      <span className="text-white">N/A</span>
-                    )}
-                  </div>
+                <div
+                  className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
+                  style={{
+                    backgroundColor: 
+                      user?.province === 'Agusan del Norte' ? 'blue' : 
+                      user?.province === 'Agusan del Sur' ? 'red' : 
+                      user?.province === 'Dinagat Islands' ? 'brown' :
+                      user?.province === 'Surigao del Norte' ? 'orange' :
+                      user?.province === 'Surigao del Sur' ? 'violet' :   
+                      'gray' // Default color
+                  }}
+                >
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+
                   {user?.username || 'Unknown'}
                 </td>
+                <td className="px-6 py-4">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
                 <td className="px-6 py-4">{user?.email || 'N/A'}</td>
                 <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   {user?.usertype || 'N/A'}
@@ -174,7 +213,7 @@ export default function Users() {
 
       {/* MODAL */}
       <Modal isVisible={showModal}>
-        <div className="bg-white w-[600px] h-auto rounded py-4 px-6">
+        <div className="bg-white w-[450px] h-auto rounded py-4 px-6">
           <div className="flex justify-between items-center">
             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Add New User</h1>
             <button className="text-[27px] text-[#1E1E1E] bg-transparent border-none" onClick={() => setShowModal(false)}>×</button>
@@ -183,6 +222,89 @@ export default function Users() {
           <hr className="border-t border-[#7694D4] my-3" />
 
           <div className="space-y-4">
+            {/* *Location-------------------------------------------------------------------------------------------------------------------------------------------------------- */}
+              {/**Region */}
+                <div className="relative">
+                  <select
+                    id="region"
+                    className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                    value={selectedRegion}
+                    onChange={(e) => {
+                      const selectedValue = e.target.value;
+                      setSelectedRegion(selectedValue); // Save the selected region's code
+                      const region = regions.find((region) => region.long === selectedValue); // Find the selected region by its code
+                      setSelectedRegionCode(region ? region.key : ''); // Save the region's key (or code) if found
+                    }}
+                  >
+                    <option value="">Select region</option>
+                    {regions
+                    .filter(regions => regions.key === 'XIII')
+                    .map((regions) =>(
+                      <option key={regions.key} value={regions.code}>
+                        {regions.long}
+                        </option>
+
+                    ))}
+
+                  </select>
+                  <label htmlFor="region" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Region</label>
+                </div>
+                {/**Province */}
+                <div className="relative">
+                  <select
+                    id="province"
+                    className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                    value={selectedProvince}
+                    onChange={(e) => {
+                      const selectedValue = e.target.value;
+                      setSelectedProvince(selectedValue); // Save the selected region's code
+                      const province = provinces.find((provinces) => provinces.name === selectedValue); // Find the selected region by its code
+                      setSelectedProvinceCode(province ? province.key : ''); // Save the region's key (or code) if found
+                    }}
+                  >
+                    <option value="">Select province</option>
+                      {provinces
+                        .filter(province => province.region === selectedRegionCode)
+                        .map(province => (
+                          <option key={province.code} value={province.code}>
+                            {province.name}
+                    </option>
+                      ))
+                    }
+                  
+                  </select>
+                  <label htmlFor="province" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Province</label>
+                </div>
+                    
+                {/**Municipality/City */}
+                <div className="relative">
+                  <select
+                    id="municipalityOrCity"
+                    className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                    value={selectedCityMunicipality}
+                    onChange={(e) => {
+                      setSelectedCityMunicipality(e.target.value)
+                      setEmail(e.target.value + '@email.com')
+                      setUsername(e.target.value)
+                    }}
+                  >
+                    <option value="">Select city/municipality</option>
+
+                    {cities
+                      .filter(cities => cities.province === selectedProvinceCode)
+                      .map(cities => (
+                        <option key={cities.code} value={cities.code}>
+                          {cities.name}
+                        </option>
+                      ))
+                    }
+                  
+                  </select>
+                  <label htmlFor="municipalityOrCity" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Province</label>
+                </div>
+            {/**Location-------------------------------------------------------------------------------------------------------------------------------------------------------- */}
+          
+          {/**Email-------------------------------------------------------------------- */}
             <div className="relative">
               <input
                 type="email"
@@ -194,19 +316,8 @@ export default function Users() {
               />
               <label htmlFor="email" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Email</label>
             </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                id="username"
-                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
-                placeholder=" "
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <label htmlFor="username" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Username</label>
-            </div>
-
+          {/**Email-------------------------------------------------------------------- */}
+          
             <div className="relative">
               <input
                 type="password"
@@ -222,7 +333,7 @@ export default function Users() {
             <div className="relative">
               <select
                 id="usertype"
-                className="block w-full px-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
                 value={usertype}
                 onChange={(e) => setUsertype(e.target.value)}
               >

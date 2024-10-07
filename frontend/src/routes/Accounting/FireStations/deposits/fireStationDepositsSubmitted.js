@@ -328,15 +328,16 @@ const groupByDate = (deposits, selectedCategory) => {
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
                     <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-2 w-40">Date Submitted</th>
-                            <th scope="col" className="px-2 py-2 w-40">Collecting Agent</th>
-                            <th scope="col" className="px-2 py-2 w-36">Date Collected</th>
-                            <th scope="col" className="px-2 py-2 w-36">Date Deposited</th>
-                            <th scope="col" className="px-2 py-2 w-36">OR Number</th>
-                            <th scope="col" className="px-2 py-2 w-36">LC Number</th>
-                            <th scope="col" className="px-2 py-2 w-36">Particulars</th>
-                            <th scope="col" className="px-2 py-2 w-36">Amount</th>
-                            <th scope="col" className="px-2 py-2 w-36">Total</th>
+                              <th scope="col" className="px-2 py-3 w-40">Date Submitted</th>
+                              <th scope="col" className="px-1 py-3 w-40">Collecting Agent</th>
+                              <th scope="col" className="px-1 py-3 w-36">Account Code</th>
+                              <th scope="col" className="px-1 py-3 w-36">Date Collected</th>
+                              <th scope="col" className="px-1 py-3 w-36">Date Deposited</th>
+                              <th scope="col" className="px-1 py-3 w-36">OR Number</th>
+                              <th scope="col" className="px-1 py-3 w-36">LC Number</th>
+                              <th scope="col" className="px-1 py-3 w-36">Particulars</th>
+                              <th scope="col" className="px-1 py-3 w-36">Depositor</th>
+                              <th scope="col" className="px-1 py-3 w-36">Amount</th>
                             <th scope="col" className="w-4"></th>
                         </tr>
                     </thead>
@@ -379,6 +380,7 @@ const groupByDate = (deposits, selectedCategory) => {
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
                                     <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
                                         {/* Display the total amount */}
                                         {totalAmount.toFixed(2)}
@@ -405,13 +407,14 @@ const groupByDate = (deposits, selectedCategory) => {
                                                 className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
                                             >
                                                 <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.collectingAgent}</td>
+                                                <td className="table-cell px-2 py-2 w-40 text-[12px]">{deposit.collectingAgent}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.accountCode}</td>
                                                 <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateCollected}</td>
                                                 <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateDeposited}</td>
                                                 <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.orNumber}</td>
                                                 <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.lcNumber}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.nameOfPayor}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.natureOfdeposit}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.particulars}</td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.nameofDepositor}</td>
                                                 <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.depositAmount}</td>
                                             </tr>
                                         );
