@@ -71,7 +71,7 @@ export default function FirestationReports(){
                             >
                                 {collection.username}
                             </th>
-                            <td className="px-6 py-4">{collection.region + ', ' + collection.province + ', ' + collection.municipality}</td>
+                            <td className="px-6 py-4">{collection.region + ', ' + collection.province + ', ' + collection.municipalityCity}</td>
                             <td className="px-6 py-4"></td>
                             <td className="px-6 py-4"></td>
                         </tr>
