@@ -45,6 +45,23 @@ export default function FireStationDepositsUnsubmitted() {
   //subNavigations
   const [isPending,setIsPending] =useState(true);
 
+
+  //default classifications
+  const accountCodes = [
+    '628-BFP-01',
+    '628-BFP-02',
+    '628-BFP-03',
+    '628-BFP-04',
+    '628-BFP-05',
+    '628-BFP-06',
+    '628-BFP-07',
+    '628-BFP-08',
+    '628-BFP-09',
+    '628-BFP-10',
+    '628-BFP-11',
+
+  ]
+
   useEffect(() => {
     const checkUserIndeposits = async (userEmail, deposits) => {
       const userFound = deposits.find((deposit) => deposit.email === userEmail);
@@ -65,10 +82,11 @@ export default function FireStationDepositsUnsubmitted() {
                   createdAt:serverTimestamp(),
                   fireStationName: userFound.username,
                   collectingAgent: null,
+                  accountCode:null,
                   dateCollected: null,
                   orNumber: null,
                   lcNumber: null,
-                  nameOfPayor:null,
+                  particulars:null,
                   natureOfdeposit:null,
                   depositAmount: null,
                   status:null,
@@ -244,10 +262,11 @@ export default function FireStationDepositsUnsubmitted() {
         createdAt:serverTimestamp(),
         fireStationName: logginUser.username,
         collectingAgent: null,
+        accountCode:null,
         dateCollected: null,
         orNumber: null,
         lcNumber: null,
-        nameOfPayor:null,
+        particulars:null,
         natureOfdeposit:null,
         depositAmount: null,
         nameofDepositor:null,
@@ -315,10 +334,11 @@ const handleAddRowAbove = async () => {
       createdAt:serverTimestamp(),
       fireStationName: logginUser.username,
       collectingAgent: null,
+      accountCode:null,
       dateCollected: null,
       orNumber: null,
       lcNumber: null,
-      nameOfPayor:null,
+      particulars:null,
       natureOfdeposit:null,
       depositAmount: null,
       nameofDepositor:null,
@@ -390,7 +410,7 @@ const handleSubmitDataToRegion = async () => {
           data.collectingAgent &&
           data.dateCollected &&
           data.depositAmount &&
-          data.nameOfPayor &&
+          data.particulars &&
           data.natureOfdeposit &&
           data.nameofDepositor &&
           (data.orNumber || data.lcNumber)
@@ -440,12 +460,12 @@ const handleSubmitDataToRegion = async () => {
       createdAt: serverTimestamp(),
       fireStationName: logginUser.username,
       collectingAgent: null,
+      accountCode:null,
       dateCollected: null,
       orNumber: null,
       lcNumber: null,
-      nameOfPayor: null,
-      natureOfdeposit: null,
-      depositAmount: null,
+      particulars: null,
+      depositAmount: 0,
       nameofDepositor:null,
       status: null,
       depositStatus: null,
@@ -607,13 +627,13 @@ const handleSubmitDataToRegion = async () => {
               <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                           <tr className="text-[12px]">
                               <th scope="col" className="px-2 py-3 w-40">Collecting Agent</th>
+                              <th scope="col" className="px-2 py-3 w-36">Account Code</th>
                               <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
                               <th scope="col" className="px-2 py-3 w-36">Date Deposited</th>
                               <th scope="col" className="px-2 py-3 w-36">OR Number</th>
                               <th scope="col" className="px-2 py-3 w-36">LC Number</th>
                               <th scope="col" className="px-2 py-3 w-36">Particulars</th>
                               <th scope="col" className="px-2 py-3 w-36">Amount</th>
-                              <th scope="col" className="px-2 py-3 w-36">Total</th>
                               <th scope="col" className="px-2 py-3 w-36">Name of Depositor</th>
                               <th scope="col" className=" w-[20px] "></th>
                           </tr>
@@ -634,7 +654,7 @@ const handleSubmitDataToRegion = async () => {
                       onContextMenu={(e) => handleRightClick(e, deposits)}  // Right-click functionality
                         >
 
-                        <td className="table-cell px-2 w-40 text-[12px]">
+                          <td className="table-cell px-2 w-40 text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'collectingAgent' ? (
                               <select
 
@@ -658,6 +678,32 @@ const handleSubmitDataToRegion = async () => {
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
                                 {deposits.collectingAgent || '-'}
+                              </span>
+                            )}
+
+                          </td>
+                          <td className="table-cell px-2 w-40 text-[12px]">
+                            {editingCell === deposits.id && editValue.field === 'accountCode' ? (
+                              <select
+
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'accountCode', value: e.target.value })}
+                                onBlur={() => handleCellChange(deposits.id, 'accountCode', editValue.value)}
+                                autoFocus
+                              >
+                              <option value="" disabled>Select an officer</option>
+                              {accountCodes.map((accountcode,index)=>(
+                                  <option key={index} value={accountcode}>{accountcode}</option>
+
+                              ))}
+                              </select>
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'accountCode', value: deposits.accountCode || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                              >
+                                {deposits.accountCode || '-'}
                               </span>
                             )}
 
@@ -750,44 +796,26 @@ const handleSubmitDataToRegion = async () => {
 
 
                           <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'nameOfPayor' ? (
+                            {editingCell === deposits.id && editValue.field === 'particulars' ? (
                               <input
                                 type="text"
                                 className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
                                 value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'nameOfPayor', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'nameOfPayor', editValue.value)}
+                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                onBlur={() => handleCellChange(deposits.id, 'particulars', editValue.value)}
                                 autoFocus
                               />
                             ) : (
                               <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'nameOfPayor', value: deposits.nameOfPayor || '' }) }}
+                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'particulars', value: deposits.particulars || '' }) }}
                                 className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
                               >
-                                {deposits.nameOfPayor || '-'}
+                                {deposits.particulars || '-'}
                               </span>
                             )}
                           </td>
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'natureOfdeposit' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'natureOfdeposit', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'natureOfdeposit', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'natureOfdeposit', value: deposits.natureOfdeposit || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.natureOfdeposit || '-'}
-                              </span>
-                            )}
-                          </td>
+                  
 
                           <td className="table-cell px-2 py-2 w-36 text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'depositAmount' ? (
