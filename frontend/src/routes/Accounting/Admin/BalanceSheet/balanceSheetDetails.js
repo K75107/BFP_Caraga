@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
@@ -45,6 +45,20 @@ export default function BalanceSheet() {
 
             if (docSnap.exists()) {
                 const balanceSheetData = { id: docSnap.id, ...docSnap.data() };
+                console.log("balance sheet data: ", balanceSheetData)
+
+                // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
+                const convertToLocalDate = (timestamp) => {
+                    const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JavaScript Date
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000); // Adjust to local timezone
+                    return localDate.toISOString().split("T")[0]; // Convert to "yyyy-mm-dd" format
+                };
+
+                const startDate = convertToLocalDate(balanceSheetData.start_date);
+                const endDate = convertToLocalDate(balanceSheetData.end_date);
+
+                console.log("balance sheet start date: ", startDate)
+                console.log("balance sheet end date: ", endDate)
 
                 // Check if ledgerID exists in the balance sheet
                 if (balanceSheetData.ledgerID) {
@@ -67,40 +81,42 @@ export default function BalanceSheet() {
 
                             // Fetch accounts subcollection for each account title
                             const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            const accountsSnap = await getDocs(accountsRef);
+                            let accountsQuery = query(
+                                accountsRef,
+                                where("date", ">=", startDate),   // Filter by start_date
+                                where("date", "<=", endDate)      // Filter by end_date
+                            );
+                            const accountsSnap = await getDocs(accountsQuery);
 
-                            // Initialize sums for debit and credit
-                            let totalDebit = 0;
-                            let totalCredit = 0;
+                            // Only proceed if there are accounts within the date range
+                            if (!accountsSnap.empty) {
+                                // Initialize sums for debit and credit
+                                let totalDebit = 0;
+                                let totalCredit = 0;
 
-                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                const accountData = {
-                                    id: accountDoc.id,
-                                    accountTitleID: titleDoc.id, // Link to the account title ID
-                                    ...accountDoc.data(),
-                                };
+                                const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                    const accountData = {
+                                        id: accountDoc.id,
+                                        accountTitleID: titleDoc.id, // Link to the account title ID
+                                        ...accountDoc.data(),
+                                    };
 
-                                totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+                                    totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                    totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
 
+                                    return accountData;
+                                });
 
-                                console.log('total credit', totalCredit);
-                                console.log('total debit', totalDebit)
+                                // After processing all account documents, you can attach the difference (debit - credit) to the account title
+                                titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
+                                titleData.differenceContra = totalCredit - totalDebit;
 
-                                return accountData;
-                            });
+                                // Continue to add this account title to the list
+                                accountTitlesData.push(titleData);  // Add account title to state
 
-                            // After processing all account documents, you can attach the difference (debit - credit) to the account title
-                            titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
-                            titleData.differenceContra = totalCredit - totalDebit;
-
-
-
-                            // Continue to add this account title to the list
-                            accountTitlesData.push(titleData);  // Add account title to state
-
-                            // Add accounts to a separate state for accounts
-                            accountsData.push(...titleAccounts);
+                                // Add accounts to a separate state for accounts
+                                accountsData.push(...titleAccounts);
+                            }
                         }
 
                         setAccountTitles(accountTitlesData); // Set account titles
@@ -143,7 +159,7 @@ export default function BalanceSheet() {
         )
         .reduce((total, accountTitle) => {
             const amount = accountTitle.accountType === "Contra Assets"
-                ? -accountTitle.differenceContra // Subtract differenceContra for Contra Assets
+                ? +accountTitle.differenceContra // Subtract differenceContra for Contra Assets
                 : accountTitle.difference;        // Use difference for regular Assets
             return total + amount; // Sum the amounts
         }, 0);
@@ -157,7 +173,8 @@ export default function BalanceSheet() {
         }, 0);
 
     // Calculate base equity as Assets - Liabilities
-    let totalEquity = totalAssets - totalLiabilities;
+    let totalNetAssets = totalAssets - totalLiabilities;
+    let totalEquity = totalNetAssets;
 
     // Add any Equity accounts to the calculated equity
     totalEquity += accountTitles
@@ -168,21 +185,30 @@ export default function BalanceSheet() {
         }, 0);
 
     // Data structure for balance sheet (you can replace this with your actual data from Firebase)
-    const balanceSheetData = [
+    const balanceSheetDetailsData = [
         {
             name: "Assets",
             children: accountTitles
                 .filter(accountTitle =>
-                    accountTitle.accountType === "Assets" ||
-                    accountTitle.accountType === "Contra Assets" // Filter for "Assets/Contra Assets" 
+                    accountTitle.accountType === "Assets" || accountTitle.accountType === "Contra Assets"
                 )
+                .sort((a, b) => {
+                    // Sort assets alphabetically, and move Contra Assets to the bottom
+                    if (a.accountType === "Assets" && b.accountType === "Contra Assets") {
+                        return -1;  // Keep "Assets" before "Contra Assets"
+                    } else if (a.accountType === "Contra Assets" && b.accountType === "Assets") {
+                        return 1;   // Move "Contra Assets" after "Assets"
+                    } else {
+                        return a.accountTitle.localeCompare(b.accountTitle);  // Sort alphabetically within the same type
+                    }
+                })
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.accountType === "Contra Assets"
                         ? accountTitle.differenceContra // Use differenceContra for Contra Assets
                         : accountTitle.difference,      // Use difference for regular Assets
                 })),
-            amount: totalAssets // Add the calculated total amount for Assets
+            amount: totalAssets  // Add the calculated total amount for Assets
         },
         {
             name: "Liabilities",
@@ -190,6 +216,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Liabilities"
                 )
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -202,6 +229,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Equity"
                 )
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -215,24 +243,24 @@ export default function BalanceSheet() {
         {
             //GROUP 2
             items: [
-                { label: "Total Current Assets", value: "100,000" },
-                { label: "Total Non-Current Assets", value: "200,000" },
-                { label: "TOTAL ASSETS", value: "300,000" }
+                { label: "Total Current Assets", value: "N/A" },
+                { label: "Total Non-Current Assets", value: "N/A" },
+                { label: "TOTAL ASSETS", value: totalAssets.toLocaleString() }
             ]
         },
         {
             // GROUP 2
             items: [
-                { label: "Total Current Liabilities", value: "50,000" },
-                { label: "Total Non-Current Liabilities", value: "80,000" },
-                { label: "TOTAL LIABILITIES", value: "130,000" }
+                { label: "Total Current Liabilities", value: "N/A" },
+                { label: "Total Non-Current Liabilities", value: "N/A" },
+                { label: "TOTAL LIABILITIES", value: totalLiabilities.toLocaleString() }
             ]
         },
         {
             // GROUP 3
             items: [
-                { label: "Total Assets Less Total Liabilities", value: "170,000" },
-                { label: "Total Net Assets/Equity", value: "170,000" }
+                { label: "Total Assets Less Total Liabilities", value: totalNetAssets.toLocaleString() },
+                { label: "Total Net Assets/Equity", value: totalEquity.toLocaleString() }
             ]
         }
     ];
@@ -254,6 +282,25 @@ export default function BalanceSheet() {
     const Row = ({ item, depth = 0 }) => {
         const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
+        // Helper function to format amounts with parentheses for negative or contra amounts
+        const formatAmount = (amount) => {
+            if (amount < 0) {
+                return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
+            }
+            return amount.toLocaleString(); // Format positive amounts normally
+        };
+
+        // Determine text color based on positive or negative value
+        const getTextColor = (amount) => {
+            if (amount > 0) {
+                return "text-green-500"; // Green for positive values
+            } else if (amount < 0) {
+                return "text-red-500"; // Red for negative values
+            } else {
+                return ""; // Default for zero values
+            }
+        };
+
         return (
             <>
                 <tr className="border-t">
@@ -273,8 +320,8 @@ export default function BalanceSheet() {
                     </td>
 
                     {/* Amount in the second column */}
-                    <td className="px-6 py-4 text-right font-semibold">
-                        {item.amount ? item.amount.toLocaleString() : ''}
+                    <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
+                        {item.amount ? formatAmount(item.amount) : ''}
                     </td>
 
                     {/* Empty column for the "View" or other action */}
@@ -319,7 +366,7 @@ export default function BalanceSheet() {
                         </tr>
                     </thead>
                     <tbody>
-                        {balanceSheetData.map((item, index) => (
+                        {balanceSheetDetailsData.map((item, index) => (
                             <Row key={index} item={item} depth={1} /> // Start with depth 1 for main categories
                         ))}
                     </tbody>
