@@ -470,6 +470,7 @@ const handleAddEntry = async () => {
             case 'Liabilities':
             case 'Equity':
             case 'Revenue':
+            case 'Subsidy': 
             case 'Contra Assets':
                 balance += credit - debit;
                 break;
