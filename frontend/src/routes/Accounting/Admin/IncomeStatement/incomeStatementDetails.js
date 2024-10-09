@@ -153,7 +153,7 @@ export default function IncomeStatement() {
     .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
     let totalNetSurplusDeficit = totalRevenues - totalExpenses;
-    let totalSurplusandDeficit= totalNetSurplusDeficit;
+
 
   
 
@@ -186,7 +186,7 @@ export default function IncomeStatement() {
             amount: totalExpenses
         },
         {
-            name: "Subsidy",
+            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs",
             children: accountTitles
                 .filter(accountTitle =>
                     accountTitle.accountType === "Subsidy"
@@ -194,10 +194,10 @@ export default function IncomeStatement() {
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
-                    amount: accountTitle.differenceContra,
+                    amount: accountTitle.difference,
                 })),
             amount: totalSubsidy    
-        },
+        },  
     ];
 
 
@@ -212,13 +212,20 @@ export default function IncomeStatement() {
             {
                 // GROUP 2
                 items: [
-                    { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() }
+                    { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
+                    { label: "Total Non-Cash Expense" , value: totalExpenses.toLocaleString() },
+                    { label: "Current Operating Expense" , value: totalExpenses.toLocaleString() },
+                    
                 ]
             },
             {
                 // GROUP 3
                 items: [
-                    { label: "TOTAL Surplus/Deficit", value: totalNetSurplusDeficit.toLocaleString() }
+                    {
+                        label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
+                        value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
+                    },
+                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()}
                 ]
             }
         ];
@@ -334,7 +341,7 @@ export default function IncomeStatement() {
                     </thead>
                     <tbody>
                         {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> // Start with depth 1 for main categories
+                            <Row key={index} item={item} depth={1} /> 
                         ))}
                     </tbody>
                 </table>
