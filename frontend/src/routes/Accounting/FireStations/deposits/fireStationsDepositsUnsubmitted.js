@@ -411,10 +411,11 @@ const handleSubmitDataToRegion = async () => {
         // Check if the row is not empty (you can add more fields to this check if needed)
         if (
           data.collectingAgent &&
-          data.dateCollected &&
+          data.dateCollectedStart &&
+          data.dateCollectedEnd &&
+          data.dateDeposited &&
           data.depositAmount &&
           data.particulars &&
-          data.natureOfdeposit &&
           data.nameofDepositor &&
           (data.orNumber || data.lcNumber)
         ){
@@ -486,32 +487,49 @@ const handleSubmitDataToRegion = async () => {
     setShowModal(false);
   
   
-    //Update the undeposited Collections ------------------------------------------------------------------------------
-      try {
-      const submittedCollectionRef = collection(db, 'submittedReportsCollections' ,logginUser.id, 'collections');
+   // Update the undeposited Collections ------------------------------------------------------------------------------
+    try {
+      // Reference to the 'submittedReportsDeposits' collection
+      const submittedDepositsRef = collection(db, 'submittedReportsDeposits', logginUser.id, 'deposits');
 
-      // Retrieve all documents in the collection
-      const querySnapshot = await getDocs(submittedCollectionRef);
+      // Retrieve all documents in the 'submittedReportsDeposits' collection
+      const depositsSnapshot = await getDocs(submittedDepositsRef);
 
+      // Fetch all documents from the 'submittedReportsCollections' collection
+      const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
+      const collectionsSnapshot = await getDocs(submittedCollectionRef);
 
-        // Loop through each document
-        querySnapshot.forEach(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          const dateCollected = data.dateCollected; // Assuming dateCollected is in Firestore Timestamp format
-    
-          // Check if dateCollected is within the specified date range
-          // if (dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
-          //   const docRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', docSnapshot.id);
-    
-          //   // Update the depositStatus
-          //   await updateDoc(docRef, {
-          //     depositStatus: true, 
-          //   });
-          // }
-        });
-      } catch (error) {
-        console.error("Error updating depositStatus: ", error);
-      }
+      // Loop through each deposit document in 'submittedReportsDeposits'
+      depositsSnapshot.forEach(async (depositDoc) => {
+          const depositData = depositDoc.data();
+          const dateCollectedStart = depositData.dateCollectedStart; // Firestore Timestamp
+          const dateCollectedEnd = depositData.dateCollectedEnd; // Firestore Timestamp
+
+          if (!dateCollectedStart || !dateCollectedEnd) {
+              console.warn(`Missing date range in deposit document: ${depositDoc.id}`);
+              return; // Skip if date range is missing
+          }
+
+          // Loop through each collection document in 'submittedReportsCollections'
+          collectionsSnapshot.forEach(async (collectionDoc) => {
+              const collectionData = collectionDoc.data();
+              const dateCollected = collectionData.dateCollected; // Firestore Timestamp
+
+              // Check if dateCollected is within the specified date range
+              if (dateCollected && dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
+                  const collectionDocRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', collectionDoc.id);
+
+                  // Update the depositStatus
+                  await updateDoc(collectionDocRef, {
+                      depositStatus: true,
+                  });
+              }
+          });
+      });
+    } catch (error) {
+      console.error("Error updating depositStatus: ", error);
+    }
+
     
   
   
@@ -719,49 +737,49 @@ const handleSubmitDataToRegion = async () => {
                           </td>
                           
                           <td className="table-cell px-2 py-2 w-[288px] text-[12px]">
-  <div className="flex items-center space-x-2">
-    {/* Start Date (dateCollectedStart) */}
-    {editingCell === deposits.id && editValue.field === 'dateCollectedStart' ? (
-      <input
-        type="date"
-        className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-        value={editValue.startDate || ''}
-        onChange={(e) =>
-          setEditValue({ field: 'dateCollectedStart', startDate: e.target.value, endDate: deposits.dateCollectedEnd })
-        }
-        onBlur={() => handleCellChange(deposits.id, 'dateCollectedStart', editValue.startDate)}
-        autoFocus
-      />
-    ) : (
-      <span
-        onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedStart', startDate: deposits.dateCollectedStart })}
-        className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
-      >
-        {deposits.dateCollectedStart ? deposits.dateCollectedStart : 'From'}
-      </span>
-    )}
+                            <div className="flex items-center space-x-2">
+                              {/* Start Date (dateCollectedStart) */}
+                              {editingCell === deposits.id && editValue.field === 'dateCollectedStart' ? (
+                                <input
+                                  type="date"
+                                  className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                                  value={editValue.startDate || ''}
+                                  onChange={(e) =>
+                                    setEditValue({ field: 'dateCollectedStart', startDate: e.target.value, endDate: deposits.dateCollectedEnd })
+                                  }
+                                  onBlur={() => handleCellChange(deposits.id, 'dateCollectedStart', editValue.startDate)}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedStart', startDate: deposits.dateCollectedStart })}
+                                  className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+                                >
+                                  {deposits.dateCollectedStart ? deposits.dateCollectedStart : 'From'}
+                                </span>
+                              )}
 
-    {/* End Date (dateCollectedEnd) */}
-    {editingCell === deposits.id && editValue.field === 'dateCollectedEnd' ? (
-      <input
-        type="date"
-        className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-        value={editValue.endDate || ''}
-        onChange={(e) =>
-          setEditValue({ field: 'dateCollectedEnd', startDate: deposits.dateCollectedStart, endDate: e.target.value })
-        }
-        onBlur={() => handleCellChange(deposits.id, 'dateCollectedEnd', editValue.endDate)}
-      />
-    ) : (
-      <span
-        onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedEnd', endDate: deposits.dateCollectedEnd })}
-        className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
-      >
-        {deposits.dateCollectedEnd ? deposits.dateCollectedEnd : 'To'}
-      </span>
-    )}
-  </div>
-</td>
+                              {/* End Date (dateCollectedEnd) */}
+                              {editingCell === deposits.id && editValue.field === 'dateCollectedEnd' ? (
+                                <input
+                                  type="date"
+                                  className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                                  value={editValue.endDate || ''}
+                                  onChange={(e) =>
+                                    setEditValue({ field: 'dateCollectedEnd', startDate: deposits.dateCollectedStart, endDate: e.target.value })
+                                  }
+                                  onBlur={() => handleCellChange(deposits.id, 'dateCollectedEnd', editValue.endDate)}
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedEnd', endDate: deposits.dateCollectedEnd })}
+                                  className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+                                >
+                                  {deposits.dateCollectedEnd ? deposits.dateCollectedEnd : 'To'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
 
 
                           

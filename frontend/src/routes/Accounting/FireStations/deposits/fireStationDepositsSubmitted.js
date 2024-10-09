@@ -16,7 +16,7 @@ export default function FireStationDepositsSubmitted() {
 
     //FOR FILTERS -------------------------------------------------------------------------------------------
       // State to track selected category
-        const [selectedCategory, setSelectedCategory] = useState(null);
+        const [selectedCategory, setSelectedCategory] = useState('month');
 
         // Handlers for toggling the checkboxes
         const handleYearChange = () => {
@@ -135,7 +135,7 @@ const groupByDate = (deposits, selectedCategory) => {
     };
 
     // Usage
-    const groupeddeposits = groupByDate(firestationdeposit, selectedCategory);
+    const groupedDeposits = groupByDate(firestationdeposit, selectedCategory);
 
 
 
@@ -150,6 +150,52 @@ const groupByDate = (deposits, selectedCategory) => {
             }));
         };
 
+
+        // For SEARCH ---------------------------------------------------------------------------------------------
+        const [searchQuery, setSearchQuery] = useState(''); // Search input state
+        const [filteredGroupedDeposits, setFilteredGroupedDeposits] = useState(groupedDeposits); // Filtered grouped deposits
+
+        // Function to filter the grouped deposits based on search query
+        const filterGroupedDeposits = (groupedDeposits, searchQuery) => {
+            const filteredGroups = {};
+
+            Object.keys(groupedDeposits).forEach((groupKey) => {
+                const deposits = groupedDeposits[groupKey];
+
+                // Filter deposits based on the search query
+                const filteredRows = deposits.filter((deposit) => {
+                    const date = deposit.date_submitted?.toDate();
+                    if (!date) return false; // Skip if date_submitted is missing
+
+                    let formattedDate;
+
+                    // Format the date based on the selected category
+                    if (selectedCategory === 'year') {
+                        formattedDate = date.toLocaleDateString('en-US', { year: 'numeric' });
+                    } else if (selectedCategory === 'month') {
+                        formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    } else if (selectedCategory === 'day') {
+                        formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                    }
+
+                    // Filter deposits based on the formatted date matching the search query
+                    return formattedDate && formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
+                });
+
+                if (filteredRows.length > 0) {
+                    filteredGroups[groupKey] = filteredRows;
+                }
+            });
+
+            return filteredGroups;
+        };
+
+        // Update filteredGroupedDeposits when searchQuery or groupedDeposits change
+        useEffect(() => {
+            const filtered = filterGroupedDeposits(groupedDeposits, searchQuery);
+            setFilteredGroupedDeposits(filtered);
+        }, [searchQuery, groupedDeposits, selectedCategory]); // Remove selectedDepositFilter from the dependencies
+        // For SEARCH ---------------------------------------------------------------------------------------------
 
 
     return (
@@ -203,62 +249,46 @@ const groupByDate = (deposits, selectedCategory) => {
 
           <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
             {/* Search Form */}
-            <div className="w-full md:w-1/2">
-              <form className="flex items-center">
-                <label htmlFor="simple-search" className="sr-only">Search</label>
-                <div className="relative w-full">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg
-                      aria-hidden="true"
-                      className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    id="simple-search"
-                    className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                    placeholder="Search"
-                    required
-                  />
+                <div className="w-full md:w-1/2">
+                <form className="flex items-center">
+                    <label htmlFor="search" className="sr-only">Search</label>
+                    <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg
+                                aria-hidden="true"
+                                className="w-5 h-5 text-gray-500 dark:text-gray-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="search"
+                            className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+                            autoComplete="off"
+                        />
+                    </div>
+                </form>
                 </div>
-              </form>
-            </div>
 
             {/* Buttons and Dropdowns */}
             <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
 
-              {/* Sort By Dropdown */}
-              <Dropdown
-                label={
-                  <div className="flex items-center">
-                    <span className="mr-2">Sort</span>
-                    <BsChevronDown className="w-4 h-4" /> {/* Chevron Down Icon */}
-                  </div>
-                }
-                dismissOnClick={false}
-                inline={true}
-                arrowIcon={false} // Disabled default arrow icon
-                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-              >
-                <Dropdown.Item>Mass Edit</Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item>Delete all</Dropdown.Item>
-              </Dropdown>
 
 
 
-
- {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}         
+            {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}         
               {/* Filter Dropdown */}
               <Dropdown
                 label={
@@ -346,9 +376,9 @@ const groupByDate = (deposits, selectedCategory) => {
                 <table className="w-full overflow-x-visible">
                 <tbody>
                     {/* Iterate over grouped deposits by date_submitted date */}
-                    {Object.keys(groupeddeposits).map((date) => {
+                    {Object.keys(filteredGroupedDeposits).map((date) => {
                         // Calculate the total amount for each date group
-                        const totalAmount = groupeddeposits[date].reduce(
+                        const totalAmount = filteredGroupedDeposits[date].reduce(
                             (sum, deposit) => sum + parseFloat(deposit.depositAmount || 0),
                             0
                         );
@@ -387,7 +417,7 @@ const groupByDate = (deposits, selectedCategory) => {
 
                                 {/* Conditionally render rows under the current date header */}
                                 {expandedGroups[date] &&
-                                    groupeddeposits[date].map((deposit) => {
+                                    filteredGroupedDeposits[date].map((deposit) => {
                                         const submittedDate = deposit.date_submitted?.toDate();
                                         let formattedDate;
 

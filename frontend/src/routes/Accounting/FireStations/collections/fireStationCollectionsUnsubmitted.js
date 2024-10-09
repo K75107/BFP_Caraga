@@ -424,7 +424,7 @@ const handleSubmitDataToRegion = async () => {
             db,
             'submittedReportsCollections',
             logginUser.id,
-            'Collections'
+            'collections'
           );
 
           // Add the new data to the submitted reports subcollection
