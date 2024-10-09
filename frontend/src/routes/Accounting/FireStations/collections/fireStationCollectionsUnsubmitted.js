@@ -45,6 +45,24 @@ export default function FireStationCollectionsUnsubmitted() {
   //subNavigations
   const [isPending,setIsPending] =useState(true);
 
+  //default classifications
+  const accountCodes = [
+    '628-BFP-01 | Fire Code Construction Tax',
+    '628-BFP-02 | Fire Code Realty Tax',
+    '628-BFP-03 | Fire Code Premium Tax',
+    '628-BFP-04 | Fire Code Sales Tax',
+    '628-BFP-05 | Fire Code Proceeds Tax',
+    '628-BFP-06 | Fire Safety Inspection Fee',
+    '628-BFP-07 | Storage Fee',
+    '628-BFP-08 | Conveyance Clearance Fee',
+    '628-BFP-09 | Installation Clearance Fee',
+    '628-BFP-10 | Fire Code Fines',
+    '628-BFP-11 | Other Fees',
+
+  ]
+
+
+
   useEffect(() => {
     const checkUserInCollections = async (userEmail, collections) => {
       const userFound = collections.find((collection) => collection.email === userEmail);
@@ -64,15 +82,16 @@ export default function FireStationCollectionsUnsubmitted() {
               const defaultDoc = {
                   createdAt:serverTimestamp(),
                   fireStationName: userFound.username,
+                  collectingAgent:null,
                   collectingOfficer: null,
                   dateCollected: null,
                   orNumber: null,
                   lcNumber: null,
                   nameOfPayor:null,
                   natureOfCollection:null,
-                  collectionAmount: null,
+                  collectionAmount: 0,
                   status:null,
-                  depositStatus:null,
+                  depositStatus:false,
                   depositID:null,
                   position: 1 // Default position for the first row
               };
@@ -243,14 +262,15 @@ export default function FireStationCollectionsUnsubmitted() {
         createdAt:serverTimestamp(),
         fireStationName: logginUser.username,
         collectingOfficer: null,
+        collectingAgent:null,
         dateCollected: null,
         orNumber: null,
         lcNumber: null,
         nameOfPayor:null,
         natureOfCollection:null,
-        collectionAmount: null,
+        collectionAmount: 0,
         status:null,
-        depositStatus:null,
+        depositStatus:false,
         depositID:null,
         position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
       };
@@ -313,14 +333,15 @@ const handleAddRowAbove = async () => {
       createdAt:serverTimestamp(),
       fireStationName: logginUser.username,
       collectingOfficer: null,
+      collectingAgent:null,
       dateCollected: null,
       orNumber: null,
       lcNumber: null,
       nameOfPayor:null,
       natureOfCollection:null,
-      collectionAmount: null,
+      collectionAmount: 0,
       status:null,
-      depositStatus:null,
+      depositStatus:false,
       depositID:null,
       position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
     };
@@ -385,6 +406,7 @@ const handleSubmitDataToRegion = async () => {
         // Check if the row is not empty (you can add more fields to this check if needed)
         if (
           data.collectingOfficer &&
+          data.collectingAgent &&
           data.dateCollected &&
           data.collectionAmount &&
           data.nameOfPayor &&
@@ -436,12 +458,13 @@ const handleSubmitDataToRegion = async () => {
       createdAt: serverTimestamp(),
       fireStationName: logginUser.username,
       collectingOfficer: null,
+      collectingAgent:null,
       dateCollected: null,
       orNumber: null,
       lcNumber: null,
       nameOfPayor: null,
       natureOfCollection: null,
-      collectionAmount: null,
+      collectionAmount: 0,
       status: null,
       depositStatus: null,
       depositID: null,
@@ -602,13 +625,14 @@ const handleSubmitDataToRegion = async () => {
               <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                           <tr className="text-[12px]">
                               <th scope="col" className="px-2 py-3 w-40">Collecting Officer</th>
-                              <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
-                              <th scope="col" className="px-2 py-3 w-36">OR Number</th>
-                              <th scope="col" className="px-2 py-3 w-36">LC Number</th>
-                              <th scope="col" className="px-2 py-3 w-36">Name of Payor</th>
-                              <th scope="col" className="px-2 py-3 w-36">Nature of Collection</th>
+                              <th scope="col" className="px-2 py-3 w-40">Collecting Agent</th>
+                              <th scope="col" className="px-2 py-3 w-40">Nature of Collection</th>
+                              <th scope="col" className="pl-4 px-2 py-3 w-32">Date Collected</th>
+                              <th scope="col" className="pl-2 px-2 py-3 w-32">OR Number</th>
+                              <th scope="col" className="px-2 py-3 w-32">LC Number</th>
+                              <th scope="col" className="px-2 py-3 w-40">Name of Payor</th>
                               <th scope="col" className="px-2 py-3 w-36">Amount</th>
-                              <th scope="col" className=" w-[20px] "></th>
+                              <th scope="col" className=" w-[22px] "></th>
                           </tr>
               </thead>
             </table>
@@ -631,7 +655,7 @@ const handleSubmitDataToRegion = async () => {
                             {editingCell === collections.id && editValue.field === 'collectingOfficer' ? (
                               <select
 
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px] py-1"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'collectingOfficer', value: e.target.value })}
                                 onBlur={() => handleCellChange(collections.id, 'collectingOfficer', editValue.value)}
@@ -648,16 +672,74 @@ const handleSubmitDataToRegion = async () => {
                             ) : (
                               <span
                                 onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectingOfficer', value: collections.collectingOfficer || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-2 text-[12px]"
                               >
                                 {collections.collectingOfficer || '-'}
                               </span>
                             )}
 
-                          </td>
+                      </td>
+                      
+                      <td className="table-cell px-2 py-2 w-40 text-[12px]">
+                            {editingCell === collections.id && editValue.field === 'collectingAgent' ? (
+                              <select
+
+                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px] py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'collectingAgent', value: e.target.value })}
+                                onBlur={() => handleCellChange(collections.id, 'collectingAgent', editValue.value)}
+                                autoFocus
+                              >
+                              <option value="" disabled>Select an officer</option>
+                                {/* Dynamically render officers */}
+                                {officersData.map((officer) => (
+                                  <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
+                                    {officer.firstname} {officer.lastname}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span
+                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'collectingAgent', value: collections.collectingAgent || '' }) }}
+                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-2 text-[12px]"
+                              >
+                                {collections.collectingAgent || '-'}
+                              </span>
+                            )}
+
+                      </td>
+
+                      <td className="table-cell px-2 py-2 w-40 text-[12px] overflow-hidden text-ellipsis whitespace-nowrap">
+                        {editingCell === collections.id && editValue.field === 'natureOfCollection' ? (
+                          <select
+                            type="text"
+                            className="border border-gray-400 focus:outline-none w-40 h-8 px-2 text-[12px] py-1"
+                            value={editValue.value}
+                            onChange={(e) => setEditValue({ field: 'natureOfCollection', value: e.target.value })}
+                            onBlur={() => handleCellChange(collections.id, 'natureOfCollection', editValue.value)}
+                            autoFocus
+                          >
+                            <option value="" disabled>Select an officer</option>
+                            {/* Dynamically render officers */}
+                            {accountCodes.map((accountCode, index) => (
+                              <option key={index} value={accountCode}>
+                                {accountCode}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'natureOfCollection', value: collections.natureOfCollection || '' }); }}
+                            className="block border border-gray-300 hover:bg-gray-100 h-8 w-40 px-2  px-2 py-2 text-[12px] overflow-hidden text-ellipsis whitespace-nowrap"
+                          >
+                            {collections.natureOfCollection || '-'}
+                          </span>
+                        )}
+                      </td>
+
 
                           
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-32 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'dateCollected' ? (
                               <input
                                 type="date"
@@ -682,7 +764,7 @@ const handleSubmitDataToRegion = async () => {
                           
 
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-32 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'orNumber' ? (
                               <input
                                 type="text"
@@ -702,7 +784,7 @@ const handleSubmitDataToRegion = async () => {
                             )}
                           </td>
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-32 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
@@ -723,7 +805,7 @@ const handleSubmitDataToRegion = async () => {
                           </td>
 
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-40 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'nameOfPayor' ? (
                               <input
                                 type="text"
@@ -743,25 +825,7 @@ const handleSubmitDataToRegion = async () => {
                             )}
                           </td>
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === collections.id && editValue.field === 'natureOfCollection' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'natureOfCollection', value: e.target.value })}
-                                onBlur={() => handleCellChange(collections.id, 'natureOfCollection', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(collections.id); setEditValue({ field: 'natureOfCollection', value: collections.natureOfCollection || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {collections.natureOfCollection || '-'}
-                              </span>
-                            )}
-                          </td>
+                          
 
                           <td className="table-cell px-2 py-2 w-36 text-[12px]">
                             {editingCell === collections.id && editValue.field === 'collectionAmount' ? (

@@ -83,7 +83,8 @@ export default function FireStationDepositsUnsubmitted() {
                   fireStationName: userFound.username,
                   collectingAgent: null,
                   accountCode:null,
-                  dateCollected: null,
+                  dateCollectedStart: null,
+                  dateCollectedEnd: null,
                   orNumber: null,
                   lcNumber: null,
                   particulars:null,
@@ -263,7 +264,8 @@ export default function FireStationDepositsUnsubmitted() {
         fireStationName: logginUser.username,
         collectingAgent: null,
         accountCode:null,
-        dateCollected: null,
+        dateCollectedStart: null,
+        dateCollectedEnd:null,
         orNumber: null,
         lcNumber: null,
         particulars:null,
@@ -335,7 +337,8 @@ const handleAddRowAbove = async () => {
       fireStationName: logginUser.username,
       collectingAgent: null,
       accountCode:null,
-      dateCollected: null,
+      dateCollectedStart: null,
+      dateCollectedEnd:null,
       orNumber: null,
       lcNumber: null,
       particulars:null,
@@ -461,7 +464,8 @@ const handleSubmitDataToRegion = async () => {
       fireStationName: logginUser.username,
       collectingAgent: null,
       accountCode:null,
-      dateCollected: null,
+      dateCollectedStart: null,
+      dateCollectedEnd:null,
       orNumber: null,
       lcNumber: null,
       particulars: null,
@@ -480,6 +484,37 @@ const handleSubmitDataToRegion = async () => {
 
     // Hide the modal after completion
     setShowModal(false);
+  
+  
+    //Update the undeposited Collections ------------------------------------------------------------------------------
+      try {
+      const submittedCollectionRef = collection(db, 'submittedReportsCollections' ,logginUser.id, 'collections');
+
+      // Retrieve all documents in the collection
+      const querySnapshot = await getDocs(submittedCollectionRef);
+
+
+        // Loop through each document
+        querySnapshot.forEach(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          const dateCollected = data.dateCollected; // Assuming dateCollected is in Firestore Timestamp format
+    
+          // Check if dateCollected is within the specified date range
+          // if (dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
+          //   const docRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', docSnapshot.id);
+    
+          //   // Update the depositStatus
+          //   await updateDoc(docRef, {
+          //     depositStatus: true, 
+          //   });
+          // }
+        });
+      } catch (error) {
+        console.error("Error updating depositStatus: ", error);
+      }
+    
+  
+  
   } catch (error) {
     console.log(error);
   }
@@ -623,26 +658,26 @@ const handleSubmitDataToRegion = async () => {
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
         <button type="button" onClick={handleSubmit} class="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
+        <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
               <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                           <tr className="text-[12px]">
-                              <th scope="col" className="px-2 py-3 w-40">Collecting Agent</th>
-                              <th scope="col" className="px-2 py-3 w-36">Account Code</th>
-                              <th scope="col" className="px-2 py-3 w-36">Date Collected</th>
-                              <th scope="col" className="px-2 py-3 w-36">Date Deposited</th>
-                              <th scope="col" className="px-2 py-3 w-36">OR Number</th>
-                              <th scope="col" className="px-2 py-3 w-36">LC Number</th>
-                              <th scope="col" className="px-2 py-3 w-36">Particulars</th>
-                              <th scope="col" className="px-2 py-3 w-36">Amount</th>
-                              <th scope="col" className="px-2 py-3 w-36">Name of Depositor</th>
+                              <th scope="col" className="px-2 py-3 w-[160px]">Collecting Agent</th>
+                              <th scope="col" className="px-2 py-3 w-[288px] text-center">Date Collected</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">Date Deposited</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">OR Number</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">LC Number</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">Particulars</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">Amount</th>
+                              <th scope="col" className="px-2 py-3 w-[144px]">Name of Depositor</th>
                               <th scope="col" className=" w-[20px] "></th>
                           </tr>
               </thead>
-            </table>
+           
 
             
-            <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
-            <table className='w-full overflow-x-visible'>
+            
+           
                   <tbody>
                   {depositsData.map((deposits) => (
                       <Fragment key={deposits.id}>
@@ -654,7 +689,7 @@ const handleSubmitDataToRegion = async () => {
                       onContextMenu={(e) => handleRightClick(e, deposits)}  // Right-click functionality
                         >
 
-                          <td className="table-cell px-2 w-40 text-[12px]">
+                          <td className="table-cell px-2 w-[160px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'collectingAgent' ? (
                               <select
 
@@ -682,56 +717,57 @@ const handleSubmitDataToRegion = async () => {
                             )}
 
                           </td>
-                          <td className="table-cell px-2 w-40 text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'accountCode' ? (
-                              <select
+                          
+                          <td className="table-cell px-2 py-2 w-[288px] text-[12px]">
+  <div className="flex items-center space-x-2">
+    {/* Start Date (dateCollectedStart) */}
+    {editingCell === deposits.id && editValue.field === 'dateCollectedStart' ? (
+      <input
+        type="date"
+        className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+        value={editValue.startDate || ''}
+        onChange={(e) =>
+          setEditValue({ field: 'dateCollectedStart', startDate: e.target.value, endDate: deposits.dateCollectedEnd })
+        }
+        onBlur={() => handleCellChange(deposits.id, 'dateCollectedStart', editValue.startDate)}
+        autoFocus
+      />
+    ) : (
+      <span
+        onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedStart', startDate: deposits.dateCollectedStart })}
+        className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+      >
+        {deposits.dateCollectedStart ? deposits.dateCollectedStart : 'From'}
+      </span>
+    )}
 
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'accountCode', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'accountCode', editValue.value)}
-                                autoFocus
-                              >
-                              <option value="" disabled>Select an officer</option>
-                              {accountCodes.map((accountcode,index)=>(
-                                  <option key={index} value={accountcode}>{accountcode}</option>
+    {/* End Date (dateCollectedEnd) */}
+    {editingCell === deposits.id && editValue.field === 'dateCollectedEnd' ? (
+      <input
+        type="date"
+        className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+        value={editValue.endDate || ''}
+        onChange={(e) =>
+          setEditValue({ field: 'dateCollectedEnd', startDate: deposits.dateCollectedStart, endDate: e.target.value })
+        }
+        onBlur={() => handleCellChange(deposits.id, 'dateCollectedEnd', editValue.endDate)}
+      />
+    ) : (
+      <span
+        onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedEnd', endDate: deposits.dateCollectedEnd })}
+        className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+      >
+        {deposits.dateCollectedEnd ? deposits.dateCollectedEnd : 'To'}
+      </span>
+    )}
+  </div>
+</td>
 
-                              ))}
-                              </select>
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'accountCode', value: deposits.accountCode || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.accountCode || '-'}
-                              </span>
-                            )}
 
-                          </td>
-
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'dateCollected' ? (
-                              <input
-                                type="date"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] "
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'dateCollected', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'dateCollected', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'dateCollected', value: deposits.dateCollected || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] "
-                              >
-                                {deposits.dateCollected || '-'}
-                              </span>
-                            )}
-                          </td>
                           
 
                           
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'dateDeposited' ? (
                               <input
                                 type="date"
@@ -754,7 +790,7 @@ const handleSubmitDataToRegion = async () => {
                           
 
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'orNumber' ? (
                               <input
                                 type="text"
@@ -774,7 +810,7 @@ const handleSubmitDataToRegion = async () => {
                             )}
                           </td>
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'lcNumber' ? (
                               <input
                                 type="text"
@@ -795,7 +831,7 @@ const handleSubmitDataToRegion = async () => {
                           </td>
 
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'particulars' ? (
                               <input
                                 type="text"
@@ -817,7 +853,7 @@ const handleSubmitDataToRegion = async () => {
 
                   
 
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'depositAmount' ? (
                               <input
                                 type="text"
@@ -836,7 +872,7 @@ const handleSubmitDataToRegion = async () => {
                               </span>
                             )}
                           </td>
-                          <td className="table-cell px-2 py-2 w-36 text-[12px]">
+                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
                             {editingCell === deposits.id && editValue.field === 'nameofDepositor' ? (
                               <input
                                 type="text"
