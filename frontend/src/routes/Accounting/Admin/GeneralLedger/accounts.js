@@ -171,7 +171,7 @@ export default function Accounts() {
                                             <option value="Revenue">Revenue</option>
                                             <option value="Expenses">Expenses</option>
                                             <option value="Contra Assets">Contra Assets</option>
-                                            <option value="Subsidy">Financial Subsidy</option>
+                                            <option value="Subsidy">Subsidy</option>
                                         </select>
                                     ) : (
                                         <span
@@ -284,7 +284,7 @@ export default function Accounts() {
                                 <option value="Revenue">Revenue</option>
                                 <option value="Expenses">Expenses</option>
                                 <option value="Contra Assets">Contra Assets</option>
-                                <option value="Subsidy">Financial Subsidy</option>
+                                <option value="Subsidy">Subsidy</option>
                             </select>
                             <label
                                 htmlFor="account-type"
