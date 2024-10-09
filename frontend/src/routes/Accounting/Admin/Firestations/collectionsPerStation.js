@@ -28,7 +28,7 @@ export default function CollectionsPerStation() {
 
     //FOR FILTERS -------------------------------------------------------------------------------------------
       // State to track selected category
-      const [selectedCategory, setSelectedCategory] = useState(null);
+      const [selectedCategory, setSelectedCategory] = useState('month');
 
       // Handlers for toggling the checkboxes
       const handleYearChange = () => {
@@ -41,6 +41,10 @@ export default function CollectionsPerStation() {
       const handleDayChange = () => {
           setSelectedCategory((prev) => (prev === "day" ? null : "day"));
       };
+
+      const handleNatureOfCollection = () =>{
+          setSelectedCategory('natureOfCollection');
+      }
   //FOR FILTERS -------------------------------------------------------------------------------------------
 
   //Modal
@@ -80,7 +84,7 @@ export default function CollectionsPerStation() {
       // Only run the listener if logUserID is set (i.e., user is found)
       if (logUserID) {
           // Reference the collections subcollection
-          const submittedSubCollectionsDataRef = collection(db, 'submittedReportsCollections', logUserID, 'Collections');
+          const submittedSubCollectionsDataRef = collection(db, 'submittedReportsCollections', logUserID, 'collections');
           
           // Listener for the collections subcollections
           const unsubscribeSubmittedCollectionsDataRef = onSnapshot(submittedSubCollectionsDataRef, (snapshot) => {
@@ -139,10 +143,40 @@ const groupByDate = (collections, selectedCategory) => {
       }, {});
   };
 
-  // Usage
-  const groupedCollections = groupByDate(firestationCollection, selectedCategory);
 
+  const groupByNatureOfCollections = (collections) => {
+      // First, sort the collections by natureOfCollections alphabetically
+      const sortedCollections = collections.sort((a, b) => {
+          const natureA = a.natureOfCollection ? a.natureOfCollection.toLowerCase() : '';
+          const natureB = b.natureOfCollection ? b.natureOfCollection.toLowerCase() : '';
+          return natureA.localeCompare(natureB); // Ascending alphabetical order
+      });
+  
+      return sortedCollections.reduce((grouped, collection) => {
+          const natureOfCollection = collection.natureOfCollection;
+  
+          // Only proceed if natureOfCollections exists
+          if (natureOfCollection) {
+              const key = natureOfCollection.toLowerCase(); // Normalize key to lowercase for consistency
+  
+              if (!grouped[key]) {
+                  grouped[key] = [];
+              }
+  
+              grouped[key].push(collection);
+          }
+  
+          return grouped;
+      }, {});
+  };
+  
 
+      // Usage
+      const groupedCollections = selectedCategory === 'year' || selectedCategory === 'month' || selectedCategory === 'day'
+      ? groupByDate(firestationCollection, selectedCategory)
+      : groupByNatureOfCollections(firestationCollection);
+
+    
 
       // State to manage which groups are expanded/collapsed
       const [expandedGroups, setExpandedGroups] = useState({});
@@ -155,7 +189,99 @@ const groupByDate = (collections, selectedCategory) => {
           }));
       };
 
+      const columns = selectedCategory === 'natureOfCollection'
+      ? [
+          { id: 'natureOfCollection', label: 'Nature of Collection', width: '170px' },
+          { id: 'dateSubmitted', label: 'Date Submitted', width: '144px' },
+          { id: 'collectingOfficer', label: 'Collecting Officer', width: '160px' },
+          { id: 'collectingAgent', label: 'Collecting Agent', width: '160px' },
+          { id: 'dateCollected', label: 'Date Collected', width: '144px' },
+          { id: 'orNumber', label: 'OR Number', width: '128px' },
+          { id: 'lcNumber', label: 'LC Number', width: '128px' },
+          { id: 'nameOfPayor', label: 'Name of Payor', width: '144px' },
+          { id: 'collectionAmount', label: 'Amount', width: '100px' },
+          { id: 'depositStatus', label: 'Status', width: '100px' },
+      ]
+      : [
+          { id: 'dateSubmitted', label: 'Date Submitted', width: '144px' },
+          { id: 'natureOfCollection', label: 'Nature of Collection', width: '170px' },
+          { id: 'collectingOfficer', label: 'Collecting Officer', width: '160px' },
+          { id: 'collectingAgent', label: 'Collecting Agent', width: '160px' },
+          { id: 'dateCollected', label: 'Date Collected', width: '144px' },
+          { id: 'orNumber', label: 'OR Number', width: '128px' },
+          { id: 'lcNumber', label: 'LC Number', width: '128px' },
+          { id: 'nameOfPayor', label: 'Name of Payor', width: '144px' },
+          { id: 'collectionAmount', label: 'Amount', width: '100px' },
+          { id: 'depositStatus', label: 'Status', width: '100px' },
 
+      ];
+
+      // For the display of deposited,undeposited and all
+      const [selectedDepositFilter, setSelectedDepositFilter] = useState('all'); // Default to 'all'
+
+      // For SEARCH ---------------------------------------------------------------------------------------------
+      const [searchQuery, setSearchQuery] = useState(''); // Search input state
+      const [filteredGroupedCollections, setFilteredGroupedCollections] = useState(groupedCollections); // Filtered grouped collections
+
+      // Function to filter the grouped collections based on search query
+      const filterGroupedCollections = (groupedCollections, searchQuery) => {
+          const filteredGroups = {};
+      
+          Object.keys(groupedCollections).forEach((groupKey) => {
+              const collections = groupedCollections[groupKey];
+      
+              // Filter collections based on the selected category and deposit status
+              const filteredRows = collections.filter((collection) => {
+                  const matchesSearchQuery = (collection) => {
+                      if (selectedCategory === 'year' || selectedCategory === 'month' || selectedCategory === 'day') {
+                          const date = collection.date_submitted?.toDate();
+                          if (!date) return false; // Skip if date_submitted is missing
+      
+                          let formattedDate;
+                          
+                          // Format the date based on the selected category
+                          if (selectedCategory === 'year') {
+                              formattedDate = date.toLocaleDateString('en-US', { year: 'numeric' });
+                          } else if (selectedCategory === 'month') {
+                              formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                          } else if (selectedCategory === 'day') {
+                              formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                          }
+      
+                          return formattedDate && formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
+                      } else {
+                          // If selectedCategory is 'natureOfCollection', search by natureOfCollection
+                          return collection.natureOfCollection?.toLowerCase().includes(searchQuery.toLowerCase());
+                      }
+                  };
+      
+                  // Filter based on the selected deposit filter
+                  const matchesDepositFilter = () => {
+                      if (selectedDepositFilter === 'all') return true; // Show all entries
+                      if (selectedDepositFilter === 'deposited') return collection.depositStatus; // Adjust according to your data
+                      if (selectedDepositFilter === 'undeposited') return !collection.depositStatus; // Adjust according to your data
+                      return false; // Default case (should not occur)
+                  };
+      
+                  return matchesSearchQuery(collection) && matchesDepositFilter();
+              });
+      
+              if (filteredRows.length > 0) {
+                  filteredGroups[groupKey] = filteredRows;
+              }
+          });
+      
+          return filteredGroups;
+      };
+      
+      // Update filteredGroupedCollections when searchQuery or groupedCollections change
+      useEffect(() => {
+          const filtered = filterGroupedCollections(groupedCollections, searchQuery);
+          setFilteredGroupedCollections(filtered);
+      }, [searchQuery, groupedCollections, selectedCategory, selectedDepositFilter]); // Make sure to include selectedDepositFilter
+      
+
+      // For SEARCH --------------------------------------------------------------------------------------------
     //From firestations Code -------------------------------------------------------------------------------------------------------------------------
 
 
@@ -220,61 +346,50 @@ const groupByDate = (collections, selectedCategory) => {
             </div>
                 <hr className="border-t border-[#7694D4] my-4" />
 
-                {/* Table Header */}
+        {/* Table Header */}
 
-          <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+        <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
             {/* Search Form */}
-            <div className="w-full md:w-1/2">
-              <form className="flex items-center">
-                <label htmlFor="simple-search" className="sr-only">Search</label>
-                <div className="relative w-full">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg
-                      aria-hidden="true"
-                      className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    id="simple-search"
-                    className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                    placeholder="Search"
-                    required
-                  />
+                <div className="w-full md:w-1/2">
+                <form className="flex items-center">
+                    <label htmlFor="search" className="sr-only">Search</label>
+                    <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg
+                                aria-hidden="true"
+                                className="w-5 h-5 text-gray-500 dark:text-gray-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="search"
+                            className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+                            autoComplete="off"
+                        />
+                    </div>
+                </form>
                 </div>
-              </form>
-            </div>
+
 
             {/* Buttons and Dropdowns */}
             <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
 
-              {/* Sort By Dropdown */}
-              <Dropdown
-                label={
-                  <div className="flex items-center">
-                    <span className="mr-2">Sort</span>
-                    <BsChevronDown className="w-4 h-4" /> {/* Chevron Down Icon */}
-                  </div>
-                }
-                dismissOnClick={false}
-                inline={true}
-                arrowIcon={false} // Disabled default arrow icon
-                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-              >
-                <Dropdown.Item>Mass Edit</Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item>Delete all</Dropdown.Item>
-              </Dropdown>
+             
+
+
 
 
  {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}         
@@ -291,43 +406,90 @@ const groupByDate = (collections, selectedCategory) => {
                 inline={true}
                 arrowIcon={false} // Disabled default arrow icon
                 className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto  hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                style={{zIndex: 3}}
               >
 
-
-                <div className="p-3 w-40">
+                <div className="p-6 w-[170px]" style={{ zIndex: 3 }}>
                     <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white ">
                         Category
                     </h6>
                     <ul className="space-y-2 text-sm ">
                         <li className="flex items-center hover:bg-gray-100 p-1">
-                        <Checkbox
-                            id="year"
-                            label="Year"
-                            checked={selectedCategory === "year"}
-                            onChange={handleYearChange} // Toggle year
-                        />
-                        <span className="ml-2">Year</span>
+                            <Checkbox
+                                id="year"
+                                label="Year"
+                                checked={selectedCategory === "year"}
+                                onChange={handleYearChange} // Toggle year
+                            />
+                            <span className="ml-2">Year</span>
                         </li>
                         <li className="flex items-center hover:bg-gray-100 p-1">
-                        <Checkbox
-                            id="month"
-                            label="Month"
-                            checked={selectedCategory === "month"}
-                            onChange={handleMonthChange} // Toggle month
-                        />
-                        <span className="ml-2">Month</span>
+                            <Checkbox
+                                id="month"
+                                label="Month"
+                                checked={selectedCategory === "month"}
+                                onChange={handleMonthChange} // Toggle month
+                            />
+                            <span className="ml-2">Month</span>
                         </li>
                         <li className="flex items-center hover:bg-gray-100 p-1">
-                        <Checkbox
-                            id="day"
-                            label="day"
-                            checked={selectedCategory === "day"}
-                            onChange={handleDayChange} // Toggle month
-                        />
-                        <span className="ml-2">Day</span>
+                            <Checkbox
+                                id="day"
+                                label="Day"
+                                checked={selectedCategory === "day"}
+                                onChange={handleDayChange} // Toggle day
+                            />
+                            <span className="ml-2">Day</span>
+                        </li>
+                        <li className="flex items-center hover:bg-gray-100 p-1">
+                            <Checkbox
+                                id="natureOfCollection"
+                                label="Nature of Collection"
+                                checked={selectedCategory === "natureOfCollection"}
+                                onChange={handleNatureOfCollection} // Toggle collection
+                            />
+                            <span className="ml-2">Nature of Collection</span>
                         </li>
                     </ul>
+
+                    {/* New Section for Deposit Filter */}
+                    <h6 className="mt-4 mb-3 text-sm font-medium text-gray-900 dark:text-white ">
+                        Deposit Status
+                    </h6>
+                    <div className="space-y-2">
+                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
+                            <input
+                                type="radio"
+                                value="all"
+                                checked={selectedDepositFilter === 'all'}
+                                onChange={() => setSelectedDepositFilter('all')}
+                                className="mr-2"
+                            />
+                            <span>All</span>
+                        </label>
+                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
+                            <input
+                                type="radio"
+                                value="deposited"
+                                checked={selectedDepositFilter === 'deposited'}
+                                onChange={() => setSelectedDepositFilter('deposited')}
+                                className="mr-2"
+                            />
+                            <span>Deposited</span>
+                        </label>
+                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
+                            <input
+                                type="radio"
+                                value="undeposited"
+                                checked={selectedDepositFilter === 'undeposited'}
+                                onChange={() => setSelectedDepositFilter('undeposited')}
+                                className="mr-2"
+                            />
+                            <span>Undeposited</span>
+                        </label>
                     </div>
+                </div>
+
             {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}   
 
               </Dropdown>
@@ -341,104 +503,115 @@ const groupByDate = (collections, selectedCategory) => {
 
 
 
-                      {/* TABLE */}
-                      <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
-                
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
-                        <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-2 w-40">Date Submitted</th>
-                            <th scope="col" className="px-2 py-2 w-40">Collecting Officer</th>
-                            <th scope="col" className="px-2 py-2 w-36">Date Collected</th>
-                            <th scope="col" className="px-2 py-2 w-36">OR Number</th>
-                            <th scope="col" className="px-2 py-2 w-36">LC Number</th>
-                            <th scope="col" className="px-2 py-2 w-36">Name of Payor</th>
-                            <th scope="col" className="px-2 py-2 w-36">Nature of Collection</th>
-                            <th scope="col" className="px-2 py-2 w-36">Amount</th>
-                            <th scope="col" className="w-4"></th>
+            {/* TABLE */}
+            <div className="relative overflow-y-scroll shadow-md sm:rounded-lg h-[500px]">
+                <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky top-0  " style={{zIndex: 1}}>
+                        <tr className="text-[12px] h-10">
+                            {columns.map((col) => (
+                                <th key={col.id} scope="col" className={`px-2 py-2 w-[${col.width}]`}>
+                                    {col.label}
+                                </th>
+                            ))}
                         </tr>
                     </thead>
-                </table>
 
-                <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                <table className="w-full overflow-x-visible">
-                <tbody>
-                    {/* Iterate over grouped collections by date_submitted date */}
-                    {Object.keys(groupedCollections).map((date) => {
-                        // Calculate the total amount for each date group
-                        const totalAmount = groupedCollections[date].reduce(
-                            (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
-                            0
-                        );
+                    <tbody>
+                        {Object.keys(filteredGroupedCollections).map((date) => {
+                            const totalAmount = filteredGroupedCollections[date].reduce(
+                                (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
+                                0
+                            );
 
-                        return (
-                            <React.Fragment key={date}>
-                                {/* Render clickable header row for the date */}
-                                <tr
-                                    className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                                    onClick={() => toggleGroup(date)}
-                                >
-                                    <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative">
-                                        {date}
-                                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                            {expandedGroups[date] ? (
-                                                <MdKeyboardArrowDown size={20} style={{ display: 'inline' }} />
-                                            ) : (
-                                                <MdKeyboardArrowRight size={20} style={{ display: 'inline' }} />
-                                            )}
-                                        </span>
-                                    </td>
-
-                                    {/* Empty cells for alignment */}
-                                    <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                    <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
-                                        {/* Display the total amount */}
-                                        {totalAmount.toFixed(2)}
-                                    </td>
-                                </tr>
-
-                                {/* Conditionally render rows under the current date header */}
-                                {expandedGroups[date] &&
-                                    groupedCollections[date].map((collection) => {
-                                        const submittedDate = collection.date_submitted?.toDate();
-                                        let formattedDate;
-
-                                        if (selectedCategory === 'year') {
-                                            formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                                        } else if (selectedCategory === 'month') {
-                                            formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
-                                        } else {
-                                            formattedDate = '';
-                                        }
-
-                                        return (
-                                            <tr
-                                                key={collection.id}
-                                                className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                            return (
+                                <React.Fragment key={date}>
+                                    <tr
+                                        className="text-[12px] bg-gray-50 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                        onClick={() => toggleGroup(date)}
+                                    >
+                                        {columns.map((col) => (
+                                            <td
+                                                key={col.id}
+                                                className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative`}
                                             >
-                                                <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectingOfficer}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.dateCollected}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.orNumber}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.lcNumber}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.nameOfPayor}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.natureOfCollection}</td>
-                                                <td className="table-cell px-2 py-2 w-36 text-[12px]">{collection.collectionAmount}</td>
-                                            </tr>
-                                        );
-                                    })}
-                            </React.Fragment>
-                        );
-                    })}
-                </tbody>
+                                                {selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection'
+                                                    ? filteredGroupedCollections[date][0]?.natureOfCollection
+                                                    : selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted'
+                                                    ? date
+                                                    : ''}
+                                                {(selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted') || 
+                                                (selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection') ? (
+                                                    <span className="absolute right-[-15px] top-1/2 transform -translate-y-1/2">
+                                                        {expandedGroups[date] ? (
+                                                            <MdKeyboardArrowDown size={20} />
+                                                        ) : (
+                                                            <MdKeyboardArrowRight size={20} />
+                                                        )}
+                                                    </span>
+                                                ) : null}
+                                                {col.id === 'collectionAmount' && (
+                                                    <span>{totalAmount.toFixed(2)}
+                                                    </span>
+                                                 )}
+                                            </td>
+                                        ))}
+                                    </tr>
 
-        </table>
-                </div>
+                                    {expandedGroups[date] &&
+                                        filteredGroupedCollections[date]
+                                            // Apply the deposit status filter before mapping
+                                            .filter((collection) => {
+                                                if (selectedDepositFilter === 'all') return true;
+                                                if (selectedDepositFilter === 'deposited') return collection.depositStatus;
+                                                if (selectedDepositFilter === 'undeposited') return !collection.depositStatus;
+                                            })
+                                            .map((collection) => {
+                                            const submittedDate = collection.date_submitted?.toDate();
+                                            let formattedDate;
+
+                                            if (selectedCategory === 'year') {
+                                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                            } else if (selectedCategory === 'month') {
+                                                formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
+                                            } else if (selectedCategory === 'natureOfCollection') {
+                                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                            } else {
+                                                formattedDate = '';
+                                            }
+
+                                            return (
+                                                <tr
+                                                    key={collection.id}
+                                                    className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                                                >
+                                                    {columns.map((col) => (
+                                                        <td
+                                                        key={col.id}
+                                                        className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] ${
+                                                          col.id === 'collectionAmount' || col.id === 'dateSubmitted' || col.id === 'natureOfCollection' ? 'pl-5' : ''
+                                                        }`}
+                                                      >
+                                                        {col.id === 'natureOfCollection'
+                                                          ? '' // Show empty string if col.id is 'natureOfCollection'
+                                                          : col.id === 'dateSubmitted'
+                                                          ? formattedDate
+                                                          : col.id === 'depositStatus'
+                                                          ? (
+                                                            <span className={collection.depositStatus ? 'text-green-600' : 'text-red-600'}>
+                                                              {collection.depositStatus ? 'Deposited' : 'Undeposited'}
+                                                            </span>
+                                                          )
+                                                          : collection[col.id] || ''} {/* Show the value or empty string */}
+                                                      </td>
+                                                    ))}
+                                                </tr>
+                                            );
+                                        })}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
         </Fragment>
     );
