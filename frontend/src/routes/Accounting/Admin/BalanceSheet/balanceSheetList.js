@@ -30,6 +30,8 @@ export default function BalanceSheet() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteBalanceSheetID, setDeleteBalanceSheetID] = useState(null);
 
+    const [equity, setEquity] = useState("");
+
     // Add New Balance Sheet to the Firestore
     const addNewBalanceSheet = async () => {
         try {
@@ -43,6 +45,7 @@ export default function BalanceSheet() {
                 start_date: startDate,
                 end_date: endDate,
                 ledgerID: selectedLedger,
+                totalNetAssets: equity,
             });
 
             // Fetch the new document from Firestore
@@ -162,7 +165,7 @@ export default function BalanceSheet() {
                                     {balanceSheet.end_date ? balanceSheet.end_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
                                 <td className="px-6 py-4">
-                                    {balanceSheet.totalNetAssets !== undefined ? balanceSheet.totalNetAssets : "N/A"}
+                                    {balanceSheet.totalNetAssets ? balanceSheet.totalNetAssets : "N/A"}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <span
