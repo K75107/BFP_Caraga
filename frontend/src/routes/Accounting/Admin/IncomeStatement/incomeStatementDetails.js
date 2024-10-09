@@ -1,24 +1,50 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc } from "firebase/firestore";
-import Modal from "../../../../components/Modal";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import Modal from "../../../../components/Modal"; // Import the Modal component
 
 export default function IncomeStatement() {
     const navigate = useNavigate();
     const { incomeStatementID } = useParams();
-    const [currentModal, setCurrentModal] = useState(1);
     const [incomeStatement, setIncomeStatement] = useState(null);
     const [accountTitles, setAccountTitles] = useState([]);
     const [accounts, setAccounts] = useState([]);
+    const [incomeStatementData, setIncomeStatementData] = useState([]
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [balanceSheetData, setBalanceSheetData] = useState({
-        ledgerYear: "", // Placeholder for ledger year
-    });
     const [showModal, setShowModal] = useState(false);
     const [selectedLedger, setSelectedLedger] = useState("");
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
+    const [currentModal, setCurrentModal] = useState(1); // Modal state
+    
+    
+
+
+    const Spinner = () => (
+        <div className="flex justify-center items-center h-screen">
+            <div role="status">
+                <svg
+                    aria-hidden="true"
+                    className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" // Set to w-8 h-8 to match original
+                    viewBox="0 0 100 101"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                        fill="currentColor"
+                    />
+                    <path
+                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                        fill="currentFill"
+                    />
+                </svg>
+                <span className="sr-only">Loading...</span>
+            </div>
+        </div>
+    );
 
     const getIncomeStatementDescription = async () => {
         try {
@@ -33,7 +59,8 @@ export default function IncomeStatement() {
                     const ledgerSnap = await getDoc(ledgerRef);
 
                     if (ledgerSnap.exists()) {
-                        balanceSheetData.ledgerYear = ledgerSnap.data().year;
+                        incomeStatementData.ledgerYear = ledgerSnap.data().year;
+                        console.log("Ledger Data:", ledgerSnap.data());
                     }
                 }
 
@@ -70,11 +97,13 @@ export default function IncomeStatement() {
                     accountsData.push(...titleAccounts);
                 }
 
+                console.log("Income Statement Data:", incomeStatementData);
+                
                 setAccountTitles(accountTitlesData);
                 setAccounts(accountsData);
                 setIncomeStatement(incomeStatementData);
             } else {
-                setError("No income statement found.");
+                incomeStatementData.ledgerYear = "N/A"; 
             }
         } catch (err) {
             console.error("Error fetching income statement data:", err);
@@ -103,171 +132,173 @@ export default function IncomeStatement() {
     }, [incomeStatementID]);
 
     if (loading) {
-        return <p>Loading...</p>;
+        return <Spinner />;
     }
 
     if (error) {
         return <p>{error}</p>;
     }
+    // Calculate total Revenue
+    const totalRevenues = accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Revenue")
+        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
-    const calculateTotal = (children) => {
-        return children.reduce((sum, child) => {
-            if (child.children) {
-                return sum + calculateTotal(child.children);
-            }
-            return sum + (child.amount || 0); // Ensure default 0 if amount is undefined
-        }, 0);
-    };
+    // Calculate total Expenses
+    const totalExpenses = accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Expenses")
+        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
-    const incomeStatementData = [
+    const totalSubsidy = accountTitles
+    .filter(accountTitle => accountTitle.accountType === "Subsidy")
+    .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+
+    let totalNetSurplusDeficit = totalRevenues - totalExpenses;
+
+
+  
+
+
+    const incomeStatementDetailsData = [
         {
-            name: "Revenues",
-            amount: calculateTotal([
-                {
-                    name: "Service and Business Income",
-                    children: [
-                        {
-                            name: "Service Income",
-                            children: accountTitles
-                                .filter(accountTitle => accountTitle.accountType === "Revenue")
-                                .map(accountTitle => ({
-                                    name: accountTitle.accountTitle,
-                                    amount: accountTitle.difference || 0, // Ensure default 0 if difference is undefined
-                                })),
-                        },
-                    ],
-                },
-                {
-                    name: "Shares, Grants and Donations",
-                    children: [
-                        {
-                            name: "Grants and Donations",
-                            amount: accountTitles
-                                .filter(accountTitle => accountTitle.accountTitle === "Grants and Donations")
-                                .reduce((sum, accountTitle) => sum + (accountTitle.difference || 0), 0), // Ensure default 0
-                        },
-                    ],
-                },
-                {
-                    name: "Miscellaneous Income",
-                    children: [
-                        {
-                            name: "Miscellaneous",
-                            amount: accountTitles
-                                .filter(accountTitle => accountTitle.accountTitle === "Miscellaneous Income")
-                                .reduce((sum, accountTitle) => sum + (accountTitle.difference || 0), 0), // Ensure default 0
-                        },
-                    ],
-                },
-            ]),
-            children: [
-                {
-                    name: "Service and Business Income",
-                    children: [
-                        {
-                            name: "Service Income",
-                            children: accountTitles
-                                .filter(accountTitle => accountTitle.accountType === "Revenue")
-                                .map(accountTitle => ({
-                                    name: accountTitle.accountTitle,
-                                    amount: accountTitle.difference || 0, // Ensure default 0
-                                })),
-                        },
-                    ],
-                },
-                {
-                    name: "Shares, Grants and Donations",
-                    children: [
-                        {
-                            name: "Grants and Donations",
-                            amount: accountTitles
-                                .filter(accountTitle => accountTitle.accountTitle === "Grants and Donations")
-                                .reduce((sum, accountTitle) => sum + (accountTitle.difference || 0), 0), // Ensure default 0
-                        },
-                    ],
-                },
-                {
-                    name: "Miscellaneous Income",
-                    children: [
-                    ],
-                },
-            ],
+            name: "Revenue",
+            children: accountTitles
+                .filter(accountTitle =>
+                    accountTitle.accountType === "Revenue"
+                )
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                })),
+            amount: totalRevenues  // Add the calculated total amount for Revenue
         },
         {
             name: "Expenses",
-            amount: calculateTotal(
-                accountTitles
-                    .filter(accountTitle => accountTitle.accountType === "Expenses")
-                    .map(accountTitle => ({
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.difference || 0, // Ensure default 0
-                    }))
-            ),
-            children: [
-                {
-                    name: "Maintenance and Other Operating Expenses",
-                    children: accountTitles
-                        .filter(accountTitle => accountTitle.accountType === "Expenses")
-                        .map(accountTitle => ({
-                            name: accountTitle.accountTitle,
-                            amount: accountTitle.difference || 0, // Ensure default 0
-                        })),
-                },
-            ],
+            children: accountTitles
+                .filter(accountTitle => 
+                    accountTitle.accountType === "Expenses"
+                )
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                })),
+            amount: totalExpenses
         },
         {
-            name: "Financial Subsidy from NGAs, LGUs, GOCCs",
-            amount: calculateTotal(
-                accountTitles
-                    .filter(accountTitle => accountTitle.accountType === "Subsidy")
-                    .map(accountTitle => ({
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.difference || 0, 
-                    }))
-            ),
-            children: [], 
-        },
+            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs",
+            children: accountTitles
+                .filter(accountTitle =>
+                    accountTitle.accountType === "Subsidy"
+                )
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
+                .map((accountTitle) => ({
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                })),
+            amount: totalSubsidy    
+        },  
     ];
 
-    const totalRevenues = incomeStatementData.find(item => item.name === "Revenue")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
-    const totalExpenses = incomeStatementData.find(item => item.name === "Expenses")?.children.flatMap(child => child.children).reduce((sum, grandChild) => sum + (grandChild.amount || 0), 0) || 0;
-    const totalFinancialSubsidy = incomeStatementData
-        .find(item => item.name === "Subsidy")
-        ?.amount || 0;
 
-    const totalSurplusDeficit = totalRevenues - totalExpenses;
+        // Group data for the cards
+        const groupData = [
+            {
+                //GROUP 2
+                items: [
+                    { label: "TOTAL Revenue", value: totalRevenues.toLocaleString() }
+                ]
+            },
+            {
+                // GROUP 2
+                items: [
+                    { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
+                    { label: "Total Non-Cash Expense" , value: totalExpenses.toLocaleString() },
+                    { label: "Current Operating Expense" , value: totalExpenses.toLocaleString() },
+                    
+                ]
+            },
+            {
+                // GROUP 3
+                items: [
+                    {
+                        label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
+                        value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
+                    },
+                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()}
+                ]
+            }
+        ];
+        const Card = ({ title, items }) => (
+            <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
+                <h3 className="text-lg font-semibold mb-4">{title}</h3>
+                {items.map((item, index) => (
+                    <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
+                        <span className="font-medium">{item.label}: </span>
+                        {item.value}
+                    </p>
+                ))}
+            </div>
+        );
 
-    const surplusOrDeficit = totalSurplusDeficit > 0 ? "Total Surplus" : totalSurplusDeficit < 0 ? "Total Deficit" : "Break-even";
 
-    const Row = ({ item, depth = 0 }) => {
-        const [isOpen, setIsOpen] = useState(false);
+        
 
-        return (
-            <>
-                <tr className="border-t">
-                    <td
-                        className="px-6 py-4 cursor-pointer"
-                        onClick={() => setIsOpen(!isOpen)}
-                        style={{ paddingLeft: `${depth * 20}px`, width: '70%' }}
-                    >
-                        {item.children ? (
-                            <span>
-                                {isOpen ? "▼" : "▶"} {item.name}
-                            </span>
-                        ) : (
-                            <span>{item.name}</span>
-                        )}
-                    </td>
 
-                    <td className="px-6 py-4 text-right font-semibold" style={{ width: '30%' }}>
-                        {item.amount !== undefined ? item.amount.toLocaleString() : null}
-                    </td>
+        const Row = ({ item, depth = 0 }) => {
+            const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
+
+            // Helper function to format amounts with parentheses for negative or contra amounts
+            const formatAmount = (amount) => {
+                if (amount < 0) {
+                    return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
+                }
+                return amount.toLocaleString(); // Format positive amounts normally
+            };
+
+            // Determine text color based on positive or negative value
+            const getTextColor = (amount) => {
+                if (amount > 0) {
+                    return "text-green-500"; // Green for positive values
+                } else if (amount < 0) {
+                    return "text-red-500"; // Red for negative values
+                } else {
+                    return ""; // Default for zero values
+                }
+            };
+
+            return (
+                <>
+                    <tr className="border-t">
+                        {/* Account name with indentation */}
+                        <td
+                            className="px-6 py-4 cursor-pointer"
+                            onClick={() => setIsOpen(!isOpen)}
+                            style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
+                        >
+                            {item.children ? (
+                                <span>
+                                    {isOpen ? "▼" : "▶"} {item.name}
+                                </span>
+                            ) : (
+                                <span>{item.name}</span>
+                            )}
+                        </td>
+
+                        {/* Amount in the second column */}
+                        <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
+                            {item.amount ? formatAmount(item.amount) : ''}
+                        </td>
+
+                    {/* Empty column for the "View" or other action */}
+                    <td className="px-6 py-4 text-right font-semibold"></td>
                 </tr>
 
+                {/* If the row has children and is open, render child rows directly without nested tables */}
                 {isOpen && item.children && (
                     <>
                         {item.children.map((childItem, index) => (
-                            <Row key={index} item={childItem} depth={depth + 1} />
+                            <Row key={index} item={childItem} depth={depth + 1} /> // Increment depth for children
                         ))}
                     </>
                 )}
@@ -299,45 +330,30 @@ export default function IncomeStatement() {
 
             <hr className="border-t border-[#7694D4] my-4" />
 
-            <div className="overflow-x-auto my-8">
-                <div className="overflow-y-auto max-h-96"> {/* Wrapper for vertical scrollbar */}
-                    <table className="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" className="px-6 py-3">Account Title</th>
-                                <th scope="col" className="px-6 py-3 text-right">
-                                    {`Period - ${incomeStatement?.ledgerYear || "N/A"}`}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {incomeStatementData.map((item, index) => (
-                                <Row key={index} item={item} />
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" className="px-6 py-3">Account Description</th>
+                            <th scope="col" className="px-6 py-3 text-right">Period- {incomeStatement?.ledgerYear || "N/A"}</th>
+                            <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {incomeStatementDetailsData.map((item, index) => (
+                            <Row key={index} item={item} depth={1} /> 
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 shadow rounded">
-                    <h2 className="text-xl font-semibold">Total Revenues</h2>
-                    <p className="text-2xl font-bold">{totalRevenues.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 shadow rounded">
-                    <h2 className="text-xl font-semibold">Total Expenses</h2>
-                    <p className="text-2xl font-bold">{totalExpenses.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 shadow rounded">
-                    <h2 className="text-xl font-semibold">Total Subsidy</h2>
-                    <p className="text-2xl font-bold">{totalFinancialSubsidy.toLocaleString()}</p>
-                </div>
+           {/* Group Data Cards */}
+           <div className="flex flex-wrap justify-evenly mt-8">
+                {groupData.map((group, index) => (
+                    <Card key={index} title={group.title} items={group.items} />
+                ))}
             </div>
 
-            <div className="bg-white p-4 shadow rounded mt-4">
-                <h2 className="text-xl font-semibold">{surplusOrDeficit}</h2>
-                <p className="text-2xl font-bold">{totalSurplusDeficit.toLocaleString()}</p>
-            </div>
             {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
