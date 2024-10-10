@@ -148,16 +148,16 @@ export default function BalanceSheet() {
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                                 onClick={() => navigate(`/main/balanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
                             >
-                                <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                <th scope="row" className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.description || "N/A"}
                                 </th>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.start_date ? balanceSheet.start_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.end_date ? balanceSheet.end_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {balanceSheet.totalNetAssets !== undefined && balanceSheet.totalNetAssets !== null
                                         ? balanceSheet.totalNetAssets.toLocaleString()
                                         : ""}
