@@ -4,14 +4,7 @@ import Modal from "../../../../components/Modal";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { db } from "../../../../config/firebase-config";
-import {
-    collection,
-    addDoc,
-    deleteDoc,
-    doc,
-    getDocs,
-    getDoc
-} from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 
 export default function BalanceSheet() {
 
@@ -165,7 +158,9 @@ export default function BalanceSheet() {
                                     {balanceSheet.end_date ? balanceSheet.end_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
                                 <td className="px-6 py-4">
-                                    {balanceSheet.totalNetAssets ? balanceSheet.totalNetAssets : "N/A"}
+                                    {balanceSheet.totalNetAssets !== undefined && balanceSheet.totalNetAssets !== null
+                                        ? balanceSheet.totalNetAssets.toLocaleString()
+                                        : ""}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <span

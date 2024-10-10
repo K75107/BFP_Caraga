@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
@@ -184,6 +184,22 @@ export default function BalanceSheet() {
             return total + amount; // Sum equity amounts
         }, 0);
 
+    // Function to update totalEquity in the balanceSheet collection
+    const updateTotalEquityInFirestore = async (balanceSheetID, totalEquity) => {
+        try {
+            const balanceSheetRef = doc(db, "balancesheet", balanceSheetID);
+            await updateDoc(balanceSheetRef, {
+                totalNetAssets: totalEquity // Push the totalEquity value to Firestore
+            });
+            console.log("Total net assets successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total equity:", err);
+        }
+    };
+
+    // Call the function to update Firestore after calculating totalEquity
+    updateTotalEquityInFirestore(balanceSheetID, totalEquity);
+
     // Data structure for balance sheet (you can replace this with your actual data from Firebase)
     const balanceSheetDetailsData = [
         {
@@ -208,7 +224,7 @@ export default function BalanceSheet() {
                         ? accountTitle.differenceContra // Use differenceContra for Contra Assets
                         : accountTitle.difference,      // Use difference for regular Assets
                 })),
-            amount: totalAssets  // Add the calculated total amount for Assets
+            amount: totalAssets // Add className for totalAssets
         },
         {
             name: "Liabilities",
@@ -243,23 +259,24 @@ export default function BalanceSheet() {
         {
             //GROUP 2
             items: [
-                { label: "Total Current Assets", value: "N/A" },
-                { label: "Total Non-Current Assets", value: "N/A" },
-                { label: "TOTAL ASSETS", value: totalAssets.toLocaleString() }
+                { label: "Total Assets", value: totalAssets.toLocaleString() }
             ]
         },
         {
             // GROUP 2
             items: [
-                { label: "Total Current Liabilities", value: "N/A" },
-                { label: "Total Non-Current Liabilities", value: "N/A" },
-                { label: "TOTAL LIABILITIES", value: totalLiabilities.toLocaleString() }
+                { label: "Total Liabilities", value: totalLiabilities.toLocaleString() }
             ]
         },
         {
             // GROUP 3
             items: [
-                { label: "Total Assets Less Total Liabilities", value: totalNetAssets.toLocaleString() },
+                { label: "Total Assets Less Total Liabilities", value: totalNetAssets.toLocaleString() }
+            ]
+        },
+        {
+            // GROUP 3
+            items: [
                 { label: "Total Net Assets/Equity", value: totalEquity.toLocaleString() }
             ]
         }
@@ -267,10 +284,10 @@ export default function BalanceSheet() {
 
     // Card component for group data
     const Card = ({ title, items }) => (
-        <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
+            <h3 className="text-lg font-semibold mb-2">{title}</h3>
             {items.map((item, index) => (
-                <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
+                <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
                     <span className="font-medium">{item.label}: </span>
                     {item.value}
                 </p>
@@ -301,9 +318,12 @@ export default function BalanceSheet() {
             }
         };
 
+        // Check if the row is a parent row for "Assets", "Liabilities", or "Equity"
+        const isMainCategory = ["Assets", "Liabilities", "Equity"].includes(item.name);
+
         return (
             <>
-                <tr className="border-t">
+                <tr className="border-t ">
                     {/* Account name with indentation */}
                     <td
                         className="px-6 py-4 cursor-pointer"
@@ -320,8 +340,11 @@ export default function BalanceSheet() {
                     </td>
 
                     {/* Amount in the second column */}
-                    <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
-                        {item.amount ? formatAmount(item.amount) : ''}
+                    <td
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                            }`}
+                    >
+                        {item.amount ? formatAmount(item.amount) : ""}
                     </td>
 
                     {/* Empty column for the "View" or other action */}
