@@ -1,7 +1,8 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import Modal from "../../../../components/Modal";
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
@@ -11,6 +12,12 @@ export default function BalanceSheet() {
     const [accounts, setAccounts] = useState([]); // Separate state for accounts
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [currentModal, setCurrentModal] = useState(1); // Modal state
+    const [showModal, setShowModal] = useState(false);
+
+    const [selectedLedger, setSelectedLedger] = useState("");
+    const [balanceSheetLedgerList, setBalanceSheetLedgerList] = useState([]);
 
     // Spinner Component
     const Spinner = () => (
@@ -37,6 +44,21 @@ export default function BalanceSheet() {
         </div>
     );
 
+    // ---------Fetching ledger list from the Firestore-----------------
+    const getLedgerList = async () => {
+        try {
+            const data = await getDocs(collection(db, "ledger"));
+            const filteredData = data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+            }));
+            setBalanceSheetLedgerList(filteredData);
+        } catch (err) {
+            console.error("Error fetching ledger data:", err);
+        }
+    };
+    // -----------------------------------------------------------------
+    
     // Fetch the balance sheet description and its associated ledger year
     const getBalanceSheetDescription = async () => {
         try {
@@ -45,7 +67,7 @@ export default function BalanceSheet() {
 
             if (docSnap.exists()) {
                 const balanceSheetData = { id: docSnap.id, ...docSnap.data() };
-                console.log("balance sheet data: ", balanceSheetData)
+                // console.log("balance sheet data: ", balanceSheetData)
 
                 // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
                 const convertToLocalDate = (timestamp) => {
@@ -57,8 +79,8 @@ export default function BalanceSheet() {
                 const startDate = convertToLocalDate(balanceSheetData.start_date);
                 const endDate = convertToLocalDate(balanceSheetData.end_date);
 
-                console.log("balance sheet start date: ", startDate)
-                console.log("balance sheet end date: ", endDate)
+                // console.log("balance sheet start date: ", startDate)
+                // console.log("balance sheet end date: ", endDate)
 
                 // Check if ledgerID exists in the balance sheet
                 if (balanceSheetData.ledgerID) {
@@ -141,6 +163,7 @@ export default function BalanceSheet() {
 
     useEffect(() => {
         getBalanceSheetDescription();
+        getLedgerList();
     }, [balanceSheetID]);
 
     if (loading) {
@@ -184,6 +207,22 @@ export default function BalanceSheet() {
             return total + amount; // Sum equity amounts
         }, 0);
 
+    // Function to update totalEquity in the balanceSheet collection
+    const updateTotalEquityInFirestore = async (balanceSheetID, totalEquity) => {
+        try {
+            const balanceSheetRef = doc(db, "balancesheet", balanceSheetID);
+            await updateDoc(balanceSheetRef, {
+                totalNetAssets: totalEquity // Push the totalEquity value to Firestore
+            });
+            // console.log("Total net assets successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total equity:", err);
+        }
+    };
+
+    // Call the function to update Firestore after calculating totalEquity
+    updateTotalEquityInFirestore(balanceSheetID, totalEquity);
+
     // Data structure for balance sheet (you can replace this with your actual data from Firebase)
     const balanceSheetDetailsData = [
         {
@@ -208,7 +247,7 @@ export default function BalanceSheet() {
                         ? accountTitle.differenceContra // Use differenceContra for Contra Assets
                         : accountTitle.difference,      // Use difference for regular Assets
                 })),
-            amount: totalAssets  // Add the calculated total amount for Assets
+            amount: totalAssets 
         },
         {
             name: "Liabilities",
@@ -216,7 +255,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Liabilities"
                 )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) 
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -229,7 +268,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Equity"
                 )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) 
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -243,23 +282,24 @@ export default function BalanceSheet() {
         {
             //GROUP 2
             items: [
-                { label: "Total Current Assets", value: "N/A" },
-                { label: "Total Non-Current Assets", value: "N/A" },
-                { label: "TOTAL ASSETS", value: totalAssets.toLocaleString() }
+                { label: "Total Assets", value: totalAssets.toLocaleString() }
             ]
         },
         {
             // GROUP 2
             items: [
-                { label: "Total Current Liabilities", value: "N/A" },
-                { label: "Total Non-Current Liabilities", value: "N/A" },
-                { label: "TOTAL LIABILITIES", value: totalLiabilities.toLocaleString() }
+                { label: "Total Liabilities", value: totalLiabilities.toLocaleString() }
             ]
         },
         {
             // GROUP 3
             items: [
-                { label: "Total Assets Less Total Liabilities", value: totalNetAssets.toLocaleString() },
+                { label: "Total Assets Less Total Liabilities", value: totalNetAssets.toLocaleString() }
+            ]
+        },
+        {
+            // GROUP 3
+            items: [
                 { label: "Total Net Assets/Equity", value: totalEquity.toLocaleString() }
             ]
         }
@@ -267,10 +307,10 @@ export default function BalanceSheet() {
 
     // Card component for group data
     const Card = ({ title, items }) => (
-        <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
+            <h3 className="text-lg font-semibold mb-2">{title}</h3>
             {items.map((item, index) => (
-                <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
+                <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
                     <span className="font-medium">{item.label}: </span>
                     {item.value}
                 </p>
@@ -301,9 +341,12 @@ export default function BalanceSheet() {
             }
         };
 
+        // Check if the row is a parent row for "Assets", "Liabilities", or "Equity"
+        const isMainCategory = ["Assets", "Liabilities", "Equity"].includes(item.name);
+
         return (
             <>
-                <tr className="border-t">
+                <tr className="border-t ">
                     {/* Account name with indentation */}
                     <td
                         className="px-6 py-4 cursor-pointer"
@@ -311,17 +354,22 @@ export default function BalanceSheet() {
                         style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
                     >
                         {item.children ? (
-                            <span>
+                            <span className={`font-medium ${isMainCategory ? "text-black" : "text-gray-900"}`}>
                                 {isOpen ? "▼" : "▶"} {item.name}
                             </span>
                         ) : (
-                            <span>{item.name}</span>
+                            <span className={`font-normal ${isMainCategory ? "text-black" : "text-gray-900"}`}>
+                                {item.name}
+                            </span>
                         )}
                     </td>
 
                     {/* Amount in the second column */}
-                    <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
-                        {item.amount ? formatAmount(item.amount) : ''}
+                    <td
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                            }`}
+                    >
+                        {item.amount ? formatAmount(item.amount) : ""}
                     </td>
 
                     {/* Empty column for the "View" or other action */}
@@ -346,11 +394,20 @@ export default function BalanceSheet() {
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
                     {balanceSheet.description}
                 </h1>
-                <button
-                    className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
-                >
-                    EXPORT TO EXCEL
-                </button>
+                <div className="flex space-x-4">
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
+                        EXPORT TO EXCEL
+                    </button>
+                    <button
+                        className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
+                    onClick={() => {
+                        setCurrentModal(1);
+                        setShowModal(true);
+                    }}
+                    >
+                        ADD PERIOD
+                    </button>
+                </div>
             </div>
 
             <hr className="border-t border-[#7694D4] my-4" />
@@ -379,6 +436,46 @@ export default function BalanceSheet() {
                     <Card key={index} title={group.title} items={group.items} />
                 ))}
             </div>
+
+            {/* Modal */}
+            {showModal && currentModal === 1 && (
+                <Modal isVisible={showModal}>
+                    <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
+                        <div className="flex justify-between">
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select Ledger Period</h1>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        <form className="max-w-sm mt-5">
+                            <select
+                                id="ledgerselect"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                value={selectedLedger}
+                                onChange={(e) => setSelectedLedger(e.target.value)}
+                            >
+                                <option value="">Select Period</option>
+                                {balanceSheetLedgerList.map((ledger) => (
+                                    <option key={ledger.id} value={ledger.id}>
+                                        {ledger.year}
+                                    </option>
+                                ))}
+                            </select>
+                        </form>
+
+                        <div className="flex justify-end py-3 px-4">
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                                onClick={() => selectedLedger && setCurrentModal(2)}
+                                disabled={!selectedLedger} // Disable when no ledger is selected
+                            >
+                                ADD
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </Fragment>
     );
 
