@@ -1,53 +1,37 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../../config/firebase-config";
-import { Timestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
-import { MdKeyboardArrowRight } from "react-icons/md";
-import { MdKeyboardArrowDown } from "react-icons/md";
+import { MdKeyboardArrowRight, MdKeyboardArrowDown } from "react-icons/md";
+
 export default function FireStationCollectionsSubmitted() {
 
+    // FOR FILTERS -------------------------------------------------------------------------------------------
+    const [selectedCategory, setSelectedCategory] = useState('month');
 
+    // Handlers for toggling the checkboxes
+    const handleYearChange = () => setSelectedCategory((prev) => (prev === "year" ? null : "year"));
+    const handleMonthChange = () => setSelectedCategory((prev) => (prev === "month" ? null : "month"));
+    const handleDayChange = () => setSelectedCategory((prev) => (prev === "day" ? null : "day"));
+    const handleNatureOfCollection = () => setSelectedCategory('natureOfCollection');
+    // FOR FILTERS -------------------------------------------------------------------------------------------
 
-    
-
-    //FOR FILTERS -------------------------------------------------------------------------------------------
-      // State to track selected category
-        const [selectedCategory, setSelectedCategory] = useState('month');
-
-        // Handlers for toggling the checkboxes
-        const handleYearChange = () => {
-            setSelectedCategory((prev) => (prev === "year" ? null : "year"));
-        };
-
-        const handleMonthChange = () => {
-            setSelectedCategory((prev) => (prev === "month" ? null : "month"));
-        };
-        const handleDayChange = () => {
-            setSelectedCategory((prev) => (prev === "day" ? null : "day"));
-        };
-
-        const handleNatureOfCollection = () =>{
-            setSelectedCategory('natureOfCollection');
-        }
-    //FOR FILTERS -------------------------------------------------------------------------------------------
-
-    //Modal
     const [showModal, setShowModal] = useState(false);
-
     const navigate = useNavigate();
     
-    // Define state for firestation collections
+    // Define state for fire station collections
     const [logUserID, setlogUserID] = useState(null);  // Set initial value to null
     const [firestationCollection, setFirestationCollection] = useState([]);
+    const [expandedGroups, setExpandedGroups] = useState({});
+    const [selectedDepositFilter, setSelectedDepositFilter] = useState('all'); // Default to 'all'
+    const [searchQuery, setSearchQuery] = useState(''); // Search input state
+    const [filteredGroupedCollections, setFilteredGroupedCollections] = useState({}); // Filtered grouped collections
 
     useEffect(() => {
-        // Setup listener for the submitted data
         const submittedCollectionRef = collection(db, 'submittedReportsCollections');
         const unsubscribeSubmittedCollections = onSnapshot(submittedCollectionRef, (snapshot) => {
             const submittedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -55,13 +39,9 @@ export default function FireStationCollectionsSubmitted() {
             const auth = getAuth();
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    // Find the current user in the submitted data by matching their email
                     const currentUser = submittedData.find((doc) => doc.email === user.email);
-
                     if (currentUser) {
-                        // Set the current user ID in the state if found in the submitted collections
                         setlogUserID(currentUser.id);
-                        // console.log('User found in submittedReportsCollections:', currentUser);
                     } else {
                         console.log('User not found in submittedReportsCollections');
                     }
@@ -71,48 +51,41 @@ export default function FireStationCollectionsSubmitted() {
             });
         });
 
-        // Return the unsubscribe function to clean up the listener on unmount
         return () => {
             unsubscribeSubmittedCollections();
         };
-    }, []);  // Only runs once on mount
+    }, []);
 
     useEffect(() => {
-        // Only run the listener if logUserID is set (i.e., user is found)
         if (logUserID) {
-            // Reference the collections subcollection
             const submittedSubCollectionsDataRef = collection(db, 'submittedReportsCollections', logUserID, 'collections');
-            
-            // Listener for the collections subcollections
             const unsubscribeSubmittedCollectionsDataRef = onSnapshot(submittedSubCollectionsDataRef, (snapshot) => {
                 const submittedCollectionsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                // console.log(submittedCollectionsList);
                 setFirestationCollection(submittedCollectionsList);
             });
 
-            // Clean up the listener when the component unmounts or when logUserID changes
             return () => {
                 unsubscribeSubmittedCollectionsDataRef();
             };
         }
-    }, [logUserID]);  // This effect runs only when logUserID changes
+    }, [logUserID]);
 
-    // Convert Firestore Timestamp to JavaScript Date
-const formatTimestamp = (timestamp) => {
+
+  // Convert Firestore Timestamp to JavaScript Date
+  const formatTimestamp = (timestamp) => {
     if (!timestamp || !timestamp.seconds) return null;  // Check if timestamp is valid
     return new Date(timestamp.seconds * 1000);  // Convert Firestore Timestamp to JS Date
-};
-
-// For groupings and Toggle of view
-const groupByDate = (collections, selectedCategory) => {
+  };
+  
+  // For groupings and Toggle of view
+  const groupByDate = (collections, selectedCategory) => {
     // First, sort the collections by date_submitted
     const sortedCollections = collections.sort((a, b) => {
         const dateA = a.date_submitted ? a.date_submitted.toDate() : new Date(0); // Fallback to epoch if date_submitted is missing
         const dateB = b.date_submitted ? b.date_submitted.toDate() : new Date(0);
         return dateA - dateB; // Ascending order (use dateB - dateA for descending)
     });
-
+  
     return sortedCollections.reduce((grouped, collection) => {
             const date_submitted = collection.date_submitted ? formatTimestamp(collection.date_submitted) : null;
             let groupKey;
@@ -131,7 +104,7 @@ const groupByDate = (collections, selectedCategory) => {
             } else {
                 groupKey = "N/A";
             }
-
+  
             if (!grouped[groupKey]) {
                 grouped[groupKey] = [];
             }
@@ -139,8 +112,8 @@ const groupByDate = (collections, selectedCategory) => {
             return grouped;
         }, {});
     };
-
-
+  
+  
     const groupByNatureOfCollections = (collections) => {
         // First, sort the collections by natureOfCollections alphabetically
         const sortedCollections = collections.sort((a, b) => {
@@ -167,17 +140,13 @@ const groupByDate = (collections, selectedCategory) => {
         }, {});
     };
     
-
+  
         // Usage
         const groupedCollections = selectedCategory === 'year' || selectedCategory === 'month' || selectedCategory === 'day'
         ? groupByDate(firestationCollection, selectedCategory)
         : groupByNatureOfCollections(firestationCollection);
-
+  
       
-
-        // State to manage which groups are expanded/collapsed
-        const [expandedGroups, setExpandedGroups] = useState({});
-
         // Toggle function to expand/collapse groups
         const toggleGroup = (date) => {
             setExpandedGroups((prevExpandedGroups) => ({
@@ -185,7 +154,7 @@ const groupByDate = (collections, selectedCategory) => {
                 [date]: !prevExpandedGroups[date],
             }));
         };
-
+  
         const columns = selectedCategory === 'natureOfCollection'
         ? [
             { id: 'natureOfCollection', label: 'Nature of Collection', width: '170px' },
@@ -210,16 +179,9 @@ const groupByDate = (collections, selectedCategory) => {
             { id: 'nameOfPayor', label: 'Name of Payor', width: '144px' },
             { id: 'collectionAmount', label: 'Amount', width: '100px' },
             { id: 'depositStatus', label: 'Status', width: '100px' },
-
+  
         ];
-
-        // For the display of deposited,undeposited and all
-        const [selectedDepositFilter, setSelectedDepositFilter] = useState('all'); // Default to 'all'
-
-        // For SEARCH ---------------------------------------------------------------------------------------------
-        const [searchQuery, setSearchQuery] = useState(''); // Search input state
-        const [filteredGroupedCollections, setFilteredGroupedCollections] = useState(groupedCollections); // Filtered grouped collections
-
+  
         // Function to filter the grouped collections based on search query
         const filterGroupedCollections = (groupedCollections, searchQuery) => {
             const filteredGroups = {};
@@ -277,10 +239,7 @@ const groupByDate = (collections, selectedCategory) => {
             setFilteredGroupedCollections(filtered);
         }, [searchQuery, groupedCollections, selectedCategory, selectedDepositFilter]); // Make sure to include selectedDepositFilter
         
-
-        // For SEARCH --------------------------------------------------------------------------------------------
-
-
+  
 
 
     return (

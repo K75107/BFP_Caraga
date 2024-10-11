@@ -7,7 +7,6 @@ import { db } from "../../../../config/firebase-config";
 import { Timestamp } from "firebase/firestore";
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
-import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 

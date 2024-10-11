@@ -40,7 +40,7 @@ import CollectionsPerStation from './routes/Accounting/Admin/Firestations/collec
 import FirestationReports from './routes/Accounting/Admin/Firestations/firestationReports';
 import ReportsOverview from './routes/Accounting/Admin/Firestations/reportsOverview';
 import DepositsPerStation from './routes/Accounting/Admin/Firestations/depositsPerStation';
-
+import GeneratedReports from './routes/Accounting/Admin/Firestations/reportsGenerated';
 
 import FireStationDepositsSubmitted from './routes/Accounting/FireStations/deposits/fireStationDepositsSubmitted';
 import FireStationDepositsUnsubmitted from './routes/Accounting/FireStations/deposits/fireStationsDepositsUnsubmitted';
@@ -182,6 +182,11 @@ const router = createBrowserRouter([
             path: '/main/reports/deposits/:userId',
             element: <DepositsPerStation/>
           },
+          {
+            path: 'generateReports',
+            element: <GeneratedReports/>
+          },
+          
           {
             index:true,
             element: <Navigate to = 'firestationReports'/>
