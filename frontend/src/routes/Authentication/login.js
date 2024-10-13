@@ -23,10 +23,15 @@ export default function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      // Redirect based on user role (assuming role is stored in user metadata or database)
+  
       // Example: const role = user.role; // Retrieve role from user object or database
-      // Here, we'll assume you have a way to fetch the role
       const role = "Admin"; // Replace with actual role fetching logic
+  
+      // Store 'true' as a string explicitly
+      sessionStorage.setItem('loginSuccess', 'true');
+
+  
+      // Redirect based on the role
       switch (role) {
         case 'Admin':
           navigate('/main/dashboard');
@@ -34,7 +39,6 @@ export default function Login() {
         case 'Regional Accountant':
           navigate('/main/generalLedger');
           break;
-        // Add more cases for other roles...
         default:
           navigate('/main/dashboard');
       }
@@ -42,6 +46,7 @@ export default function Login() {
       setError("Invalid email or password. Please try again.");
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/bfpbackground.png)' }}>
