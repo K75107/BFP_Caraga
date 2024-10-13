@@ -58,7 +58,7 @@ export default function BalanceSheet() {
         }
     };
     // -----------------------------------------------------------------
-    
+
     // Fetch the balance sheet description and its associated ledger year
     const getBalanceSheetDescription = async () => {
         try {
@@ -346,7 +346,7 @@ export default function BalanceSheet() {
 
         return (
             <>
-                <tr className="border-t ">
+                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                     {/* Account name with indentation */}
                     <td
                         className="px-6 py-4 cursor-pointer"
