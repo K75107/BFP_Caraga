@@ -87,13 +87,13 @@ export default function LedgerList() {
             setLedgerYear("");
 
 
-            //Alerts
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
             setIsSuccess(true);
             const timer = setTimeout(() => {
                 setIsSuccess(false);
             }, 2000)
             return () => clearTimeout(timer);
-
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
 
 
         } catch (err) {
@@ -110,14 +110,13 @@ export default function LedgerList() {
             // Update the state to remove the deleted ledger from the list
             setLedgerList((prevLedgerList) => prevLedgerList.filter((ledger) => ledger.id !== deleteLedgerID));
 
-
-             //Alerts
-             setIsError(true);
-             const timer = setTimeout(() => {
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setIsError(true);
+            const timer = setTimeout(() => {
                 setIsError(false);
-             }, 2000)
-             return () => clearTimeout(timer);
- 
+            }, 2000)
+            return () => clearTimeout(timer);
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
 
         } catch (err) {
             console.error("Error deleting document:", err);
@@ -126,6 +125,8 @@ export default function LedgerList() {
 
     return (
         <Fragment>
+
+            {/**---------------------------------------------Alerts--------------------------------------- */}
             {isSuccess && (
                 <div className="absolute top-4 right-4">
                     <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Ledger Created'} icon={'check'} />
@@ -136,11 +137,12 @@ export default function LedgerList() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Ledger Deleted'} icon={'wrong'} />
                 </div>
             )}
-
+            {/**---------------------------------------------Alerts--------------------------------------- */}
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
                 <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>ADD LEDGER</button>
             </div>
+
 
             <hr className="border-t border-[#7694D4] my-4" />
 
