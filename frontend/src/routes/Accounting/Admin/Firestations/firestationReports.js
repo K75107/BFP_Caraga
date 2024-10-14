@@ -329,8 +329,8 @@ export default function FirestationReports() {
                 <div className="grow bg-white">
                     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                         <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                            <table className="w-full text-sm text-left  text-black-700 ">
-                                <thead className="text-xs uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <table className="w-full text-left text-black-700 ">
+                                <thead className="text-[12px] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>
                                         <th scope="col" className="px-2 py-3 w-[120px]">Province</th>
                                         <th scope="col" className="px-2 py-3 w-[120px]">Firestation</th>
@@ -344,10 +344,10 @@ export default function FirestationReports() {
                                     {Object.entries(groupedData).map(([province, collections]) => (
                                         <Fragment key={province}>
                                             <tr
-                                                className=" text-[12px] bg-gray-100 h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                                className=" text-[14px] bg-gray-100 h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
                                                 onClick={() => toggleProvince(province)}
                                             >
-                                                <td className=" table-cell px-2 py-2 w-[120px] text-[12px] h-8 px-2">
+                                                <td className=" table-cell px-2 py-2 w-[120px] text-[14px] h-8 px-2">
                                                     {province}
 
                                                     {toggledRows[province] ? (
@@ -357,11 +357,11 @@ export default function FirestationReports() {
                                                     )}
 
                                                 </td>
-                                                <td className=" table-cell px-2 py-2 w-[120px] text-[12px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[12px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[12px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[12px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[12px] h-8 px-2"></td>
+                                                <td className=" table-cell px-2 py-2 w-[120px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
 
                                             </tr>
 
@@ -371,15 +371,15 @@ export default function FirestationReports() {
                                                     className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer h-8"
                                                     onClick={() => navigate(`/main/reports/overview/${collection.id}`)}
                                                 >
-                                                    <td className="text-[12px] px-2 py-2 w-[120px]"></td>
-                                                    <td className="text-[12px] px-2 py-2 w-[120px]">
+                                                    <td className="text-[14px] px-2 py-2 w-[120px]"></td>
+                                                    <td className="text-[14px] px-2 py-2 w-[120px]">
                                                         {collection.username}
                                                     </td>
-                                                    <td className="text-[12px] px-2 py-2 w-[150px]">
+                                                    <td className="text-[14px] px-2 py-2 w-[150px]">
                                                         {collection.province + ', ' + collection.municipalityCity}
                                                     </td>
-                                                    <td className="text-[12px] px-2 py-2 w-[150px]"></td>
-                                                    <td className="text-[12px] px-2 py-2 w-[150px]"></td>
+                                                    <td className="text-[14px] px-2 py-2 w-[150px]"></td>
+                                                    <td className="text-[14px] px-2 py-2 w-[150px]"></td>
 
                                                 </tr>
                                             ))}
