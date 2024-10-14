@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal";
+import { useLocation } from "react-router-dom";
+import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
@@ -18,6 +20,10 @@ export default function BalanceSheet() {
 
     const [selectedLedger, setSelectedLedger] = useState("");
     const [balanceSheetLedgerList, setBalanceSheetLedgerList] = useState([]);
+
+    const location = useLocation();
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     // Spinner Component
     const Spinner = () => (
@@ -166,6 +172,19 @@ export default function BalanceSheet() {
         getLedgerList();
     }, [balanceSheetID]);
 
+    useEffect(() => {
+        if (!loading && location.state?.successMessage) {
+            setSuccessMessage(location.state.successMessage);
+            setIsSuccess(true);
+
+            const timer = setTimeout(() => {
+                setIsSuccess(false);
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [loading, location.state]);
+
     if (loading) {
         return <Spinner />;
     }
@@ -214,7 +233,7 @@ export default function BalanceSheet() {
             await updateDoc(balanceSheetRef, {
                 totalNetAssets: totalEquity // Push the totalEquity value to Firestore
             });
-            // console.log("Total net assets successfully updated in Firestore.");
+            console.log("Total net assets successfully updated in Firestore.");
         } catch (err) {
             console.error("Error updating total equity:", err);
         }
@@ -247,7 +266,7 @@ export default function BalanceSheet() {
                         ? accountTitle.differenceContra // Use differenceContra for Contra Assets
                         : accountTitle.difference,      // Use difference for regular Assets
                 })),
-            amount: totalAssets 
+            amount: totalAssets
         },
         {
             name: "Liabilities",
@@ -255,7 +274,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Liabilities"
                 )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) 
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -268,7 +287,7 @@ export default function BalanceSheet() {
                 .filter(accountTitle =>
                     accountTitle.accountType === "Equity"
                 )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) 
+                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
                 .map((accountTitle) => ({
                     name: accountTitle.accountTitle,
                     amount: accountTitle.differenceContra,
@@ -390,6 +409,16 @@ export default function BalanceSheet() {
 
     return (
         <Fragment>
+            {/* Success Alert */}
+            {isSuccess && (
+                <div className="absolute top-4 right-4">
+                    <SuccessUnsuccessfulAlert
+                        isSuccess={isSuccess}
+                        message={successMessage}
+                        icon="check"
+                    />
+                </div>
+            )}
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
                     {balanceSheet.description}
@@ -400,10 +429,10 @@ export default function BalanceSheet() {
                     </button>
                     <button
                         className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
-                    onClick={() => {
-                        setCurrentModal(1);
-                        setShowModal(true);
-                    }}
+                        onClick={() => {
+                            setCurrentModal(1);
+                            setShowModal(true);
+                        }}
                     >
                         ADD PERIOD
                     </button>
