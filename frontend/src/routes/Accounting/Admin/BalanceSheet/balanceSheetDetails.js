@@ -349,7 +349,7 @@ export default function BalanceSheet() {
                 <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                     {/* Account name with indentation */}
                     <td
-                        className="px-6 py-4 cursor-pointer"
+                        className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
                         onClick={() => setIsOpen(!isOpen)}
                         style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
                     >
