@@ -4,6 +4,7 @@ import Modal from "../../../../components/Modal";
 import { db } from "../../../../config/firebase-config";
 import { getDocs, collection, addDoc, deleteDoc, doc } from "firebase/firestore"; // Import deleteDoc and doc
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 
 export default function LedgerList() {
     const [showModal, setShowModal] = useState(false);
@@ -138,6 +139,25 @@ export default function LedgerList() {
                 </div>
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
+
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                                <RiBook2Fill className="mr-2"></RiBook2Fill>
+                                General Ledger
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
+
+
+
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
                 <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>ADD LEDGER</button>
