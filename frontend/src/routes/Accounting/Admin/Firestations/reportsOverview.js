@@ -13,6 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { PiStack, PiStackFill } from "react-icons/pi";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -196,6 +197,35 @@ export default function ReportsOverview() {
 
   return (
     <Fragment>
+      {/**Breadcrumbs */}
+      <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+          <li class="inline-flex items-center">
+            <button onClick={() => navigate("/main/reports/firestationReports")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+              <PiStackFill className="mr-2"></PiStackFill>
+              Collections & Deposits
+            </button>
+          </li>
+          <li aria-current="page">
+            <div class="flex items-center">
+              <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+              </svg>
+              <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{firestationUsername}</span>
+            </div>
+          </li>
+          <li aria-current="page">
+            <div class="flex items-center">
+              <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+              </svg>
+              <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Overview</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+      {/**Breadcrumbs */}
+
       <div className="flex flex-col space-y-6 w-full mb-2">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-800">
@@ -204,7 +234,7 @@ export default function ReportsOverview() {
         </div>
       </div>
 
-      {/* Unsubmitted and Submitted */}
+      {/* Navigations */}
       <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
         <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
           <li className="me-2" role="presentation">

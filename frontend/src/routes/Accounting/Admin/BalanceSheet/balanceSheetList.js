@@ -6,6 +6,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 
 export default function BalanceSheet() {
 

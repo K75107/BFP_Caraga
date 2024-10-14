@@ -122,7 +122,7 @@ export default function Accounts() {
                     </thead>
                 </table>
                 <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                <table className='w-full overflow-x-visible'>
+                <table className='w-full overflow-x-visible text-[14px]'>
                    
                 <tbody>
                         {accountsData.map((account) => (

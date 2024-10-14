@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
 import Modal from "../../../../components/Modal"; // Import the Modal component
+import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
+
 
 export default function IncomeStatement() {
     const navigate = useNavigate();
@@ -308,6 +310,27 @@ export default function IncomeStatement() {
 
     return (
         <Fragment>
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li class="inline-flex items-center">
+                        <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                            <RiFileAddFill className="mr-2"></RiFileAddFill>
+                            Income Statement
+                        </button>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+                            </svg>
+                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{incomeStatement.description}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
                     {incomeStatement.description}
