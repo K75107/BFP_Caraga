@@ -12,6 +12,8 @@ import {
     getDocs,
     getDoc
 } from "firebase/firestore";
+import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
+
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -100,6 +102,22 @@ export default function IncomeStatementList() {
 
     return (
         <Fragment>
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                                <RiFileAddFill className="mr-2"></RiFileAddFill>
+                                Income Statement
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
+
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Income Statement</h1>
                 <button

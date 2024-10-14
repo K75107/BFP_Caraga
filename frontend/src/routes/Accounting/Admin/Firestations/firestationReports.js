@@ -7,6 +7,7 @@ import { Dropdown, Checkbox } from 'flowbite-react';
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
+import { PiStack, PiStackFill } from "react-icons/pi";
 
 export default function FirestationReports() {
     const navigate = useNavigate();
@@ -62,6 +63,21 @@ export default function FirestationReports() {
 
     return (
         <Fragment>
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                                <PiStackFill className="mr-2"></PiStackFill>
+                                Collections & Deposits
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
             <div className="flex flex-col space-y-6 w-full mb-2">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-semibold text-gray-800">
@@ -91,7 +107,7 @@ export default function FirestationReports() {
                     </li>
                     <li className="me-2" role="presentation">
                         <button
-                           
+
                             onClick={() => navigate(`/main/reports/generateReports`)}
                             className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
                             id="profile-styled-tab"
@@ -146,7 +162,7 @@ export default function FirestationReports() {
                 {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
                 {/* Buttons and Dropdowns */}
                 <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
-                <Dropdown
+                    <Dropdown
                         label={
                             <div className="flex items-center">
                                 <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
