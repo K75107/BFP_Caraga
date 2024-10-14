@@ -168,7 +168,7 @@ export default function LedgerList() {
 
             {/*TABLE*/}
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
+                <thead className="text-[13px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
                     <tr>
                         <th scope="col" className="px-2 py-3 w-72">DESCRIPTION</th>
                         <th scope="col" className="px-2 py-3 w-72">Year</th>
@@ -179,7 +179,7 @@ export default function LedgerList() {
                 </thead>
             </table>
             <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                <table className='w-full overflow-x-visible'>
+                <table className='text-[14px]  w-full overflow-x-visible'>
                     <tbody>
                         {ledgerList.map((ledger) => (
                             <tr

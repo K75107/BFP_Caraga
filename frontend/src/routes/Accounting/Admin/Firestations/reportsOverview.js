@@ -234,7 +234,7 @@ export default function ReportsOverview() {
         </div>
       </div>
 
-      {/* Unsubmitted and Submitted */}
+      {/* Navigations */}
       <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
         <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
           <li className="me-2" role="presentation">
