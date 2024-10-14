@@ -8,15 +8,16 @@ import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from "react-router-dom";
-
 import { IoMdAddCircleOutline } from "react-icons/io";
+import { debounce } from 'lodash'; // Import debounce from lodash for debouncing updates
+
 
 export default function FireStationDepositsUnsubmitted() {
 
   const navigate = useNavigate();
 
   const [firestationdeposit, setFirestationdeposit] = useState([]);
-  const [depositsData, setdepositsData] = useState([]);
+  const [depositsData, setDepositsData] = useState([]);
 
   //Hover on Rows
   const [hoveredRowId, setHoveredRowId] = useState(null);
@@ -91,7 +92,7 @@ export default function FireStationDepositsUnsubmitted() {
                   natureOfdeposit:null,
                   depositAmount: null,
                   status:null,
-                  depositStatus:null,
+                  depositStatus:false,
                   nameofDepositor:null,
                   depositID:null,
                   position: 1 // Default position for the first row
@@ -103,19 +104,19 @@ export default function FireStationDepositsUnsubmitted() {
 
               // Immediately update the state with the new document
               const newDocument = { id: newDocRef.id, ...defaultDoc };
-              setdepositsData([newDocument]); // Update with the new default row
+              setDepositsData([newDocument]); // Update with the new default row
 
               // Optionally fetch existing documents to merge them
               const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-              setdepositsData(prevData => [newDocument, ...sortedSubdepositDocs]); // Merge new document with any existing ones
+              setDepositsData(prevData => [newDocument, ...sortedSubdepositDocs]); // Merge new document with any existing ones
           } else {
               // Fetch and sort subdeposit documents by position
               const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
               const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-              setdepositsData(sortedSubdepositDocs); // Update state with sorted documents
+              setDepositsData(sortedSubdepositDocs); // Update state with sorted documents
           }
 
           /*------------------------------------------------------------------------------------------------------------------ */
@@ -160,65 +161,70 @@ export default function FireStationDepositsUnsubmitted() {
   
 
 
-  const handleCellChange = async (depositId, field, newValue) => {
-    try {
-      // Fetch the current authenticated user
-      const auth = getAuth();
-      const user = auth.currentUser;
-  
-      if (!user) {
-        console.error('No logged-in user found.');
-        return;
-      }
-  
-      // Check if the logged-in user's email matches any document in firestationReportsDeposits
-      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsDeposits'));
-  
-      // Find the document where the email matches the logged-in user's email
-      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
-  
-      if (!userDoc) {
-        console.error('No unsubmitted deposit found for the logged-in user.');
-        return;
-      }
-  
-      // Check if the subdeposit 'deposits' exists for the user's document
-      const depositsSubdepositRef = collection(db, 'firestationReportsDeposits', userDoc.id, 'deposits');
-      const docSnapshot = await getDoc(doc(depositsSubdepositRef, depositId));
-  
-      if (!docSnapshot.exists()) {
-        console.error(`No deposit document found with ID ${depositId}.`);
-        return;
-      }
-  
-      const existingData = docSnapshot.data();
-  
-      // Only update if there is a change in value
-      if (existingData[field] === newValue) {
-        console.log('No changes detected, skipping update.');
-        return;
-      }
-  
-      // Update the specific field of the deposit document
-      await updateDoc(doc(depositsSubdepositRef, depositId), {
-        [field]: newValue
-      });
-  
-      // Update the local state after a successful update
-      setdepositsData(prevdeposits =>
-        prevdeposits.map(deposit =>
-          deposit.id === depositId ? { ...deposit, [field]: newValue } : deposit
-        )
-      );
-  
-      // Clear the editing state after a successful update
-      setEditingCell(null);
-      setEditValue('');
-  
-    } catch (error) {
-      console.error('Error updating deposit field:', error);
+const handleCellChange = async (collectionId, field, newValue) => {
+  try {
+    // Optimistic update: Update local state immediately
+    setDepositsData(prevCollections =>
+      prevCollections.map(collection =>
+        collection.id === collectionId ? { ...collection, [field]: newValue } : collection
+      )
+    );
+
+    // Debounced Firebase update to avoid too frequent writes
+    debouncedUpdate(collectionId, field, newValue);
+    
+    // Clear editing state
+    setEditingCell(null);
+    setEditValue('');
+    
+  } catch (error) {
+    console.error('Error updating collection field:', error);
+  }
+};
+
+// Debounced function to handle Firebase update
+const debouncedUpdate = debounce(async (depositId, field, newValue) => {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      // console.error('No logged-in user found.');
+      return;
     }
-  };
+
+    const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsDeposits'));
+
+    const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+
+    if (!userDoc) {
+      // console.error('No unsubmitted collection found for the logged-in user.');
+      return;
+    }
+
+    const collectionsSubCollectionRef = collection(db, 'firestationReportsDeposits', userDoc.id, 'deposits');
+    const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, depositId));
+
+    if (!docSnapshot.exists()) {
+      // console.error(`No collection document found with ID ${depositId}.`);
+      return;
+    }
+
+    const existingData = docSnapshot.data();
+
+    if (existingData[field] === newValue) {
+      // console.log('No changes detected, skipping update.');
+      return;
+    }
+
+    await updateDoc(doc(collectionsSubCollectionRef, depositId), {
+      [field]: newValue
+    });
+  } catch (error) {
+    console.error('Error updating collection field:', error);
+  }
+}, 1000); // Delay of 1 second for debouncing
+
 
 
 
@@ -273,7 +279,7 @@ export default function FireStationDepositsUnsubmitted() {
         depositAmount: null,
         nameofDepositor:null,
         status:null,
-        depositStatus:null,
+        depositStatus:false,
         depositID:null,
         position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
       };
@@ -291,7 +297,7 @@ export default function FireStationDepositsUnsubmitted() {
       };
 
       // Update the local state by adding the new row and re-sorting
-      setdepositsData(prevData => 
+      setDepositsData(prevData => 
         [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
       );
 
@@ -346,7 +352,7 @@ const handleAddRowAbove = async () => {
       depositAmount: null,
       nameofDepositor:null,
       status:null,
-      depositStatus:null,
+      depositStatus:false,
       depositID:null,
       position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
     };
@@ -363,7 +369,7 @@ const handleAddRowAbove = async () => {
     };
 
     // Update the local state by adding the new row and re-sorting
-    setdepositsData(prevData => 
+    setDepositsData(prevData => 
       [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
     );
 
@@ -454,7 +460,7 @@ const handleSubmitDataToRegion = async () => {
       // Keep existing positions unless some rows need adjustments
       const sorteddeposits = updateddeposits.sort((a, b) => a.position - b.position);
 
-      setdepositsData(sorteddeposits);
+      setDepositsData(sorteddeposits);
 
       // Show Changes to UI---------------------------------------------------------------------------------------------------
     }
@@ -473,7 +479,7 @@ const handleSubmitDataToRegion = async () => {
       depositAmount: 0,
       nameofDepositor:null,
       status: null,
-      depositStatus: null,
+      depositStatus: false,
       depositID: null,
       position: 1, // Default position for the first row
     };
@@ -612,7 +618,7 @@ const handleSubmitDataToRegion = async () => {
             
           } else {
 
-            setdepositsData(sorteddeposits);
+            setDepositsData(sorteddeposits);
         }
 
         setShowRightClickModal(false); // Close the modal
@@ -675,7 +681,7 @@ const handleSubmitDataToRegion = async () => {
 
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
-        <button type="button" onClick={handleSubmit} class="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
+        <button type="button" onClick={handleSubmit} className="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
         <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
               <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">

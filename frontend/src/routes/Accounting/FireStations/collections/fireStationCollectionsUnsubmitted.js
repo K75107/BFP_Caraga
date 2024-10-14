@@ -8,6 +8,8 @@ import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from "react-router-dom";
+import { debounce } from 'lodash'; // Import debounce from lodash for debouncing updates
+
 
 import { IoMdAddCircleOutline } from "react-icons/io";
 
@@ -156,69 +158,69 @@ export default function FireStationCollectionsUnsubmitted() {
 
 
 
-  
+const handleCellChange = async (collectionId, field, newValue) => {
+  try {
+    // Optimistic update: Update local state immediately
+    setCollectionsData(prevCollections =>
+      prevCollections.map(collection =>
+        collection.id === collectionId ? { ...collection, [field]: newValue } : collection
+      )
+    );
 
+    // Debounced Firebase update to avoid too frequent writes
+    debouncedUpdate(collectionId, field, newValue);
+    
+    // Clear editing state
+    setEditingCell(null);
+    setEditValue('');
+    
+  } catch (error) {
+    console.error('Error updating collection field:', error);
+  }
+};
 
-  const handleCellChange = async (collectionId, field, newValue) => {
-    try {
-      // Fetch the current authenticated user
-      const auth = getAuth();
-      const user = auth.currentUser;
-  
-      if (!user) {
-        console.error('No logged-in user found.');
-        return;
-      }
-  
-      // Check if the logged-in user's email matches any document in firestationReportsCollections
-      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsCollections'));
-  
-      // Find the document where the email matches the logged-in user's email
-      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
-  
-      if (!userDoc) {
-        console.error('No unsubmitted collection found for the logged-in user.');
-        return;
-      }
-  
-      // Check if the subcollection 'collections' exists for the user's document
-      const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userDoc.id, 'collections');
-      const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
-  
-      if (!docSnapshot.exists()) {
-        console.error(`No collection document found with ID ${collectionId}.`);
-        return;
-      }
-  
-      const existingData = docSnapshot.data();
-  
-      // Only update if there is a change in value
-      if (existingData[field] === newValue) {
-        console.log('No changes detected, skipping update.');
-        return;
-      }
-  
-      // Update the specific field of the collection document
-      await updateDoc(doc(collectionsSubCollectionRef, collectionId), {
-        [field]: newValue
-      });
-  
-      // Update the local state after a successful update
-      setCollectionsData(prevCollections =>
-        prevCollections.map(collection =>
-          collection.id === collectionId ? { ...collection, [field]: newValue } : collection
-        )
-      );
-  
-      // Clear the editing state after a successful update
-      setEditingCell(null);
-      setEditValue('');
-  
-    } catch (error) {
-      console.error('Error updating collection field:', error);
+// Debounced function to handle Firebase update
+const debouncedUpdate = debounce(async (collectionId, field, newValue) => {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error('No logged-in user found.');
+      return;
     }
-  };
 
+    const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsCollections'));
+
+    const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+
+    if (!userDoc) {
+      console.error('No unsubmitted collection found for the logged-in user.');
+      return;
+    }
+
+    const collectionsSubCollectionRef = collection(db, 'firestationReportsCollections', userDoc.id, 'collections');
+    const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, collectionId));
+
+    if (!docSnapshot.exists()) {
+      console.error(`No collection document found with ID ${collectionId}.`);
+      return;
+    }
+
+    const existingData = docSnapshot.data();
+
+    if (existingData[field] === newValue) {
+      console.log('No changes detected, skipping update.');
+      return;
+    }
+
+    await updateDoc(doc(collectionsSubCollectionRef, collectionId), {
+      [field]: newValue
+    });
+  } catch (error) {
+    console.error('Error updating collection field:', error);
+  }
+}, 1000); // Delay of 1 second for debouncing
 
 
 
@@ -620,7 +622,7 @@ const handleSubmitDataToRegion = async () => {
 
         {/*TABLE*/}
         <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
-        <button type="button" onClick={handleSubmit} class="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
+        <button type="button" onClick={handleSubmit} className="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
               <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
                           <tr className="text-[12px]">

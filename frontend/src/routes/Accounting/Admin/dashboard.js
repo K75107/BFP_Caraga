@@ -22,17 +22,17 @@ export default function Dashboard() {
   //For Alerts
   const location = useLocation();
   // Get login success state from session storage
-  const [showAlert, setShowAlert] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     const loginSuccess = sessionStorage.getItem('loginSuccess');
     if (loginSuccess === 'true') {
 
-      setShowAlert(true);
+      setIsSuccess(true);
       sessionStorage.removeItem('loginSuccess');
     }
     const timer = setTimeout(() => {
-      setShowAlert(false);
+      setIsSuccess(false);
     }, 2000)
     return () => clearTimeout(timer);
 
@@ -108,9 +108,9 @@ export default function Dashboard() {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       {/* Alert Section */}
-      {showAlert && (
+      {isSuccess && (
         <div className="absolute top-4 right-4">
-          <SuccessUnsuccessfulAlert showAlert={showAlert} message ={'Login Success'} icon={'check'}/>
+          <SuccessUnsuccessfulAlert isSuccess={isSuccess} message ={'Login Success'} icon={'check'}/>
         </div>
       )}
 

@@ -140,7 +140,15 @@ export default function DepositsPerStation() {
     };
 
     // Usage
-    const groupedDeposits = groupByDate(firestationdeposit, selectedCategory);
+    const [groupedDeposits, setGroupedDeposits] = useState({});
+    useEffect(() => {
+        // Call the groupByDate function whenever firestationdeposit or selectedCategory changes
+        const updatedGroupedDeposits = groupByDate(firestationdeposit, selectedCategory);
+
+        // Update the state with the new grouped deposits
+        setGroupedDeposits(updatedGroupedDeposits);
+
+    }, [firestationdeposit, selectedCategory]);
 
 
 
