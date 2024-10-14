@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
+import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 
 export default function BalanceSheet() {
@@ -25,6 +26,10 @@ export default function BalanceSheet() {
     const [deleteBalanceSheetID, setDeleteBalanceSheetID] = useState(null);
 
     const [equity, setEquity] = useState("");
+
+    //Alerts
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [isError, setIsError] = useState(false);
 
     // Add New Balance Sheet to the Firestore
     const addNewBalanceSheet = async () => {
@@ -55,6 +60,20 @@ export default function BalanceSheet() {
             setStartDate(null);
             setEndDate(null);
             setSelectedLedger("");
+
+            // Navigate to the newly created balance sheet's details page
+            navigate(`/main/balanceSheet/balanceSheetDetails/${docRef.id}`, {
+                state: { successMessage: 'New Balance Sheet Created' }
+            });
+
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setIsSuccess(true);
+            const timer = setTimeout(() => {
+                setIsSuccess(false);
+            }, 3000)
+            return () => clearTimeout(timer);
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+
         } catch (err) {
             console.error("Error adding document:", err);
         }
@@ -74,6 +93,15 @@ export default function BalanceSheet() {
             // Close the delete modal and reset state
             setShowDeleteModal(false);
             setDeleteBalanceSheetID(null);
+
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setIsError(true);
+            const timer = setTimeout(() => {
+                setIsError(false);
+            }, 3000)
+            return () => clearTimeout(timer);
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+
         } catch (err) {
             console.error("Error deleting document:", err);
         }
@@ -115,20 +143,12 @@ export default function BalanceSheet() {
 
     return (
         <Fragment>
-            {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                    <li aria-current="page">
-                        <div class="flex items-center">
-                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
-                                <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
-                                Balance Sheet
-                            </div>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
-            {/**Breadcrumbs */}
+            {isError && (
+                <div className="absolute top-4 right-4">
+                    <SuccessUnsuccessfulAlert isError={isError} message={'Balance Sheet Deleted'} icon={'wrong'} />
+                </div>
+            )}
+            {/**---------------------------------------------Alerts--------------------------------------- */}
 
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
@@ -308,7 +328,9 @@ export default function BalanceSheet() {
 
                             <button
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 ${(!balanceSheetDescription || !startDate || !endDate) && "opacity-50 cursor-not-allowed"}`}
-                                onClick={addNewBalanceSheet}
+                                onClick={async () => {
+                                    await addNewBalanceSheet(); // Create the balance sheet and navigate to the details page
+                                }}
                                 disabled={!balanceSheetDescription || !startDate || !endDate} // Disable when description, start date, or end date is missing
                             >
                                 GENERATE
