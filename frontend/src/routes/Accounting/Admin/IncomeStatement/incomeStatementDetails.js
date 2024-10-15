@@ -18,6 +18,8 @@ export default function IncomeStatement() {
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [selectedLedger, setSelectedLedger] = useState("");
+    const [selectedincomeStatement, setSelectedIncomeStatement] = useState("");
+    const [selectedincomeStatementList, setSelectedIncomeStatementList] = useState([]);
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
     const [currentModal, setCurrentModal] = useState(1); // Modal state
     
@@ -128,9 +130,25 @@ export default function IncomeStatement() {
         }
     };
 
+    const getIncomeStatementList = async () => {
+        try {
+            const data = await getDocs(collection(db, "incomestatement"));
+            const filteredData = data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+            }));
+            setSelectedIncomeStatementList(filteredData);
+        } catch (err) {
+            console.error("Error fetching ledger data:", err);
+        }
+    };
+
+
     useEffect(() => {
+        getIncomeStatementList();
         getLedgerList();
         getIncomeStatementDescription();
+        
     }, [incomeStatementID]);
 
     if (loading) {
@@ -367,7 +385,7 @@ export default function IncomeStatement() {
                     <button
                         className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
                         onClick={() => {
-                            setCurrentModal(1);
+                            setCurrentModal(3);
                             setShowModal(true);
                         }}
                     >
@@ -402,45 +420,45 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-            {showModal && currentModal === 1 && (
-                <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
-                        <div className="flex justify-between">
-                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Ledger</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+
+    {showModal && currentModal === 3 && (
+                    <Modal isVisible={showModal}>
+                        <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
+                            <div className="flex justify-between">
+                                <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Period</h1>
+                                <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                            </div>
+
+                            <hr className="border-t border-[#7694D4] my-3" />
+
+                            <form className="max-w-sm mt-5">
+                                <select
+                                    id="incomestatementselect"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                    value={selectedincomeStatement}
+                                    onChange={(e) => setSelectedIncomeStatement(e.target.value)}
+                                >
+                                    <option value="">Select Period</option>
+                                    {selectedincomeStatementList.map((incomestatement) => (
+                                        <option key={incomeStatement.id} value={incomestatement.id}>
+                                            {incomestatement.description}
+                                        </option>
+                                    ))}
+                                </select>
+                            </form>
+
+                            <div className="flex justify-end py-3 px-4">
+                                <button
+                                    className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedincomeStatement && "opacity-50 cursor-not-allowed"}`}
+                                    onClick={() => selectedincomeStatement && setCurrentModal(2)}
+                                    disabled={!selectedincomeStatement}
+                                >
+                                    NEXT
+                                </button>
+                            </div>
                         </div>
-
-                        <hr className="border-t border-[#7694D4] my-3" />
-
-                        <form className="max-w-sm mt-5">
-                            <select
-                                id="ledgerselect"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                value={selectedLedger}
-                                onChange={(e) => setSelectedLedger(e.target.value)}
-                            >
-                                <option value="">Select Ledger</option>
-                                {incomeStatementLedgerList.map((ledger) => (
-                                    <option key={ledger.id} value={ledger.id}>
-                                        {ledger.description}
-                                    </option>
-                                ))}
-                            </select>
-                        </form>
-
-                        <div className="flex justify-end py-3 px-4">
-                            <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
-                                onClick={() => selectedLedger && setCurrentModal(2)}
-                                disabled={!selectedLedger}
-                            >
-                                NEXT
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
-            )}
+                    </Modal>
+                )}
         </Fragment>
     );
 }
-
