@@ -243,7 +243,7 @@ export default function BalanceSheet() {
     // Call the function to update Firestore after calculating totalEquity
     updateTotalEquityInFirestore(balanceSheetID, totalEquity);
 
-    // Data structure for balance sheet (you can replace this with your actual data from Firebase)
+    // Data structure for balance sheet 
     const balanceSheetDetailsData = [
         {
             name: "Assets",
@@ -426,7 +426,7 @@ export default function BalanceSheet() {
                     <li class="inline-flex items-center">
                         <button onClick={() => navigate("/main/balanceSheet/balanceSheetList")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
                             <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
-                                Balance Sheet
+                            Balance Sheet
                         </button>
                     </li>
                     <li aria-current="page">
@@ -446,9 +446,6 @@ export default function BalanceSheet() {
                     {balanceSheet.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
-                    </button>
                     <button
                         className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
                         onClick={() => {
@@ -457,6 +454,9 @@ export default function BalanceSheet() {
                         }}
                     >
                         ADD PERIOD
+                    </button>
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
+                        EXPORT TO EXCEL
                     </button>
                 </div>
             </div>
