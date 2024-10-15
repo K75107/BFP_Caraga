@@ -4,6 +4,7 @@ import Modal from "../../../../components/Modal";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { db } from "../../../../config/firebase-config";
+import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import {
     collection,
     addDoc,
@@ -31,6 +32,9 @@ export default function IncomeStatementList() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteIncomeStatementID, setDeleteIncomeStatementID] = useState(null);
 
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [totalNetSurplusDeficit, settotalNetSurplusDeficit] = useState("");
     // Add New Income Statement to Firestore
     const addNewIncomeStatement = async () => {
         try {
@@ -41,14 +45,30 @@ export default function IncomeStatementList() {
                 start_date: startDate,
                 end_date: endDate,
                 ledgerID: selectedLedger,
+                totalSurplusDeficit: totalNetSurplusDeficit,
             });
             const docSnapshot = await getDoc(docRef);
             setIncomeStatementList((prevList) => [...prevList, { id: docSnapshot.id, ...docSnapshot.data() }]);
+
             setShowModal(false);
             setIncomeStatementDescription("");
             setStartDate(null);
             setEndDate(null);
             setSelectedLedger("");
+
+
+             // Navigate to the newly created Income Statement's details page
+             navigate(`/main/incomestatement/incomeStatementDetails/${docRef.id}`, {
+                state: { successMessage: 'New Income Statement Created' }
+            });
+
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setIsSuccess(true);
+            const timer = setTimeout(() => {
+                setIsSuccess(false);
+            }, 3000)
+            return () => clearTimeout(timer);
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
         } catch (err) {
             console.error("Error adding document:", err);
         }
@@ -57,15 +77,30 @@ export default function IncomeStatementList() {
     // Delete Income Statement
     const deleteIncomeStatement = async () => {
         if (!deleteIncomeStatementID) return;
+
         try {
-            await deleteDoc(doc(db, "incomestatement", deleteIncomeStatementID));
-            setIncomeStatementList((prevList) => prevList.filter((statement) => statement.id !== deleteIncomeStatementID));
-            setShowDeleteModal(false);
-            setDeleteIncomeStatementID(null);
-        } catch (err) {
-            console.error("Error deleting document:", err);
-        }
-    };
+             // Delete the document from Firestore
+             await deleteDoc(doc(db, "incomestatement", deleteIncomeStatementID));
+
+             // Remove the deleted balance sheet from the local state
+             setIncomeStatementList((prevList) => prevList.filter((sheet) => sheet.id !== deleteIncomeStatementID));
+ 
+             // Close the delete modal and reset state
+             setShowDeleteModal(false);
+             setDeleteIncomeStatementID(null);
+ 
+             {/**---------------------------------------------Alerts--------------------------------------- */ }
+             setIsError(true);
+             const timer = setTimeout(() => {
+                 setIsError(false);
+             }, 3000)
+             return () => clearTimeout(timer);
+             {/**---------------------------------------------Alerts--------------------------------------- */ }
+ 
+         } catch (err) {
+             console.error("Error deleting document:", err);
+         }
+     };
 
     // Fetching income statement list from Firestore
     const getIncomeStatementList = async () => {
@@ -102,7 +137,13 @@ export default function IncomeStatementList() {
 
     return (
         <Fragment>
-            {/**Breadcrumbs */}
+            {isError && (
+                <div className="absolute top-4 right-4">
+                    <SuccessUnsuccessfulAlert isError={isError} message={'Income Statement Deleted'} icon={'wrong'} />
+                </div>
+            )}
+            {/**---------------------------------------------Alerts--------------------------------------- */}
+             {/**Breadcrumbs */}
             <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
@@ -155,14 +196,16 @@ export default function IncomeStatementList() {
                                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                     {incomeStatement.description || "N/A"}
                                 </th>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {incomeStatement.start_date ? incomeStatement.start_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {incomeStatement.end_date ? incomeStatement.end_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="px-6 py-4">
-                                    {incomeStatement.totalSurplusDeficit !== undefined ? incomeStatement.totalSurplusDeficit : "N/A"}
+                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
+                                {incomeStatement.totalSurplusDeficit !== undefined && incomeStatement.totalSurplusDeficit !== null
+                                        ? incomeStatement.totalSurplusDeficit.toLocaleString()
+                                        : ""}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <span
@@ -222,55 +265,84 @@ export default function IncomeStatementList() {
                 </Modal>
             )}
 
-            {showModal && currentModal === 2 && (
+{showModal && currentModal === 2 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[600px] h-auto rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Generate Income Statement</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentModal(1)}>
+                                ×
+                            </button>
                         </div>
 
                         <hr className="border-t border-[#7694D4] my-3" />
 
-                        <form>
-                            <label className="block font-medium font-poppins text-[#1E1E1E] mb-1">Income Statement Description</label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-2 rounded border-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                                value={incomeStatementDescription}
-                                onChange={(e) => setIncomeStatementDescription(e.target.value)}
-                            />
-
-                            <div className="flex flex-row justify-between gap-4 mt-5">
-                                <div>
-                                    <label className="block font-medium font-poppins text-[#1E1E1E] mb-1">Start Date</label>
-                                    <DatePicker
-                                        selected={startDate}
-                                        onChange={(date) => setStartDate(date)}
-                                        dateFormat="MM/dd/yyyy"
-                                        className="w-full px-4 py-2 rounded border-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block font-medium font-poppins text-[#1E1E1E] mb-1">End Date</label>
-                                    <DatePicker
-                                        selected={endDate}
-                                        onChange={(date) => setEndDate(date)}
-                                        dateFormat="MM/dd/yyyy"
-                                        className="w-full px-4 py-2 rounded border-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end py-3 px-4">
-                                <button
-                                    className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5"
-                                    onClick={addNewIncomeStatement}
+                        <div className="flex p-2.5">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    id="description"
+                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
+                                    placeholder=" "
+                                    value={incomeStatementDescription}
+                                    onChange={(e) => setIncomeStatementDescription(e.target.value)}
+                                />
+                                <label
+                                    htmlFor="description"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2"
                                 >
-                                    GENERATE
-                                </button>
+                                    Income Statement Description
+                                </label>
                             </div>
-                        </form>
+                        </div>
+
+                        <div className="flex items-center space-x-4 p-2.5">
+                            <div className="relative">
+                                <DatePicker
+                                    selected={startDate}
+                                    onChange={(date) => setStartDate(date)}
+                                    selectsStart
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                                    placeholderText="Select start date"
+                                />
+                            </div>
+
+                            <span className="text-gray-500">to</span>
+
+                            <div className="relative">
+                                <DatePicker
+                                    selected={endDate}
+                                    onChange={(date) => setEndDate(date)}
+                                    selectsEnd
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    minDate={startDate}
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                                    placeholderText="Select end date"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end py-3 px-4 flex-row">
+                            <button
+                                className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4"
+                                onClick={() => setCurrentModal(1)}
+                            >
+                                BACK
+                            </button>
+
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 ${(!incomeStatementDescription || !startDate || !endDate) && "opacity-50 cursor-not-allowed"}`}
+                                onClick={async () => {
+                                    await addNewIncomeStatement();
+                                }}
+                                disabled={!incomeStatementDescription || !startDate || !endDate} // Disable when description, start date, or end date is missing
+                            >
+                                GENERATE
+                            </button>
+                        </div>
                     </div>
                 </Modal>
             )}
