@@ -126,7 +126,7 @@ const router = createBrowserRouter([
             element : <CashFlowsReports/>
           },
           {
-            path:'main/cashflowStatement/cashflows/:cashflowId',
+            path:'/main/cashflowStatement/cashflows/:cashflowId',
             element: <CashflowsDetails/>
           },
           {
