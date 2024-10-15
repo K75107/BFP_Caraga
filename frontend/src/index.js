@@ -20,7 +20,12 @@ import IncomeStatementList from './routes/Accounting/Admin/IncomeStatement/incom
 import BalanceSheet from './routes/Accounting/Admin/BalanceSheet/balanceSheet';
 import BalanceSheetList from './routes/Accounting/Admin/BalanceSheet/balanceSheetList';
 import BalanceSheetDetails from './routes/Accounting/Admin/BalanceSheet/balanceSheetDetails';
-import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatements';
+
+import Cashflows from './routes/Accounting/Admin/CashFlow/cashflows';
+import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatement';
+import CashFlowsReports from './routes/Accounting/Admin/CashFlow/cashflowsReports';
+import CashflowsDetails from './routes/Accounting/Admin/CashFlow/cashflowsDetails';
+
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
 import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
@@ -54,6 +59,7 @@ import FireStationCollectionsSubmitted from './routes/Accounting/FireStations/co
 import FireStationDeposits from './routes/Accounting/FireStations/deposits/fireStationDeposits';
 import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
 
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -76,16 +82,16 @@ const router = createBrowserRouter([
         element: <IncomeStatement />,
         children: [
           {
-          path: '/main/IncomeStatement/incomeStatementList',
-          element: <IncomeStatementList/>,
+            path: '/main/IncomeStatement/incomeStatementList',
+            element: <IncomeStatementList />,
           },
           {
             path: '/main/IncomeStatement/incomeStatementDetails/:incomeStatementID',
-            element: <IncomeStatementDetails/>
+            element: <IncomeStatementDetails />
           },
           {
             index: true,
-            element: <Navigate to="incomeStatementList"/>
+            element: <Navigate to="incomeStatementList" />
           },
         ],
       },
@@ -94,23 +100,42 @@ const router = createBrowserRouter([
         element: <BalanceSheet />,
         children: [
           {
-          path: '/main/balanceSheet/balanceSheetList',
-          element: <BalanceSheetList/>,
+            path: '/main/balanceSheet/balanceSheetList',
+            element: <BalanceSheetList />,
           },
           {
             path: '/main/balanceSheet/balanceSheetDetails/:balanceSheetID',
-            element: <BalanceSheetDetails/>
+            element: <BalanceSheetDetails />
           },
           {
             index: true,
-            element: <Navigate to="balanceSheetList"/>
+            element: <Navigate to="balanceSheetList" />
           },
         ],
       },
       {
         path: 'cashflowStatement',
         element: <CashflowStatement />,
+        children: [
+          {
+            path: 'cashflows',
+            element: <Cashflows />
+          },
+          {
+            path:'generatedReports',
+            element : <CashFlowsReports/>
+          },
+          {
+            path:'main/cashflowStatement/cashflows/:cashflowId',
+            element: <CashflowsDetails/>
+          },
+          {
+            index: true,
+            element: <Navigate to="cashflows" />,
+          },
+        ]
       },
+
       {
         path: 'changesInEquity',
         element: <ChangesInEquity />,
@@ -144,16 +169,16 @@ const router = createBrowserRouter([
         element: <TrialBalance />,
         children: [
           {
-          path: '/main/TrialBalance/TrialBalanceList',
-          element: <TrialBalanceList/>,
+            path: '/main/TrialBalance/TrialBalanceList',
+            element: <TrialBalanceList />,
           },
           {
             path: '/main/TrialBalance/TrialBalanceDetails/:trialbalanceID',
-            element: <TrialBalanceDetails/>
+            element: <TrialBalanceDetails />
           },
           {
             index: true,
-            element: <Navigate to="TrialBalanceList"/>
+            element: <Navigate to="TrialBalanceList" />
           },
         ],
       },
@@ -164,86 +189,86 @@ const router = createBrowserRouter([
       {
         path: 'reports',
         element: <Reports />,
-        children:[
+        children: [
           {
-            path:'/main/reports/collections/:userId',
-            element:<CollectionsPerStation/>
+            path: '/main/reports/collections/:userId',
+            element: <CollectionsPerStation />
           },
 
           {
             path: 'firestationReports',
-            element: <FirestationReports/>
+            element: <FirestationReports />
           },
           {
             path: '/main/reports/overview/:userId',
-            element: <ReportsOverview/>
+            element: <ReportsOverview />
           },
           {
             path: '/main/reports/deposits/:userId',
-            element: <DepositsPerStation/>
+            element: <DepositsPerStation />
           },
           {
             path: 'generateReports',
-            element: <GeneratedReports/>
-          },
-          
-          {
-            index:true,
-            element: <Navigate to = 'firestationReports'/>
+            element: <GeneratedReports />
           },
 
-  
+          {
+            index: true,
+            element: <Navigate to='firestationReports' />
+          },
+
+
         ]
       },
       {
         path: 'fireStation/dashboard',
-        element: <FireStationDashboard/>,
+        element: <FireStationDashboard />,
       },
       {
         path: 'fireStation/deposits',
-        element: <FireStationDeposits/>,
-        children:[
+        element: <FireStationDeposits />,
+        children: [
           {
-            index:true,
-            element: <Navigate to = 'unsubmitted'/>
+            index: true,
+            element: <Navigate to='unsubmitted' />
           },
           {
-            path:'unsubmitted',
-            element:<FireStationDepositsUnsubmitted/>
+            path: 'unsubmitted',
+            element: <FireStationDepositsUnsubmitted />
           },
           {
-            path:'submitted',
-            element:<FireStationDepositsSubmitted/>
+            path: 'submitted',
+            element: <FireStationDepositsSubmitted />
           },
 
         ]
       },
       {
         path: 'fireStation/collections',
-        element: <FireStationCollections/>,
-        children:[
+        element: <FireStationCollections />,
+        children: [
           {
-            index:true,
-            element: <Navigate to = 'unsubmitted'/>
+            index: true,
+            element: <Navigate to='unsubmitted' />
           },
           {
-            path:'unsubmitted',
-            element:<FireStationCollectionsUnsubmitted/>
+            path: 'unsubmitted',
+            element: <FireStationCollectionsUnsubmitted />
           },
           {
-            path:'submitted',
-            element:<FireStationCollectionsSubmitted/>
+            path: 'submitted',
+            element: <FireStationCollectionsSubmitted />
           },
 
         ]
       },
       {
         path: 'fireStation/officers',
-        element: <FireStationOfficers/>,
+        element: <FireStationOfficers />,
       },
     ],
   },
-  
+
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

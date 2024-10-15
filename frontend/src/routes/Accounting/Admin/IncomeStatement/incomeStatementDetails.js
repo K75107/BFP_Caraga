@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc} from "firebase/firestore";
 import Modal from "../../../../components/Modal"; // Import the Modal component
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 
@@ -156,6 +156,19 @@ export default function IncomeStatement() {
 
     let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
+    const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
+        try {
+            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
+            await updateDoc(incomeStatementRef, {
+                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalEquity value to Firestore
+            });
+            console.log("Total net assets successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total equity:", err);
+        }
+    };
+    updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
+
 
   
 
@@ -215,8 +228,6 @@ export default function IncomeStatement() {
                 // GROUP 2
                 items: [
                     { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
-                    { label: "Total Non-Cash Expense" , value: totalExpenses.toLocaleString() },
-                    { label: "Current Operating Expense" , value: totalExpenses.toLocaleString() },
                     
                 ]
             },
@@ -227,15 +238,22 @@ export default function IncomeStatement() {
                         label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
                         value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
                     },
-                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()}
+    
                 ]
-            }
+            },
+            {
+                items: [
+                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()},
+
+            ]
+        },
+            
         ];
         const Card = ({ title, items }) => (
-            <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
-                <h3 className="text-lg font-semibold mb-4">{title}</h3>
+            <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
+                <h3 className="text-lg font-semibold mb-2">{title}</h3>
                 {items.map((item, index) => (
-                    <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
+                    <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
                         <span className="font-medium">{item.label}: </span>
                         {item.value}
                     </p>
@@ -269,28 +287,35 @@ export default function IncomeStatement() {
                 }
             };
 
+            const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
+
             return (
                 <>
                     <tr className="border-t">
                         {/* Account name with indentation */}
                         <td
-                            className="px-6 py-4 cursor-pointer"
-                            onClick={() => setIsOpen(!isOpen)}
-                            style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
-                        >
-                            {item.children ? (
-                                <span>
-                                    {isOpen ? "▼" : "▶"} {item.name}
-                                </span>
-                            ) : (
-                                <span>{item.name}</span>
-                            )}
-                        </td>
+                        className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
+                        onClick={() => setIsOpen(!isOpen)}
+                        style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
+                    >
+                        {item.children ? (
+                            <span className={`font-medium ${isMainCategory ? "text-black" : "text-gray-900"}`}>
+                                {isOpen ? "▼" : "▶"} {item.name}
+                            </span>
+                        ) : (
+                            <span className={`font-normal ${isMainCategory ? "text-black" : "text-gray-900"}`}>
+                                {item.name}
+                            </span>
+                        )}
+                    </td>
 
-                        {/* Amount in the second column */}
-                        <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
-                            {item.amount ? formatAmount(item.amount) : ''}
-                        </td>
+                    <td
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                            }`}
+                    >
+                        {item.amount ? formatAmount(item.amount) : ""}
+                    </td>
+
 
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
