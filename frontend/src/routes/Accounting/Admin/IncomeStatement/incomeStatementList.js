@@ -30,20 +30,22 @@ export default function IncomeStatementList() {
     const [incomeStatementDescription, setIncomeStatementDescription] = useState("");
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [totalNetSurplusDeficit, settotalNetSurplusDeficit] = useState("");   
     const [deleteIncomeStatementID, setDeleteIncomeStatementID] = useState(null);
-
     const [isSuccess, setIsSuccess] = useState(false);
     const [isError, setIsError] = useState(false);
-    const [totalNetSurplusDeficit, settotalNetSurplusDeficit] = useState("");
+  
     // Add New Income Statement to Firestore
     const addNewIncomeStatement = async () => {
         try {
             const collectionRef = collection(db, "incomestatement");
+
+
             const docRef = await addDoc(collectionRef, {
                 created_at: new Date(),
                 description: incomeStatementDescription,
                 start_date: startDate,
-                end_date: endDate,
+                end_date: endDate,  
                 ledgerID: selectedLedger,
                 totalSurplusDeficit: totalNetSurplusDeficit,
             });
@@ -58,7 +60,7 @@ export default function IncomeStatementList() {
 
 
              // Navigate to the newly created Income Statement's details page
-             navigate(`/main/incomestatement/incomeStatementDetails/${docRef.id}`, {
+             navigate(`/main/incomeStatement/incomeStatementDetails/${docRef.id}`, {
                 state: { successMessage: 'New Income Statement Created' }
             });
 
@@ -68,7 +70,7 @@ export default function IncomeStatementList() {
                 setIsSuccess(false);
             }, 3000)
             return () => clearTimeout(timer);
-            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            {/**---------------------------------------------Alerts--------------------------------------- */ } 
         } catch (err) {
             console.error("Error adding document:", err);
         }
@@ -137,6 +139,7 @@ export default function IncomeStatementList() {
 
     return (
         <Fragment>
+           
             {isError && (
                 <div className="absolute top-4 right-4">
                     <SuccessUnsuccessfulAlert isError={isError} message={'Income Statement Deleted'} icon={'wrong'} />
