@@ -19,12 +19,18 @@ export default function BalanceSheet() {
     const [currentModal, setCurrentModal] = useState(1); // Modal state
     const [showModal, setShowModal] = useState(false);
 
-    const [selectedLedger, setSelectedLedger] = useState("");
+    const [selectedLedger, setSelectedLedger] = useState([]);
     const [balanceSheetLedgerList, setBalanceSheetLedgerList] = useState([]);
 
     const location = useLocation();
     const [isSuccess, setIsSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+
+    const [stateStartDate, setStateStartDate] = useState(null);
+    const [stateEndDate, setStateEndDate] = useState(null);
+    const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
+    const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
+    const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
 
     // Spinner Component
     const Spinner = () => (
@@ -74,7 +80,6 @@ export default function BalanceSheet() {
 
             if (docSnap.exists()) {
                 const balanceSheetData = { id: docSnap.id, ...docSnap.data() };
-                // console.log("balance sheet data: ", balanceSheetData)
 
                 // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
                 const convertToLocalDate = (timestamp) => {
@@ -86,8 +91,10 @@ export default function BalanceSheet() {
                 const startDate = convertToLocalDate(balanceSheetData.start_date);
                 const endDate = convertToLocalDate(balanceSheetData.end_date);
 
-                // console.log("balance sheet start date: ", startDate)
-                // console.log("balance sheet end date: ", endDate)
+                // Set dates in the component's state
+                setStateStartDate(startDate);
+                setStateEndDate(endDate);
+
 
                 // Check if ledgerID exists in the balance sheet
                 if (balanceSheetData.ledgerID) {
@@ -243,7 +250,7 @@ export default function BalanceSheet() {
     // Call the function to update Firestore after calculating totalEquity
     updateTotalEquityInFirestore(balanceSheetID, totalEquity);
 
-    // Data structure for balance sheet (you can replace this with your actual data from Firebase)
+    // Data structure for balance sheet 
     const balanceSheetDetailsData = [
         {
             name: "Assets",
@@ -296,6 +303,7 @@ export default function BalanceSheet() {
             amount: totalEquity // Display the updated equity (Assets - Liabilities + any Equity accounts)
         },
     ];
+
 
     // Group data for the cards
     const groupData = [
@@ -408,6 +416,82 @@ export default function BalanceSheet() {
         );
     };
 
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+    const getSelectedLedgerData = async () => {
+        try {
+            if (selectedLedger) {
+                // Fetch the associated ledger document using the selectedLedgerID
+                const ledgerRef = doc(db, "ledger", selectedLedger);
+                const ledgerSnap = await getDoc(ledgerRef);
+
+                if (ledgerSnap.exists()) {
+                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
+
+                    // Fetch account titles from the selected ledger
+                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
+                    const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                    const accountTitlesData = [];
+                    const accountsData = [];
+
+                    for (const titleDoc of accountTitlesSnap.docs) {
+                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                        // Fetch accounts subcollection for each account title
+                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                        const accountsQuery = query(
+                            accountsRef,
+                            where("date", ">=", stateStartDate),   // Filter by start_date
+                            where("date", "<=", stateEndDate)      // Filter by end_date
+                        );
+                        const accountsSnap = await getDocs(accountsQuery);
+
+                        // Only proceed if there are accounts within the date range
+                        if (!accountsSnap.empty) {
+                            // Initialize sums for debit and credit
+                            let totalDebit2 = 0;
+                            let totalCredit2 = 0;
+
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id, // Link to the account title ID
+                                    ...accountDoc.data(),
+                                };
+
+                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+
+                                return accountData;
+                            });
+
+                            // Attach the difference (debit - credit) to the account title
+                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
+                            titleData.differenceContra2 = totalCredit2 - totalDebit2;
+
+                            // Add account title and accounts data to their respective arrays
+                            accountTitlesData.push(titleData);  // Add account title to the list
+                            accountsData.push(...titleAccounts);  // Add account data to the list
+                        }
+                    }
+
+                    // Update the state with the fetched data
+                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
+                    setAccountsPeriod(accountsData); // Set accounts separately
+
+                    // Optionally, if you want to show the year
+                    setSelectedLedgerYear(ledgerYear);
+                } else {
+                    console.error("Selected ledger not found.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching selected ledger data:", error);
+        }
+    };
+
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
     return (
         <Fragment>
             {/* Success Alert */}
@@ -426,7 +510,7 @@ export default function BalanceSheet() {
                     <li class="inline-flex items-center">
                         <button onClick={() => navigate("/main/balanceSheet/balanceSheetList")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
                             <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
-                                Balance Sheet
+                            Balance Sheet
                         </button>
                     </li>
                     <li aria-current="page">
@@ -446,9 +530,6 @@ export default function BalanceSheet() {
                     {balanceSheet.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
-                    </button>
                     <button
                         className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
                         onClick={() => {
@@ -457,6 +538,9 @@ export default function BalanceSheet() {
                         }}
                     >
                         ADD PERIOD
+                    </button>
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
+                        EXPORT TO EXCEL
                     </button>
                 </div>
             </div>
@@ -518,7 +602,15 @@ export default function BalanceSheet() {
                         <div className="flex justify-end py-3 px-4">
                             <button
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
-                                onClick={() => selectedLedger && setCurrentModal(2)}
+                                onClick={() => {
+                                    if (selectedLedger) {
+                                        // Call the function to get ledger data for the selected period
+                                        getSelectedLedgerData(selectedLedger, stateStartDate, stateEndDate);
+
+                                        // Optionally move to the next modal step
+                                        setCurrentModal(2);
+                                    }
+                                }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
                             >
                                 ADD

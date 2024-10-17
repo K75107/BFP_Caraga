@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal"; // Import the Modal component
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 
@@ -18,10 +18,12 @@ export default function IncomeStatement() {
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [selectedLedger, setSelectedLedger] = useState("");
+    const [selectedincomeStatement, setSelectedIncomeStatement] = useState("");
+    const [selectedincomeStatementList, setSelectedIncomeStatementList] = useState([]);
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
     const [currentModal, setCurrentModal] = useState(1); // Modal state
-    
-    
+
+
 
 
     const Spinner = () => (
@@ -100,12 +102,12 @@ export default function IncomeStatement() {
                 }
 
                 console.log("Income Statement Data:", incomeStatementData);
-                
+
                 setAccountTitles(accountTitlesData);
                 setAccounts(accountsData);
                 setIncomeStatement(incomeStatementData);
             } else {
-                incomeStatementData.ledgerYear = "N/A"; 
+                incomeStatementData.ledgerYear = "N/A";
             }
         } catch (err) {
             console.error("Error fetching income statement data:", err);
@@ -128,9 +130,27 @@ export default function IncomeStatement() {
         }
     };
 
+    const getIncomeStatementList = async () => {
+        try {
+            const data = await getDocs(collection(db, "incomestatement"));
+            const filteredData = data.docs.map((doc) => ({
+                ...doc.data(),
+                id: doc.id,
+            }));
+            setSelectedIncomeStatementList(filteredData);
+        } catch (err) {
+            console.error("Error fetching ledger data:", err);
+        }
+    };
+
+
     useEffect(() => {
+        getIncomeStatementList();
         getLedgerList();
         getIncomeStatementDescription();
+
+        
+
     }, [incomeStatementID]);
 
     if (loading) {
@@ -151,13 +171,26 @@ export default function IncomeStatement() {
         .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
     const totalSubsidy = accountTitles
-    .filter(accountTitle => accountTitle.accountType === "Subsidy")
-    .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+        .filter(accountTitle => accountTitle.accountType === "Subsidy")
+        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
     let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
+    const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
+        try {
+            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
+            await updateDoc(incomeStatementRef, {
+                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalEquity value to Firestore
+            });
+            console.log("Total net assets successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total equity:", err);
+        }
+    };
+    updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
 
-  
+
+
 
 
     const incomeStatementDetailsData = [
@@ -177,7 +210,7 @@ export default function IncomeStatement() {
         {
             name: "Expenses",
             children: accountTitles
-                .filter(accountTitle => 
+                .filter(accountTitle =>
                     accountTitle.accountType === "Expenses"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
@@ -198,99 +231,113 @@ export default function IncomeStatement() {
                     name: accountTitle.accountTitle,
                     amount: accountTitle.difference,
                 })),
-            amount: totalSubsidy    
-        },  
+            amount: totalSubsidy
+        },
     ];
 
 
-        // Group data for the cards
-        const groupData = [
-            {
-                //GROUP 2
-                items: [
-                    { label: "TOTAL Revenue", value: totalRevenues.toLocaleString() }
-                ]
-            },
-            {
-                // GROUP 2
-                items: [
-                    { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
-                    { label: "Total Non-Cash Expense" , value: totalExpenses.toLocaleString() },
-                    { label: "Current Operating Expense" , value: totalExpenses.toLocaleString() },
-                    
-                ]
-            },
-            {
-                // GROUP 3
-                items: [
-                    {
-                        label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
-                        value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
-                    },
-                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()}
-                ]
+    // Group data for the cards
+    const groupData = [
+        {
+            //GROUP 1
+            items: [
+                { label: "TOTAL Revenue", value: totalRevenues.toLocaleString() }
+            ]
+        },
+        {
+            // GROUP 2
+            items: [
+                { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
+
+            ]
+        },
+
+        { 
+            // GROUP 3
+            items: [
+                { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString() },
+
+            ]
+        },
+        {
+            
+            items: [
+                {
+                    label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
+                    value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
+                },
+
+            ]
+        },
+
+    ];
+    const Card = ({ title, items }) => (
+        <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
+            <h3 className="text-lg font-semibold mb-2">{title}</h3>
+            {items.map((item, index) => (
+                <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
+                    <span className="font-medium">{item.label}: </span>
+                    {item.value}
+                </p>
+            ))}
+        </div>
+    );
+
+
+
+
+
+    const Row = ({ item, depth = 0 }) => {
+        const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
+
+        // Helper function to format amounts with parentheses for negative or contra amounts
+        const formatAmount = (amount) => {
+            if (amount < 0) {
+                return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
             }
-        ];
-        const Card = ({ title, items }) => (
-            <div className="card bg-white shadow-md rounded-lg p-6 m-4 w-full max-w-sm">
-                <h3 className="text-lg font-semibold mb-4">{title}</h3>
-                {items.map((item, index) => (
-                    <p key={index} className="text-gray-700 text-sm font-semibold mb-2">
-                        <span className="font-medium">{item.label}: </span>
-                        {item.value}
-                    </p>
-                ))}
-            </div>
-        );
+            return amount.toLocaleString(); // Format positive amounts normally
+        };
 
+        // Determine text color based on positive or negative value
+        const getTextColor = (amount) => {
+            if (amount > 0) {
+                return "text-green-500"; // Green for positive values
+            } else if (amount < 0) {
+                return "text-red-500"; // Red for negative values
+            } else {
+                return ""; // Default for zero values
+            }
+        };
 
-        
+        const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
 
+        return (
+            <>
+                <tr className="border-t">
+                    {/* Account name with indentation */}
+                    <td
+                        className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
+                        onClick={() => setIsOpen(!isOpen)}
+                        style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
+                    >
+                        {item.children ? (
+                            <span className={`font-medium ${isMainCategory ? "text-black" : "text-gray-900"}`}>
+                                {isOpen ? "▼" : "▶"} {item.name}
+                            </span>
+                        ) : (
+                            <span className={`font-normal ${isMainCategory ? "text-black" : "text-gray-900"}`}>
+                                {item.name}
+                            </span>
+                        )}
+                    </td>
 
-        const Row = ({ item, depth = 0 }) => {
-            const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
+                    <td
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                            }`}
+                    >
+                        {item.amount ? formatAmount(item.amount) : ""}
+                    </td>
 
-            // Helper function to format amounts with parentheses for negative or contra amounts
-            const formatAmount = (amount) => {
-                if (amount < 0) {
-                    return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
-                }
-                return amount.toLocaleString(); // Format positive amounts normally
-            };
-
-            // Determine text color based on positive or negative value
-            const getTextColor = (amount) => {
-                if (amount > 0) {
-                    return "text-green-500"; // Green for positive values
-                } else if (amount < 0) {
-                    return "text-red-500"; // Red for negative values
-                } else {
-                    return ""; // Default for zero values
-                }
-            };
-
-            return (
-                <>
-                    <tr className="border-t">
-                        {/* Account name with indentation */}
-                        <td
-                            className="px-6 py-4 cursor-pointer"
-                            onClick={() => setIsOpen(!isOpen)}
-                            style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
-                        >
-                            {item.children ? (
-                                <span>
-                                    {isOpen ? "▼" : "▶"} {item.name}
-                                </span>
-                            ) : (
-                                <span>{item.name}</span>
-                            )}
-                        </td>
-
-                        {/* Amount in the second column */}
-                        <td className={`px-6 py-4 text-right font-semibold ${getTextColor(item.amount)}`}>
-                            {item.amount ? formatAmount(item.amount) : ''}
-                        </td>
 
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
@@ -342,7 +389,7 @@ export default function IncomeStatement() {
                     <button
                         className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
                         onClick={() => {
-                            setCurrentModal(1);
+                            setCurrentModal(3);
                             setShowModal(true);
                         }}
                     >
@@ -364,24 +411,25 @@ export default function IncomeStatement() {
                     </thead>
                     <tbody>
                         {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> 
+                            <Row key={index} item={item} depth={1} />
                         ))}
                     </tbody>
                 </table>
             </div>
 
-           {/* Group Data Cards */}
-           <div className="flex flex-wrap justify-evenly mt-8">
+            {/* Group Data Cards */}
+            <div className="flex flex-wrap justify-evenly mt-8">
                 {groupData.map((group, index) => (
                     <Card key={index} title={group.title} items={group.items} />
                 ))}
             </div>
 
-            {showModal && currentModal === 1 && (
+
+            {showModal && currentModal === 3 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                    <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
-                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Ledger</h1>
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Period</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
                         </div>
 
@@ -389,15 +437,15 @@ export default function IncomeStatement() {
 
                         <form className="max-w-sm mt-5">
                             <select
-                                id="ledgerselect"
+                                id="incomestatementselect"
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                value={selectedLedger}
-                                onChange={(e) => setSelectedLedger(e.target.value)}
+                                value={selectedincomeStatement}
+                                onChange={(e) => setSelectedIncomeStatement(e.target.value)}
                             >
-                                <option value="">Select Ledger</option>
-                                {incomeStatementLedgerList.map((ledger) => (
-                                    <option key={ledger.id} value={ledger.id}>
-                                        {ledger.description}
+                                <option value="">Select Period</option>
+                                {selectedincomeStatementList.map((incomestatement) => (
+                                    <option key={incomeStatement.id} value={incomestatement.id}>
+                                        {incomestatement.description}
                                     </option>
                                 ))}
                             </select>
@@ -405,9 +453,9 @@ export default function IncomeStatement() {
 
                         <div className="flex justify-end py-3 px-4">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
-                                onClick={() => selectedLedger && setCurrentModal(2)}
-                                disabled={!selectedLedger}
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedincomeStatement && "opacity-50 cursor-not-allowed"}`}
+                                onClick={() => selectedincomeStatement && setCurrentModal(2)}
+                                disabled={!selectedincomeStatement}
                             >
                                 NEXT
                             </button>
@@ -418,4 +466,3 @@ export default function IncomeStatement() {
         </Fragment>
     );
 }
-
