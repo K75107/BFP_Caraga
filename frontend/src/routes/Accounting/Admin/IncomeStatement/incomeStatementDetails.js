@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc} from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal"; // Import the Modal component
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 
@@ -22,8 +22,8 @@ export default function IncomeStatement() {
     const [selectedincomeStatementList, setSelectedIncomeStatementList] = useState([]);
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
     const [currentModal, setCurrentModal] = useState(1); // Modal state
-    
-    
+
+
 
 
     const Spinner = () => (
@@ -102,12 +102,12 @@ export default function IncomeStatement() {
                 }
 
                 console.log("Income Statement Data:", incomeStatementData);
-                
+
                 setAccountTitles(accountTitlesData);
                 setAccounts(accountsData);
                 setIncomeStatement(incomeStatementData);
             } else {
-                incomeStatementData.ledgerYear = "N/A"; 
+                incomeStatementData.ledgerYear = "N/A";
             }
         } catch (err) {
             console.error("Error fetching income statement data:", err);
@@ -148,7 +148,9 @@ export default function IncomeStatement() {
         getIncomeStatementList();
         getLedgerList();
         getIncomeStatementDescription();
+
         
+
     }, [incomeStatementID]);
 
     if (loading) {
@@ -169,8 +171,8 @@ export default function IncomeStatement() {
         .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
     const totalSubsidy = accountTitles
-    .filter(accountTitle => accountTitle.accountType === "Subsidy")
-    .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+        .filter(accountTitle => accountTitle.accountType === "Subsidy")
+        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
     let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
@@ -188,7 +190,7 @@ export default function IncomeStatement() {
     updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
 
 
-  
+
 
 
     const incomeStatementDetailsData = [
@@ -208,7 +210,7 @@ export default function IncomeStatement() {
         {
             name: "Expenses",
             children: accountTitles
-                .filter(accountTitle => 
+                .filter(accountTitle =>
                     accountTitle.accountType === "Expenses"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
@@ -229,89 +231,91 @@ export default function IncomeStatement() {
                     name: accountTitle.accountTitle,
                     amount: accountTitle.difference,
                 })),
-            amount: totalSubsidy    
-        },  
+            amount: totalSubsidy
+        },
     ];
 
 
-        // Group data for the cards
-        const groupData = [
-            {
-                //GROUP 2
-                items: [
-                    { label: "TOTAL Revenue", value: totalRevenues.toLocaleString() }
-                ]
-            },
-            {
-                // GROUP 2
-                items: [
-                    { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
-                    
-                ]
-            },
-            {
-                // GROUP 3
-                items: [
-                    {
-                        label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
-                        value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
-                    },
-    
-                ]
-            },
-            {
-                items: [
-                    { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString ()},
+    // Group data for the cards
+    const groupData = [
+        {
+            //GROUP 1
+            items: [
+                { label: "TOTAL Revenue", value: totalRevenues.toLocaleString() }
+            ]
+        },
+        {
+            // GROUP 2
+            items: [
+                { label: "TOTAL Expenses", value: totalExpenses.toLocaleString() },
 
             ]
         },
+
+        { 
+            // GROUP 3
+            items: [
+                { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString() },
+
+            ]
+        },
+        {
             
-        ];
-        const Card = ({ title, items }) => (
-            <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
-                <h3 className="text-lg font-semibold mb-2">{title}</h3>
-                {items.map((item, index) => (
-                    <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
-                        <span className="font-medium">{item.label}: </span>
-                        {item.value}
-                    </p>
-                ))}
-            </div>
-        );
+            items: [
+                {
+                    label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
+                    value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
+                },
+
+            ]
+        },
+
+    ];
+    const Card = ({ title, items }) => (
+        <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
+            <h3 className="text-lg font-semibold mb-2">{title}</h3>
+            {items.map((item, index) => (
+                <p key={index} className="text-gray-700 text-sm font-semibold mb-1">
+                    <span className="font-medium">{item.label}: </span>
+                    {item.value}
+                </p>
+            ))}
+        </div>
+    );
 
 
-        
 
 
-        const Row = ({ item, depth = 0 }) => {
-            const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
-            // Helper function to format amounts with parentheses for negative or contra amounts
-            const formatAmount = (amount) => {
-                if (amount < 0) {
-                    return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
-                }
-                return amount.toLocaleString(); // Format positive amounts normally
-            };
+    const Row = ({ item, depth = 0 }) => {
+        const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
-            // Determine text color based on positive or negative value
-            const getTextColor = (amount) => {
-                if (amount > 0) {
-                    return "text-green-500"; // Green for positive values
-                } else if (amount < 0) {
-                    return "text-red-500"; // Red for negative values
-                } else {
-                    return ""; // Default for zero values
-                }
-            };
+        // Helper function to format amounts with parentheses for negative or contra amounts
+        const formatAmount = (amount) => {
+            if (amount < 0) {
+                return `(${Math.abs(amount).toLocaleString()})`; // Format negative amounts in parentheses
+            }
+            return amount.toLocaleString(); // Format positive amounts normally
+        };
 
-            const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
+        // Determine text color based on positive or negative value
+        const getTextColor = (amount) => {
+            if (amount > 0) {
+                return "text-green-500"; // Green for positive values
+            } else if (amount < 0) {
+                return "text-red-500"; // Red for negative values
+            } else {
+                return ""; // Default for zero values
+            }
+        };
 
-            return (
-                <>
-                    <tr className="border-t">
-                        {/* Account name with indentation */}
-                        <td
+        const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
+
+        return (
+            <>
+                <tr className="border-t">
+                    {/* Account name with indentation */}
+                    <td
                         className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
                         onClick={() => setIsOpen(!isOpen)}
                         style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
@@ -407,58 +411,58 @@ export default function IncomeStatement() {
                     </thead>
                     <tbody>
                         {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> 
+                            <Row key={index} item={item} depth={1} />
                         ))}
                     </tbody>
                 </table>
             </div>
 
-           {/* Group Data Cards */}
-           <div className="flex flex-wrap justify-evenly mt-8">
+            {/* Group Data Cards */}
+            <div className="flex flex-wrap justify-evenly mt-8">
                 {groupData.map((group, index) => (
                     <Card key={index} title={group.title} items={group.items} />
                 ))}
             </div>
 
 
-    {showModal && currentModal === 3 && (
-                    <Modal isVisible={showModal}>
-                        <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
-                            <div className="flex justify-between">
-                                <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Period</h1>
-                                <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
-                            </div>
-
-                            <hr className="border-t border-[#7694D4] my-3" />
-
-                            <form className="max-w-sm mt-5">
-                                <select
-                                    id="incomestatementselect"
-                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    value={selectedincomeStatement}
-                                    onChange={(e) => setSelectedIncomeStatement(e.target.value)}
-                                >
-                                    <option value="">Select Period</option>
-                                    {selectedincomeStatementList.map((incomestatement) => (
-                                        <option key={incomeStatement.id} value={incomestatement.id}>
-                                            {incomestatement.description}
-                                        </option>
-                                    ))}
-                                </select>
-                            </form>
-
-                            <div className="flex justify-end py-3 px-4">
-                                <button
-                                    className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedincomeStatement && "opacity-50 cursor-not-allowed"}`}
-                                    onClick={() => selectedincomeStatement && setCurrentModal(2)}
-                                    disabled={!selectedincomeStatement}
-                                >
-                                    NEXT
-                                </button>
-                            </div>
+            {showModal && currentModal === 3 && (
+                <Modal isVisible={showModal}>
+                    <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
+                        <div className="flex justify-between">
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Period</h1>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
                         </div>
-                    </Modal>
-                )}
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        <form className="max-w-sm mt-5">
+                            <select
+                                id="incomestatementselect"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                value={selectedincomeStatement}
+                                onChange={(e) => setSelectedIncomeStatement(e.target.value)}
+                            >
+                                <option value="">Select Period</option>
+                                {selectedincomeStatementList.map((incomestatement) => (
+                                    <option key={incomeStatement.id} value={incomestatement.id}>
+                                        {incomestatement.description}
+                                    </option>
+                                ))}
+                            </select>
+                        </form>
+
+                        <div className="flex justify-end py-3 px-4">
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedincomeStatement && "opacity-50 cursor-not-allowed"}`}
+                                onClick={() => selectedincomeStatement && setCurrentModal(2)}
+                                disabled={!selectedincomeStatement}
+                            >
+                                NEXT
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </Fragment>
     );
 }
