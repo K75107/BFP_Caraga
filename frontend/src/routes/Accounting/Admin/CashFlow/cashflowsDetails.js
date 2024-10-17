@@ -7,7 +7,7 @@ import { collection, doc, onSnapshot, addDoc, updateDoc } from "firebase/firesto
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { MdKeyboardArrowRight, MdKeyboardArrowDown } from "react-icons/md";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -141,7 +141,6 @@ export default function CashflowsDetails() {
                 console.error("Error updating document: ", error);
             });
 
-        console.log(`Saving category ${categoryId} with name ${name}`);
         setEditingCategory(null);
         setNewCategoryName("");
     };
@@ -163,99 +162,122 @@ export default function CashflowsDetails() {
             [id]: !prevState[id],
         }));
     };
+    const renderCategories = (parentId = null, level = 1) => {
+        const filteredCategories = cashflowCategoriesData.filter(category => category.parentID === parentId);
 
-    const [hierarchicalCategories, setHierarchicalCategories] = useState([]);
+        // Debugging: Log the filtered categories
+        console.log('Filtered Categories for parentId:', parentId, filteredCategories);
 
-    useEffect(() => {
-        const transformToHierarchy = (data) => {
-            const map = {};
-            const roots = [];
+        return filteredCategories.map((category, index) => {
+            const isParent = category.parentID === null; // Check if it's a main category
 
-            data.forEach(category => {
-                map[category.id] = { ...category, subcategories: [] };
-            });
-
-            data.forEach(category => {
-                if (category.parentID === null) {
-                    roots.push(map[category.id]);
-                } else if (map[category.parentID]) {
-                    map[category.parentID].subcategories.push(map[category.id]);
-                }
-            });
-
-            return roots;
-        };
-
-        const hierarchy = transformToHierarchy(cashflowCategoriesData);
-        console.log(hierarchy)
-        setHierarchicalCategories(hierarchy);
-    }, [cashflowCategoriesData]);
-
-
-
-    const renderCategories = (categories = hierarchicalCategories, level = 1) => {
-        return categories.map(category => (
-            <Fragment key={category.id}>
-                <tr
-                    className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                    onClick={() => toggleCategory(category.categoryName)}
-                    onContextMenu={(e) => handleRightClick(e, category)}
-                    onDoubleClick={() => toggleEditing(category.id)}
-                >
-                    <td
-                        className={`px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative`}
-                        style={{ paddingLeft: `${level * 40}px` }}
-                    >
-                        {editingCategories[category.id] || category.categoryName === '' ? (
-                            <div className="flex items-center">
-                                <input
-                                    type="text"
-                                    className="w-full bg-transparent border-b border-gray-300 focus:outline-none text-[12px] w-28 h-6"
-                                    placeholder=""
-                                    value={categoryInputs[category.id] || ''}
-                                    onChange={(e) => handleInputChange(category.id, e.target.value)}
-                                    onBlur={() => {
-                                        handleSaveCategoryName(category.id, categoryInputs[category.id] || '');
-                                        toggleEditing(category.id); // Exit edit mode on blur
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleSaveCategoryName(category.id, categoryInputs[category.id] || '');
-                                            toggleEditing(category.id); // Exit edit mode on Enter
-                                        }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                                {expandedCategories[category.categoryName] ? (
-                                    <MdKeyboardArrowDown size={20} className="ml-4 text-gray-500" />
-                                ) : (
-                                    <MdKeyboardArrowRight size={20} className="ml-4 text-gray-500" />
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-between">
-                                <span>{category.categoryName}</span>
-                                <span className="ml-20 absolute left-10 top-1/2 transform -translate-y-1/2">
-                                    {expandedCategories[category.categoryName] ? (
-                                        <MdKeyboardArrowDown size={20} />
+            return (
+                <Fragment key={category.id}>
+                    <Draggable key={category.id} draggableId={`category-${category.id}`} index={index}>
+                        {(provided) => (
+                            <tr
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                onClick={() => toggleCategory(category.categoryName)}
+                                onContextMenu={(e) => handleRightClick(e, category)}
+                                onDoubleClick={() => toggleEditing(category.id)}
+                            >
+                                <td
+                                    className={"px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative"}
+                                    style={{ paddingLeft: `${level * 40}px` }}
+                                >
+                                    {editingCategories[category.id] || category.categoryName === '' ? (
+                                        <div className="flex items-center">
+                                            <input
+                                                type="text"
+                                                className="w-full bg-transparent border-b border-gray-300 focus:outline-none text-[12px] w-28 h-6"
+                                                value={categoryInputs[category.id] || ''}
+                                                onChange={(e) => handleInputChange(category.id, e.target.value)}
+                                                onBlur={() => handleSaveCategoryName(category.id, categoryInputs[category.id] || '')}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleSaveCategoryName(category.id, categoryInputs[category.id] || '');
+                                                    }
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                            {expandedCategories[category.categoryName] ? (
+                                                <MdKeyboardArrowDown size={20} className="ml-4 text-gray-500" />
+                                            ) : (
+                                                <MdKeyboardArrowRight size={20} className="ml-4 text-gray-500" />
+                                            )}
+                                        </div>
                                     ) : (
-                                        <MdKeyboardArrowRight size={20} />
+                                        <div className="flex items-center justify-between">
+                                            <span>{category.categoryName}</span>
+                                            <span className="ml-20 absolute left-10 top-1/2 transform -translate-y-1/2">
+                                                {expandedCategories[category.categoryName] ? (
+                                                    <MdKeyboardArrowDown size={20} />
+                                                ) : (
+                                                    <MdKeyboardArrowRight size={20} />
+                                                )}
+                                            </span>
+                                        </div>
                                     )}
-                                </span>
-                            </div>
+                                </td>
+                            </tr>
                         )}
-                    </td>
-                    <td className="px-2 py-2"></td>
-                    <td className="px-2 py-2"></td>
-                </tr>
+                    </Draggable>
 
-                {/* Recursively render subcategories */}
-                {expandedCategories[category.categoryName] && renderCategories(category.subcategories, level + 1)}
-            </Fragment>
-        ));
+                    {expandedCategories[category.categoryName] && (
+                        <Droppable droppableId={`subcategory-${category.id}`} type="SUBCATEGORY">
+                            {(provided) => (
+                                <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                                    {renderCategories(category.id, level + 1)}
+                                    {provided.placeholder}
+                                </tbody>
+                            )}
+                        </Droppable>
+                    )}
+                </Fragment>
+            );
+        });
     };
 
+    const onDragEnd = (result) => {
+        const { source, destination, draggableId, type } = result;
 
+        if (!destination) return;
+
+        if (type === 'SUBCATEGORY') {
+            // Logic for moving subcategories
+            const updatedCategories = Array.from(cashflowCategoriesData);
+            const [movedItem] = updatedCategories.splice(source.index, 1);
+            updatedCategories.splice(destination.index, 0, movedItem);
+
+            // Update Firestore and state
+            setCashflowCategoriesData(updatedCategories);
+            updateFirestoreOrder(updatedCategories); // Firestore batch update function
+        } else {
+            // Logic for moving main categories
+            const updatedMainCategories = Array.from(cashflowCategoriesData.filter(cat => cat.parentID === null));
+            const [movedItem] = updatedMainCategories.splice(source.index, 1);
+            updatedMainCategories.splice(destination.index, 0, movedItem);
+
+            // Update Firestore and state
+            setCashflowCategoriesData(updatedMainCategories);
+            updateFirestoreOrder(updatedMainCategories); // Firestore batch update function
+        }
+    };
+
+    // Firestore batch update to handle reordering
+    const updateFirestoreOrder = async (categories) => {
+        const batch = db.batch();
+
+        categories.forEach((category, index) => {
+            const docRef = doc(db, 'cashflow', cashflowId, 'categories', category.id);
+            batch.update(docRef, { order: index });
+        });
+
+        await batch.commit();
+    };
 
 
 
@@ -299,8 +321,20 @@ export default function CashflowsDetails() {
                             </tr>
                         </thead>
                         <tbody>
-                            <DragDropContext>
-                                {renderCategories(hierarchicalCategories)}
+                            <DragDropContext onDragEnd={onDragEnd}>
+                                {cashflowCategoriesData.map((category) => (
+                                    <Droppable key={category.id} droppableId={`category-${category.id}`}>
+                                        {(provided) => (
+                                            <tbody
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                            >
+                                                {renderCategories(null)}
+                                                {provided.placeholder}
+                                            </tbody>
+                                        )}
+                                    </Droppable>
+                                ))}
                             </DragDropContext>
                         </tbody>
                     </table>
@@ -338,7 +372,34 @@ export default function CashflowsDetails() {
 
 
 
+            {/* Right-click context modal */}
+            {showRightClickModal && (
+                <div
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
+                >
+                    <div
+                        style={{ top: modalPosition.y, left: modalPosition.x }}
+                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={addNewSubcategory}
+                        >
+                            Add Subcategory
+                        </button>
 
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        // onClick={handleDeleteRow}
+                        >
+                            Delete Row
+                        </button>
+                    </div>
+                </div>
+            )}
 
 
         </Fragment>
