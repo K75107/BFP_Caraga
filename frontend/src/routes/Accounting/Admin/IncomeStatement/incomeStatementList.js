@@ -196,7 +196,7 @@ export default function IncomeStatementList() {
                                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                                 onClick={() => navigate(`/main/incomeStatement/incomeStatementDetails/${incomeStatement.id}`)}
                             >
-                                <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                <th scope="row" className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                     {incomeStatement.description || "N/A"}
                                 </th>
                                 <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
