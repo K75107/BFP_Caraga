@@ -4,9 +4,14 @@ import { Button, Input, Label, Select } from 'flowbite-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import Modal from "../../../components/Modal";
 import { useNavigate } from "react-router-dom";
+
+
 // Firebase
 import { auth } from "../../../config/firebase-config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+
+
+
 import { db, storage } from "../../../config/firebase-config";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";

@@ -265,6 +265,7 @@ export default function CashflowsDetails() {
                                                         className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 ${snapshot.isDragging ? 'bg-yellow-50' : ''} ${highlightedRow === category.id ? 'bg-green-200' : ''}`} // Highlight during drag and drop
                                                         onContextMenu={(e) => handleRightClick(e, category)}
                                                     >
+                                                  
                                                         <td
                                                             className="px-2 py-3"
                                                             style={{ paddingLeft: `${20 * category.level}px` }}
