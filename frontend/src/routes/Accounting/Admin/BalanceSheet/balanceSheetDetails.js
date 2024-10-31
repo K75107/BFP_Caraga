@@ -34,12 +34,30 @@ export default function BalanceSheet() {
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
-
     // const [showPeriodColumn, setShowPeriodColumn] = useState(false);
 
     const [isClicked, setIsClicked] = useState(false);
-    const { accountTitlesPeriod, accountsPeriod, selectedLedgerYear, showPeriodColumn,
-        setAccountTitlesPeriod, setAccountsPeriod, setSelectedLedgerYear, setShowPeriodColumn } = UseLedgerData();
+    const {
+        accountTitlesPeriod, updateAccountTitlesPeriod,
+        accountsPeriod, updateAccountsPeriod,
+        selectedLedgerYear, updateSelectedLedgerYear,
+        showPeriodColumn, updateShowPeriodColumn
+    } = UseLedgerData();
+
+    // Access data specific to this balance sheet ID
+    const currentAccountTitlesPeriod = accountTitlesPeriod[balanceSheetID] || [];
+    const currentAccountsPeriod = accountsPeriod[balanceSheetID] || [];
+    const currentSelectedLedgerYear = selectedLedgerYear[balanceSheetID] || null;
+    const currentShowPeriodColumn = showPeriodColumn[balanceSheetID] || false;
+
+    // Functions to update data for this balance sheet ID
+    const setAccountTitlesPeriod = (data) => updateAccountTitlesPeriod(balanceSheetID, data);
+    const setAccountsPeriod = (data) => updateAccountsPeriod(balanceSheetID, data);
+    const setSelectedLedgerYear = (year) => updateSelectedLedgerYear(balanceSheetID, year);
+    const setShowPeriodColumn = (value) => updateShowPeriodColumn(balanceSheetID, value);
+
+    // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
+    // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
 
     // Spinner Component
     const Spinner = () => (
@@ -337,7 +355,7 @@ export default function BalanceSheet() {
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
     // Calculate total amount for Assets
-    const totalAssets2 = accountTitlesPeriod
+    const totalAssets2 = currentAccountTitlesPeriod
         .filter(accountTitle =>
             accountTitle.accountType === "Assets" ||
             accountTitle.accountType === "Contra Assets"
@@ -350,7 +368,7 @@ export default function BalanceSheet() {
         }, 0);
 
     // Calculate total amount for Liabilities
-    const totalLiabilities2 = accountTitlesPeriod
+    const totalLiabilities2 = currentAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Liabilities")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.differenceContra2;
@@ -362,7 +380,7 @@ export default function BalanceSheet() {
     let totalEquity2 = totalNetAssets2;
 
     // Add any Equity accounts to the calculated equity
-    totalEquity2 += accountTitlesPeriod
+    totalEquity2 += currentAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Equity")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.differenceContra2; // Use differenceContra for Equity accounts if applicable
@@ -390,7 +408,7 @@ export default function BalanceSheet() {
                     }
                 })
                 .map(accountTitle => {
-                    const matchingPeriodAccount = accountTitlesPeriod.find(
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
                         periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
                     );
 
@@ -418,7 +436,7 @@ export default function BalanceSheet() {
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
                 .map(accountTitle => {
                     // Match by accountTitle with accountTitlesPeriod
-                    const matchingPeriodAccount = accountTitlesPeriod.find(
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
                         periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
                     );
 
@@ -439,7 +457,7 @@ export default function BalanceSheet() {
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
                 .map(accountTitle => {
-                    const matchingPeriodAccount = accountTitlesPeriod.find(
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
                         periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
                     );
 
@@ -641,9 +659,9 @@ export default function BalanceSheet() {
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheet?.ledgerYear || "N/A"}`}</th>
-                            {showPeriodColumn && (
+                            {currentShowPeriodColumn && (
                                 <th scope="col" className="px-6 py-3 text-right">
-                                    {selectedLedgerYear ? `Period - ${selectedLedgerYear}` : "Period - ××××"}
+                                    {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
                                 </th>
                             )}
                             <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
