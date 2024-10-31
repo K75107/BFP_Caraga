@@ -1,11 +1,15 @@
-import React, { Fragment, useState, useEffect } from "react";
+import React, { Fragment, useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, onSnapshot, addDoc, writeBatch } from "firebase/firestore";
+import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities"
+import { createSnapModifier } from '@dnd-kit/modifiers';
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -14,6 +18,9 @@ export default function CashflowsDetails() {
     const [newCategory, setNewCategory] = useState('');
     const { cashflowId } = useParams();
     const [cashflowCategoriesData, setCashflowCategoriesData] = useState([]);
+    const [selectedRowData, setSelectedRowData] = useState(null);
+    const [showRightClickModal, setShowRightClickModal] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
     const navigate = useNavigate();
 
@@ -27,9 +34,8 @@ export default function CashflowsDetails() {
                     ...doc.data()
                 }));
 
-                // Sort categories by position recursively
                 const sortedData = sortCategoriesRecursively(data);
-
+                console.log("sorted data", sortedData);
                 setCashflowCategoriesData(sortedData);
             } catch (error) {
                 console.error('Error fetching and sorting categories:', error);
@@ -92,7 +98,6 @@ export default function CashflowsDetails() {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
             const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
 
-            // Find the position for the new subcategory under the selected parent
             const siblings = cashflowCategoriesData.filter(cat => cat.parentID === selectedRowData.id);
             const newRowPosition = siblings.length > 0
                 ? siblings[siblings.length - 1].position + 1
@@ -123,84 +128,8 @@ export default function CashflowsDetails() {
         }
     };
 
-    const [highlightedRow, setHighlightedRow] = useState(null); // Track highlighted row during drag
-
-    const handleDragUpdate = (update) => {
-        if (!update.destination) {
-            setHighlightedRow(null);
-            return;
-        }
-
-        const destinationIndex = update.destination.index;
-        const destinationItem = cashflowCategoriesData[destinationIndex];
-
-        // Set the highlighted row for the destination item
-        setHighlightedRow(destinationItem.id);
-    };
-
-    const handleDragEnd = async (result) => {
-        if (!result.destination) {
-            setHighlightedRow(null); // Clear highlight if dropped outside any valid destination
-            return;
-        }
-
-        const items = Array.from(cashflowCategoriesData);
-        const [reorderedItem] = items.splice(result.source.index, 1); // Remove dragged item
-        const destinationIndex = result.destination.index;
-        const droppedOnItem = items[destinationIndex];
-
-        let newParentID = reorderedItem.parentID;
-
-        // Clear any previous highlights
-        setHighlightedRow(null);
-
-        // Determine new parent or sibling relationships
-        if (droppedOnItem) {
-            if (destinationIndex < result.source.index) {
-                // Moving to a higher level: place at the same level as the destination item (same parent)
-                newParentID = droppedOnItem.parentID || null;
-                reorderedItem.level = droppedOnItem.level;
-            } else if (destinationIndex > result.source.index) {
-                // Moving to a lower level: make the droppedOnItem its parent
-                newParentID = droppedOnItem.id;
-                reorderedItem.level = droppedOnItem.level + 1;
-            }
-        } else {
-            // If dragged to top, make it a root category
-            newParentID = null;
-            reorderedItem.level = 0;
-        }
-
-        reorderedItem.parentID = newParentID;
-
-        // Update the position and levels of the items
-        const updatedItems = [
-            ...items.slice(0, destinationIndex),
-            reorderedItem,
-            ...items.slice(destinationIndex)
-        ].map((item, index) => ({
-            ...item,
-            position: index + 1,
-        }));
-
-        setCashflowCategoriesData(updatedItems);
-
-        // Batch update Firestore
-        const batch = writeBatch(db);
-        updatedItems.forEach((item) => {
-            const docRef = doc(db, 'cashflow', cashflowId, 'categories', item.id);
-            batch.update(docRef, { position: item.position, parentID: item.parentID });
-        });
-        await batch.commit();
-    };
-
-    const [selectedRowData, setSelectedRowData] = useState(null);
-    const [showRightClickModal, setShowRightClickModal] = useState(false);
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-
     const handleRightClick = (event, category) => {
         event.preventDefault();
-
         setSelectedRowData(category);
         setModalPosition({ x: event.clientX, y: event.clientY - 50 });
         setShowRightClickModal(true);
@@ -212,8 +141,136 @@ export default function CashflowsDetails() {
         }
     };
 
+    function SortableRow({ category, handleRightClick }) {
+        const { attributes, listeners, setNodeRef, transform, transition, over } = useSortable({ id: category.id });
+
+        const style = {
+
+            transition,
+            transform: CSS.Transform.toString(transform),
+        };
+
+        return (
+            <tr
+                ref={setNodeRef}
+                {...attributes}
+                {...listeners}
+                id={category.id}
+                key={category.id}
+                style={style}
+                className="border-b"
+                onContextMenu={(e) => handleRightClick(e, category)}
+            >
+                <td
+                    style={{ paddingLeft: `${20 * category.level}px` }}
+                    className="px-2 py-3 bg-white dark:bg-gray-800"
+                >
+                    {category.categoryName}
+                </td>
+                <td className="px-2 py-3 text-center">{/* Period data if any */}</td>
+                <td className="px-2 py-3 text-center">{/* Any actions */}</td>
+            </tr>
+        );
+    }
+
+
+    // Memoize handleDragEnd to prevent it from changing on each render
+    const handleDragEnd = useCallback(
+        async (event) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id)return;
+
+            const targetItem = over.id;
+            // Get the midpoints of the over element
+            const overLeftBoundary = over.rect.left;
+            const overCenterX = overLeftBoundary;
+
+            // Get the center position of the dragged item
+            const activeCenterX = active.rect.current.translated.left;
+
+            let isLeftDrop = null;
+
+            // Check if it was dropped on the left or right of over
+            if (activeCenterX <= overCenterX) {
+                console.log('Dropped on the left side');
+                isLeftDrop = true;
+                // Perform left drop action
+            } else {
+                console.log('Dropped on the right side');
+                isLeftDrop = false;
+                // Perform right drop action
+            }
+            let updatedCategories;
+            if (isLeftDrop) {
+                // Left drop - same level as other subcategories of the target item's parent
+                const siblings = cashflowCategoriesData.filter(cat => cat.parentID === targetItem.parentID);
+                const newPosition = siblings.length > 0
+                    ? siblings[siblings.length - 1].position + 1
+                    : 1;
+
+                updatedCategories = cashflowCategoriesData.map(item => {
+                    if (item.id === active.id) {
+                        return { ...item, position: newPosition, parentID: targetItem.parentID };
+                    }
+                    return item;
+                });
+            } else {
+                // Right drop - becomes a subcategory of the target item if the target item has no parent or is already a main category
+                const subcategories = cashflowCategoriesData.filter(cat => cat.parentID === over.id);
+            
+                // Determine the new position within the subcategory list
+                const newPosition = subcategories.length > 0
+                    ? subcategories[subcategories.length - 1].position + 1
+                    : 1;
+            
+                // Create updated category list with active item as subcategory if `targetItem` is main or has no parent
+                updatedCategories = cashflowCategoriesData.map(item => {
+                    if (item.id === active.id) {
+                        return {
+                            ...item,
+                            position: newPosition,
+                            parentID: over.id,
+                        };
+                    }
+                    return item;
+                });
+                
+                console.log("Dropped as subcategory on the right side:", updatedCategories);
+            }
+            
+
+            // Sort by position for UI update
+            updatedCategories.sort((a, b) => a.position - b.position);
+            setCashflowCategoriesData(updatedCategories);
+
+            // Commit the updates to Firestore
+            const batch = writeBatch(db);
+            updatedCategories.forEach(category => {
+                const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', category.id);
+                const updatedCategoryData = {
+                    position: category.position,
+                    parentID: category.parentID ?? null,  // Set parentID to null if undefined
+                };
+                batch.update(categoryDocRef, updatedCategoryData);
+            });
+
+            try {
+                await batch.commit();
+                setIsSuccess(true);
+            } catch (error) {
+                console.error('Error updating positions in Firestore:', error);
+                setIsError(true);
+            }
+
+        },
+        [cashflowCategoriesData, cashflowId]
+    );
+
+    const gridSize = 50; // pixels
+    const snapToGridModifier = createSnapModifier(gridSize);
     return (
         <Fragment>
+
             {isSuccess && (
                 <div className="absolute top-4 right-4">
                     <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Cashflow Statement Created'} icon={'check'} />
@@ -241,52 +298,30 @@ export default function CashflowsDetails() {
                         </li>
                     </ul>
                 </div>
-
-                <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                    <DragDropContext onDragEnd={handleDragEnd} onDragUpdate={handleDragUpdate}>
-                        <Droppable droppableId="categories">
-                            {(provided) => (
-                                <table {...provided.droppableProps} ref={provided.innerRef} className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                                        <tr>
-                                            <th scope="col" className="px-2 py-3 w-[160px]">Account Description</th>
-                                            <th scope="col" className="px-2 py-3 w-[288px] text-center">Period</th>
-                                            <th scope="col" className="w-[20px]"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {cashflowCategoriesData.map((category, index) => (
-                                            <Draggable key={category.id} draggableId={category.id} index={index}>
-                                                {(provided, snapshot) => (
-                                                    <tr
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                        {...provided.dragHandleProps}
-                                                        className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 ${snapshot.isDragging ? 'bg-yellow-50' : ''} ${highlightedRow === category.id ? 'bg-green-200' : ''}`} // Highlight during drag and drop
-                                                        onContextMenu={(e) => handleRightClick(e, category)}
-                                                    >
-                                                  
-                                                        <td
-                                                            className="px-2 py-3"
-                                                            style={{ paddingLeft: `${20 * category.level}px` }}
-                                                        >
-                                                            {category.categoryName}
-                                                        </td>
-                                                        <td className="px-2 py-3 text-center">{/* Period data if any */}</td>
-                                                        <td className="px-2 py-3 text-center">
-                                                            {/* Any actions */}
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </Draggable>
-                                        ))}
-                                        {provided.placeholder}
-                                    </tbody>
-                                </table>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
-                </div>
+                <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGridModifier]} collisionDetection={closestCorners}>
+                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" className="px-2 py-3 w-[160px]">Account Description</th>
+                                    <th scope="col" className="px-2 py-3 w-[288px] text-center">Period</th>
+                                    <th scope="col" className="w-[20px]"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <SortableContext items={cashflowCategoriesData} strategy={verticalListSortingStrategy}>
+                                    {cashflowCategoriesData.map((category) => (
+                                        <SortableRow
+                                            key={category.id}
+                                            category={category}
+                                            handleRightClick={handleRightClick}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </tbody>
+                        </table>
+                    </div>
+                </DndContext>
             </div>
 
             <Modal isVisible={showModal}>
@@ -350,4 +385,3 @@ export default function CashflowsDetails() {
         </Fragment>
     );
 }
-
