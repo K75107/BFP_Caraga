@@ -6,6 +6,9 @@ import Modal from "../../../../components/Modal";
 import { useLocation } from "react-router-dom";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
+import { UseLedgerData } from './balanceSheetContext';
+import { BalanceSheetPeriodProvider } from './balanceSheetContext';
+
 
 export default function BalanceSheet() {
     const navigate = useNavigate();
@@ -28,9 +31,33 @@ export default function BalanceSheet() {
 
     const [stateStartDate, setStateStartDate] = useState(null);
     const [stateEndDate, setStateEndDate] = useState(null);
-    const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
-    const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
-    const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
+    // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
+    // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
+    // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
+    // const [showPeriodColumn, setShowPeriodColumn] = useState(false);
+
+    const [isClicked, setIsClicked] = useState(false);
+    const {
+        accountTitlesPeriod, updateAccountTitlesPeriod,
+        accountsPeriod, updateAccountsPeriod,
+        selectedLedgerYear, updateSelectedLedgerYear,
+        showPeriodColumn, updateShowPeriodColumn
+    } = UseLedgerData();
+
+    // Access data specific to this balance sheet ID
+    const currentAccountTitlesPeriod = accountTitlesPeriod[balanceSheetID] || [];
+    const currentAccountsPeriod = accountsPeriod[balanceSheetID] || [];
+    const currentSelectedLedgerYear = selectedLedgerYear[balanceSheetID] || null;
+    const currentShowPeriodColumn = showPeriodColumn[balanceSheetID] || false;
+
+    // Functions to update data for this balance sheet ID
+    const setAccountTitlesPeriod = (data) => updateAccountTitlesPeriod(balanceSheetID, data);
+    const setAccountsPeriod = (data) => updateAccountsPeriod(balanceSheetID, data);
+    const setSelectedLedgerYear = (year) => updateSelectedLedgerYear(balanceSheetID, year);
+    const setShowPeriodColumn = (value) => updateShowPeriodColumn(balanceSheetID, value);
+
+    // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
+    // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
 
     // Spinner Component
     const Spinner = () => (
@@ -175,10 +202,86 @@ export default function BalanceSheet() {
         }
     };
 
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+    const getSelectedLedgerData = async () => {
+        try {
+            if (selectedLedger) {
+                // Fetch the associated ledger document using the selectedLedgerID
+                const ledgerRef = doc(db, "ledger", selectedLedger);
+                const ledgerSnap = await getDoc(ledgerRef);
+
+                if (ledgerSnap.exists()) {
+                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
+
+                    // Fetch account titles from the selected ledger
+                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
+                    const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                    const accountTitlesData = [];
+                    const accountsData = [];
+
+                    for (const titleDoc of accountTitlesSnap.docs) {
+                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                        // Fetch accounts subcollection for each account title
+                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                        const accountsQuery = query(
+                            accountsRef,
+                            where("date", ">=", stateStartDate),   // Filter by start_date
+                            where("date", "<=", stateEndDate)      // Filter by end_date
+                        );
+                        const accountsSnap = await getDocs(accountsQuery);
+
+                        // Only proceed if there are accounts within the date range
+                        if (!accountsSnap.empty) {
+                            // Initialize sums for debit and credit
+                            let totalDebit2 = 0;
+                            let totalCredit2 = 0;
+
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id, // Link to the account title ID
+                                    ...accountDoc.data(),
+                                };
+
+                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+
+                                return accountData;
+                            });
+
+                            // Attach the difference (debit - credit) to the account title
+                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
+                            titleData.differenceContra2 = totalCredit2 - totalDebit2;
+
+                            // Add account title and accounts data to their respective arrays
+                            accountTitlesData.push(titleData);  // Add account title to the list
+                            accountsData.push(...titleAccounts);  // Add account data to the list
+                        }
+                    }
+
+                    // Update the state with the fetched data
+                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
+                    setAccountsPeriod(accountsData); // Set accounts separately
+
+                    // Optionally, if you want to show the year
+                    setSelectedLedgerYear(ledgerYear);
+                } else {
+                    console.error("Selected ledger not found.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching selected ledger data:", error);
+        }
+    };
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
     useEffect(() => {
         getBalanceSheetDescription();
         getLedgerList();
-    }, [balanceSheetID]);
+        getSelectedLedgerData();
+    }, [balanceSheetID, selectedLedger]);
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -250,6 +353,42 @@ export default function BalanceSheet() {
     // Call the function to update Firestore after calculating totalEquity
     updateTotalEquityInFirestore(balanceSheetID, totalEquity);
 
+    //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
+    // Calculate total amount for Assets
+    const totalAssets2 = currentAccountTitlesPeriod
+        .filter(accountTitle =>
+            accountTitle.accountType === "Assets" ||
+            accountTitle.accountType === "Contra Assets"
+        )
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.accountType === "Contra Assets"
+                ? +accountTitle.differenceContra2 // Subtract differenceContra for Contra Assets
+                : accountTitle.difference2;        // Use difference for regular Assets
+            return total + amount; // Sum the amounts
+        }, 0);
+
+    // Calculate total amount for Liabilities
+    const totalLiabilities2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Liabilities")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.differenceContra2;
+            return total + amount;
+        }, 0);
+
+    // Calculate base equity as Assets - Liabilities
+    let totalNetAssets2 = totalAssets2 - totalLiabilities2;
+    let totalEquity2 = totalNetAssets2;
+
+    // Add any Equity accounts to the calculated equity
+    totalEquity2 += currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Equity")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.differenceContra2; // Use differenceContra for Equity accounts if applicable
+            return total + amount; // Sum equity amounts
+        }, 0);
+
+    //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
+
     // Data structure for balance sheet 
     const balanceSheetDetailsData = [
         {
@@ -268,13 +407,25 @@ export default function BalanceSheet() {
                         return a.accountTitle.localeCompare(b.accountTitle);  // Sort alphabetically within the same type
                     }
                 })
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.accountType === "Contra Assets"
-                        ? accountTitle.differenceContra // Use differenceContra for Contra Assets
-                        : accountTitle.difference,      // Use difference for regular Assets
-                })),
-            amount: totalAssets
+                .map(accountTitle => {
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.accountType === "Contra Assets"
+                            ? accountTitle.differenceContra
+                            : accountTitle.difference,
+                        amount2: matchingPeriodAccount ? (
+                            accountTitle.accountType === "Contra Assets"
+                                ? matchingPeriodAccount.differenceContra2
+                                : matchingPeriodAccount.difference2
+                        ) : null
+                    };
+                }),
+            amount: totalAssets,
+            amount2: totalAssets2 !== 0 ? totalAssets2 : null
         },
         {
             name: "Liabilities",
@@ -283,11 +434,20 @@ export default function BalanceSheet() {
                     accountTitle.accountType === "Liabilities"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.differenceContra,
-                })),
-            amount: totalLiabilities
+                .map(accountTitle => {
+                    // Match by accountTitle with accountTitlesPeriod
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.differenceContra,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null // Display amount2 if it exists and if not the set to null
+                    };
+                }),
+            amount: totalLiabilities,
+            amount2: totalLiabilities2 !== 0 ? totalLiabilities2 : null  // Display amount2 if it exists and if not the set to null
         },
         {
             name: "Equity",
@@ -296,11 +456,19 @@ export default function BalanceSheet() {
                     accountTitle.accountType === "Equity"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.differenceContra,
-                })),
-            amount: totalEquity // Display the updated equity (Assets - Liabilities + any Equity accounts)
+                .map(accountTitle => {
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.differenceContra,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
+                    };
+                }),
+            amount: totalEquity, // Display the updated equity (Assets - Liabilities + any Equity accounts)
+            amount2: totalEquity2 !== 0 ? totalEquity2 : null
         },
     ];
 
@@ -400,6 +568,15 @@ export default function BalanceSheet() {
                         {item.amount ? formatAmount(item.amount) : ""}
                     </td>
 
+                    {/* Render amount2 if it exists */}
+                    {item.amount2 !== undefined && (
+                        <td
+                            className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount2)}`}
+                        >
+                            {item.amount2 !== null ? formatAmount(item.amount2) : ""}
+                        </td>
+                    )}
+
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
                 </tr>
@@ -415,82 +592,6 @@ export default function BalanceSheet() {
             </>
         );
     };
-
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
-    const getSelectedLedgerData = async () => {
-        try {
-            if (selectedLedger) {
-                // Fetch the associated ledger document using the selectedLedgerID
-                const ledgerRef = doc(db, "ledger", selectedLedger);
-                const ledgerSnap = await getDoc(ledgerRef);
-
-                if (ledgerSnap.exists()) {
-                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
-
-                    // Fetch account titles from the selected ledger
-                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
-                    const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                    const accountTitlesData = [];
-                    const accountsData = [];
-
-                    for (const titleDoc of accountTitlesSnap.docs) {
-                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                        // Fetch accounts subcollection for each account title
-                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
-                        const accountsQuery = query(
-                            accountsRef,
-                            where("date", ">=", stateStartDate),   // Filter by start_date
-                            where("date", "<=", stateEndDate)      // Filter by end_date
-                        );
-                        const accountsSnap = await getDocs(accountsQuery);
-
-                        // Only proceed if there are accounts within the date range
-                        if (!accountsSnap.empty) {
-                            // Initialize sums for debit and credit
-                            let totalDebit2 = 0;
-                            let totalCredit2 = 0;
-
-                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                const accountData = {
-                                    id: accountDoc.id,
-                                    accountTitleID: titleDoc.id, // Link to the account title ID
-                                    ...accountDoc.data(),
-                                };
-
-                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
-
-                                return accountData;
-                            });
-
-                            // Attach the difference (debit - credit) to the account title
-                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
-                            titleData.differenceContra2 = totalCredit2 - totalDebit2;
-
-                            // Add account title and accounts data to their respective arrays
-                            accountTitlesData.push(titleData);  // Add account title to the list
-                            accountsData.push(...titleAccounts);  // Add account data to the list
-                        }
-                    }
-
-                    // Update the state with the fetched data
-                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
-                    setAccountsPeriod(accountsData); // Set accounts separately
-
-                    // Optionally, if you want to show the year
-                    setSelectedLedgerYear(ledgerYear);
-                } else {
-                    console.error("Selected ledger not found.");
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching selected ledger data:", error);
-        }
-    };
-
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
 
     return (
         <Fragment>
@@ -531,8 +632,12 @@ export default function BalanceSheet() {
                 </h1>
                 <div className="flex space-x-4">
                     <button
-                        className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
+                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium border border-gray-400 ${isClicked
+                            ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
+                            : 'bg-white text-black hover:bg-color-lighter-gray'
+                            }`}
                         onClick={() => {
+                            setIsClicked(true);
                             setCurrentModal(1);
                             setShowModal(true);
                         }}
@@ -554,6 +659,11 @@ export default function BalanceSheet() {
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheet?.ledgerYear || "N/A"}`}</th>
+                            {currentShowPeriodColumn && (
+                                <th scope="col" className="px-6 py-3 text-right">
+                                    {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
+                                </th>
+                            )}
                             <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
                         </tr>
                     </thead>
@@ -578,7 +688,7 @@ export default function BalanceSheet() {
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select Ledger Period</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setIsClicked(false); }}>×</button>
                         </div>
 
                         <hr className="border-t border-[#7694D4] my-3" />
@@ -609,6 +719,9 @@ export default function BalanceSheet() {
 
                                         // Optionally move to the next modal step
                                         setCurrentModal(2);
+
+                                        setShowPeriodColumn(true);  // Show the period column
+                                        setIsClicked(false);
                                     }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected

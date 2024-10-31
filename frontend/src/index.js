@@ -7,6 +7,7 @@ import {
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
+import { BalanceSheetPeriodProvider } from './routes/Accounting/Admin/BalanceSheet/balanceSheetContext';
 import store from './store';
 import { Navigate } from 'react-router-dom';
 
@@ -122,12 +123,12 @@ const router = createBrowserRouter([
             element: <Cashflows />
           },
           {
-            path:'generatedReports',
-            element : <CashFlowsReports/>
+            path: 'generatedReports',
+            element: <CashFlowsReports />
           },
           {
-            path:'/main/cashflowStatement/cashflows/:cashflowId',
-            element: <CashflowsDetails/>
+            path: '/main/cashflowStatement/cashflows/:cashflowId',
+            element: <CashflowsDetails />
           },
           {
             index: true,
@@ -274,9 +275,11 @@ const router = createBrowserRouter([
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
 
-    <Provider store={store}>
+  <Provider store={store}>
+    <BalanceSheetPeriodProvider>
       <RouterProvider router={router} />
-    </Provider>
+    </BalanceSheetPeriodProvider>
+  </Provider>
 
 );
 
