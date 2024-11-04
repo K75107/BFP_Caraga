@@ -10,6 +10,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { createSnapModifier } from '@dnd-kit/modifiers';
+import { arrayMove } from '@dnd-kit/sortable';
+import { position } from "@chakra-ui/react";
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -45,17 +47,6 @@ export default function CashflowsDetails() {
         return () => unsubscribe();
     }, [cashflowId]);
 
-    const [expandedCategories, setExpandedCategories] = useState({});
-
-    const toggleCategory = (categoryId) => {
-        setExpandedCategories((prev) => ({
-            ...prev,
-            [categoryId]: !prev[categoryId],
-        }));
-    };
-
-
-
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
@@ -68,20 +59,49 @@ export default function CashflowsDetails() {
         ]);
     };
 
-    // Filtered data to show or hide based on `expandedCategories`
-    const visibleCategories = cashflowCategoriesData.filter((category) => {
-        // Show all main categories and their expanded subcategories recursively
-        if (category.parentID === null) return true;
 
-        let currentCategory = category;
-        while (currentCategory.parentID) {
-            if (!expandedCategories[currentCategory.parentID]) {
-                return false;
+
+
+    const [expandedCategories, setExpandedCategories] = useState({});
+
+    const toggleCategory = (categoryId) => {
+        setExpandedCategories((prev) => {
+            const newExpandedState = {
+                ...prev,
+                [categoryId]: !prev[categoryId],
+            };
+
+            // Log the updated expanded state
+            console.log("Toggled expandedCategories:", newExpandedState);
+
+            return newExpandedState;
+        });
+
+    };
+
+
+
+
+    // Function to get visible categories based on the expanded state
+    const getVisibleCategories = () => {
+        return cashflowCategoriesData.filter((category) => {
+            // Check if the category is a main category or if it is expanded
+            if (category.parentID === null) return true;
+
+            // If the category has a parent, check if the parent is expanded
+            let currentCategory = category;
+            while (currentCategory.parentID) {
+                if (!expandedCategories[currentCategory.parentID]) {
+                    return false; // Parent is not expanded
+                }
+                currentCategory = cashflowCategoriesData.find(cat => cat.id === currentCategory.parentID);
             }
-            currentCategory = cashflowCategoriesData.find(cat => cat.id === currentCategory.parentID);
-        }
-        return true;
-    });
+            return true; // This category and its parents are expanded
+        });
+    };
+
+    // Use getVisibleCategories in your rendering logic
+    const visibleCategories = getVisibleCategories();
 
     const addNewCategory = async () => {
         try {
@@ -97,8 +117,8 @@ export default function CashflowsDetails() {
                 categoryName: newCategory,
                 parentID: null,
                 created_at: new Date(),
-                mainCategory: true,
-                position: newRowPosition
+                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+
             });
 
             const newCategoryCreated = {
@@ -106,8 +126,8 @@ export default function CashflowsDetails() {
                 categoryName: newCategory,
                 parentID: null,
                 created_at: new Date(),
-                mainCategory: true,
-                position: newRowPosition
+                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+
             };
 
             setCashflowCategoriesData((prevData) => [...prevData, newCategoryCreated]);
@@ -133,8 +153,8 @@ export default function CashflowsDetails() {
                 categoryName: 'New Subcategory',
                 parentID: selectedRowData.id,
                 created_at: new Date(),
-                mainCategory: false,
-                position: newRowPosition
+                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+
             });
 
             const newSubcategoryCreated = {
@@ -142,8 +162,7 @@ export default function CashflowsDetails() {
                 categoryName: 'New Subcategory',
                 parentID: selectedRowData.id,
                 created_at: new Date(),
-                mainCategory: false,
-                position: newRowPosition
+                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
             };
 
             setCashflowCategoriesData((prevData) => [...prevData, newSubcategoryCreated]);
@@ -184,7 +203,7 @@ export default function CashflowsDetails() {
             >
                 <td
                     className="px-2 py-3 bg-white dark:bg-gray-800 flex items-center"
-                    style={{ paddingLeft: `${20 * category.level}px` }}
+                    style={{ paddingLeft: `${45 * category.level}px` }}
                 >
                     {/* Drag Icon */}
                     <span {...listeners} className="cursor-grab mr-2 text-gray-500">
@@ -215,83 +234,67 @@ export default function CashflowsDetails() {
     // Memoize handleDragEnd to prevent it from changing on each render
     const handleDragEnd = useCallback(
         async (event) => {
-            const { active, over } = event;
+            const { active, over, delta } = event;
             if (!over || active.id === over.id) return;
-
-            const targetItem = over.id;
-            // Get the midpoints of the over element
-            const overLeftBoundary = over.rect.left;
-            const overCenterX = overLeftBoundary;
-
-            // Get the center position of the dragged item
-            const activeCenterX = active.rect.current.translated.left;
-
-            let isLeftDrop = null;
-
-            // Check if it was dropped on the left or right of over
-            if (activeCenterX <= overCenterX) {
-                console.log('Dropped on the left side');
-                isLeftDrop = true;
-                // Perform left drop action
+    
+            const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
+            const activeItem = cashflowCategoriesData[activeIndex];
+            const overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
+            
+            // Determine if the dragged item is at the top
+            let newRowPosition;
+            if (overIndex === 0 && delta.y < 0) {
+                // If the item is dragged to the top with no over data, make it the first row
+                newRowPosition = 1;
+            } else if (overIndex < visibleCategories.length - 1) {
+                const nextItem = visibleCategories[overIndex + 1];
+                newRowPosition = (over.position + nextItem.position) / 2; // Midpoint between overItem and nextItem
             } else {
-                console.log('Dropped on the right side');
-                isLeftDrop = false;
-                // Perform right drop action
+                newRowPosition = over.position + 1; // Place it after the last item
             }
-            let updatedCategories;
-            if (isLeftDrop) {
-                // Left drop - same level as other subcategories of the target item's parent
-                const siblings = cashflowCategoriesData.filter(cat => cat.parentID === targetItem.parentID);
-                const newPosition = siblings.length > 0
-                    ? siblings[siblings.length - 1].position + 1
-                    : 1;
-
-                updatedCategories = cashflowCategoriesData.map(item => {
-                    if (item.id === active.id) {
-                        return { ...item, position: newPosition, parentID: targetItem.parentID };
+    
+            // Calculate the new level based on grid movement
+            const gridSize = 45;
+            const gridMovement = Math.round(delta.x / gridSize);
+            let newLevel = activeItem.level + gridMovement;
+            newLevel = Math.max(0, newLevel);
+    
+            let newParentID = null;
+            if (newLevel > 0) {
+                for (let i = overIndex; i >= 0; i--) {
+                    if (cashflowCategoriesData[i].level === newLevel - 1) {
+                        newParentID = cashflowCategoriesData[i].id;
+                        break;
                     }
-                    return item;
-                });
-            } else {
-                // Right drop - becomes a subcategory of the target item if the target item has no parent or is already a main category
-                const subcategories = cashflowCategoriesData.filter(cat => cat.parentID === over.id);
-
-                // Determine the new position within the subcategory list
-                const newPosition = subcategories.length > 0
-                    ? subcategories[subcategories.length - 1].position + 1
-                    : 1;
-
-                // Create updated category list with active item as subcategory if `targetItem` is main or has no parent
-                updatedCategories = cashflowCategoriesData.map(item => {
-                    if (item.id === active.id) {
-                        return {
-                            ...item,
-                            position: newPosition,
-                            parentID: over.id,
-                        };
-                    }
-                    return item;
-                });
-
-                console.log("Dropped as subcategory on the right side:", updatedCategories);
+                }
             }
-
-
-            // Sort by position for UI update
-            updatedCategories.sort((a, b) => a.position - b.position);
-            setCashflowCategoriesData(updatedCategories);
-
-            // Commit the updates to Firestore
+    
+            const updatedCategories = cashflowCategoriesData.map((item) =>
+                item.id === active.id
+                    ? { ...item, position: newRowPosition, level: newLevel, parentID: newParentID }
+                    : item
+            );
+    
+            const finalUpdatedCategories = arrayMove(updatedCategories, activeIndex, overIndex);
+    
+            // Reset positions sequentially after each change
+            const resetCategories = finalUpdatedCategories.map((item, index) => ({
+                ...item,
+                position: index + 1, // Sequential positions
+            }));
+    
+            setCashflowCategoriesData(resetCategories);
+    
             const batch = writeBatch(db);
-            updatedCategories.forEach(category => {
+            resetCategories.forEach((category) => {
                 const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', category.id);
-                const updatedCategoryData = {
+                batch.update(categoryDocRef, {
+                    parentID: category.parentID ?? null,
+                    level: category.level,
                     position: category.position,
-                    parentID: category.parentID ?? null,  // Set parentID to null if undefined
-                };
-                batch.update(categoryDocRef, updatedCategoryData);
+                });
             });
-
+    
             try {
                 await batch.commit();
                 setIsSuccess(true);
@@ -299,13 +302,37 @@ export default function CashflowsDetails() {
                 console.error('Error updating positions in Firestore:', error);
                 setIsError(true);
             }
-
         },
         [cashflowCategoriesData, cashflowId]
     );
+    
 
-    const gridSize = 50; // pixels
-    const snapToGridModifier = createSnapModifier(gridSize);
+
+
+    const gridSize = 45;
+
+    function snapToGrid(args) {
+        const { transform } = args;
+
+        return {
+            ...transform,
+            x: Math.ceil(transform.x / gridSize) * gridSize,
+            y: Math.ceil(transform.y / gridSize) * gridSize,
+        };
+    }
+
+    const handleDragStart = useCallback((event) => {
+        const categoryId = event.active.id;
+        const category = cashflowCategoriesData.find(cat => cat.id === categoryId);
+
+        if (category) {
+            toggleCategory(category.id); // Expands or collapses subcategories as expected
+        } else {
+            console.log("Category not found on drag start");
+        }
+    }, [cashflowCategoriesData, toggleCategory]);
+
+
     return (
         <Fragment>
 
@@ -336,7 +363,7 @@ export default function CashflowsDetails() {
                         </li>
                     </ul>
                 </div>
-                <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGridModifier]} collisionDetection={closestCorners}>
+                <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
