@@ -22,7 +22,6 @@ export default function CashflowsDetails() {
     const [showRightClickModal, setShowRightClickModal] = useState(false);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
-    const navigate = useNavigate();
 
     useEffect(() => {
         const cashflowsCollectionRef = collection(db, 'cashflow', cashflowId, 'categories');
@@ -46,6 +45,18 @@ export default function CashflowsDetails() {
         return () => unsubscribe();
     }, [cashflowId]);
 
+    const [expandedCategories, setExpandedCategories] = useState({});
+
+    const toggleCategory = (categoryId) => {
+        setExpandedCategories((prev) => ({
+            ...prev,
+            [categoryId]: !prev[categoryId],
+        }));
+    };
+
+
+
+
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
             .filter(category => category.parentID === parentID)
@@ -56,6 +67,21 @@ export default function CashflowsDetails() {
             ...sortCategoriesRecursively(categories, category.id, level + 1)
         ]);
     };
+
+    // Filtered data to show or hide based on `expandedCategories`
+    const visibleCategories = cashflowCategoriesData.filter((category) => {
+        // Show all main categories and their expanded subcategories recursively
+        if (category.parentID === null) return true;
+
+        let currentCategory = category;
+        while (currentCategory.parentID) {
+            if (!expandedCategories[currentCategory.parentID]) {
+                return false;
+            }
+            currentCategory = cashflowCategoriesData.find(cat => cat.id === currentCategory.parentID);
+        }
+        return true;
+    });
 
     const addNewCategory = async () => {
         try {
@@ -142,10 +168,8 @@ export default function CashflowsDetails() {
     };
 
     function SortableRow({ category, handleRightClick }) {
-        const { attributes, listeners, setNodeRef, transform, transition, over } = useSortable({ id: category.id });
-
+        const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: category.id });
         const style = {
-
             transition,
             transform: CSS.Transform.toString(transform),
         };
@@ -154,18 +178,32 @@ export default function CashflowsDetails() {
             <tr
                 ref={setNodeRef}
                 {...attributes}
-                {...listeners}
-                id={category.id}
-                key={category.id}
                 style={style}
                 className="border-b"
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
+                    className="px-2 py-3 bg-white dark:bg-gray-800 flex items-center"
                     style={{ paddingLeft: `${20 * category.level}px` }}
-                    className="px-2 py-3 bg-white dark:bg-gray-800"
                 >
-                    {category.categoryName}
+                    {/* Drag Icon */}
+                    <span {...listeners} className="cursor-grab mr-2 text-gray-500">
+                        ☰
+                    </span>
+
+                    {/* Category Name */}
+                    <span>{category.categoryName}</span>
+
+                    {/* Toggle Button at the end */}
+                    {(category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id)) && (
+                        <button
+                            onClick={() => toggleCategory(category.id)}
+                            className="mr-2 text-blue-500"
+                        >
+                            {expandedCategories[category.id] ? "▾" : "▸"}
+                        </button>
+                    )}
+
                 </td>
                 <td className="px-2 py-3 text-center">{/* Period data if any */}</td>
                 <td className="px-2 py-3 text-center">{/* Any actions */}</td>
@@ -178,7 +216,7 @@ export default function CashflowsDetails() {
     const handleDragEnd = useCallback(
         async (event) => {
             const { active, over } = event;
-            if (!over || active.id === over.id)return;
+            if (!over || active.id === over.id) return;
 
             const targetItem = over.id;
             // Get the midpoints of the over element
@@ -217,12 +255,12 @@ export default function CashflowsDetails() {
             } else {
                 // Right drop - becomes a subcategory of the target item if the target item has no parent or is already a main category
                 const subcategories = cashflowCategoriesData.filter(cat => cat.parentID === over.id);
-            
+
                 // Determine the new position within the subcategory list
                 const newPosition = subcategories.length > 0
                     ? subcategories[subcategories.length - 1].position + 1
                     : 1;
-            
+
                 // Create updated category list with active item as subcategory if `targetItem` is main or has no parent
                 updatedCategories = cashflowCategoriesData.map(item => {
                     if (item.id === active.id) {
@@ -234,10 +272,10 @@ export default function CashflowsDetails() {
                     }
                     return item;
                 });
-                
+
                 console.log("Dropped as subcategory on the right side:", updatedCategories);
             }
-            
+
 
             // Sort by position for UI update
             updatedCategories.sort((a, b) => a.position - b.position);
@@ -309,8 +347,8 @@ export default function CashflowsDetails() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <SortableContext items={cashflowCategoriesData} strategy={verticalListSortingStrategy}>
-                                    {cashflowCategoriesData.map((category) => (
+                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                    {visibleCategories.map((category) => (
                                         <SortableRow
                                             key={category.id}
                                             category={category}
