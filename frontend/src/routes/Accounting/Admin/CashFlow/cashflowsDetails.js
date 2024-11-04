@@ -239,21 +239,34 @@ export default function CashflowsDetails() {
     
             const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
             const activeItem = cashflowCategoriesData[activeIndex];
-            const overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
-            
-            // Determine if the dragged item is at the top
+    
+            let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
+            let overItem = cashflowCategoriesData[overIndex];
+    
+            console.log("overindexform top", overItem);
+    
+            // Always use the upper row as the target
+            if (activeIndex > overIndex) {
+                // If moving up, set `overItem` to the item above `over`, if it exists
+                overIndex = overIndex > 0 ? overIndex - 1 : overIndex; // Use the item above if available
+            }
+    
+            console.log("original over item", over);
+            console.log("adjusted over index", overIndex);
+    
+            // Determine new row position
             let newRowPosition;
             if (overIndex === 0 && delta.y < 0) {
-                // If the item is dragged to the top with no over data, make it the first row
+                // If dragged to the top with no over data, make it the first row
                 newRowPosition = 1;
             } else if (overIndex < visibleCategories.length - 1) {
                 const nextItem = visibleCategories[overIndex + 1];
-                newRowPosition = (over.position + nextItem.position) / 2; // Midpoint between overItem and nextItem
+                newRowPosition = (overItem.position + nextItem.position) / 2; // Midpoint between overItem and nextItem
             } else {
-                newRowPosition = over.position + 1; // Place it after the last item
+                newRowPosition = overItem.position + 1; // Place it after the last item
             }
     
-            // Calculate the new level based on grid movement
+            // Calculate new level based on grid movement
             const gridSize = 45;
             const gridMovement = Math.round(delta.x / gridSize);
             let newLevel = activeItem.level + gridMovement;
@@ -306,6 +319,7 @@ export default function CashflowsDetails() {
         [cashflowCategoriesData, cashflowId]
     );
     
+
 
 
 
