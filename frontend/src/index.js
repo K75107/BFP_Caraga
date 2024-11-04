@@ -8,6 +8,7 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
 import { BalanceSheetPeriodProvider } from './routes/Accounting/Admin/BalanceSheet/balanceSheetContext';
+import { IncomeStatementPeriodProvider } from './routes/Accounting/Admin/IncomeStatement/incomeStatementContext';
 import store from './store';
 import { Navigate } from 'react-router-dom';
 
@@ -277,10 +278,13 @@ root.render(
 
   <Provider store={store}>
     <BalanceSheetPeriodProvider>
+    <IncomeStatementPeriodProvider>
       <RouterProvider router={router} />
+      </IncomeStatementPeriodProvider>
     </BalanceSheetPeriodProvider>
   </Provider>
 
 );
+
 
 reportWebVitals();
