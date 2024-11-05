@@ -71,14 +71,28 @@ export default function CashflowsDetails() {
                 [categoryId]: !prev[categoryId],
             };
 
-            // Log the updated expanded state
-            console.log("Toggled expandedCategories:", newExpandedState);
-
             return newExpandedState;
         });
 
     };
 
+    const expandCategory = (categoryId) => {
+        setExpandedCategories((prev) => {
+            return {
+                ...prev,
+                [categoryId]: true, // Set the category to expanded
+            };
+        });
+    };
+
+    const collapseCategory = (categoryId) => {
+        setExpandedCategories((prev) => {
+            return {
+                ...prev,
+                [categoryId]: false, // Set the category to collapsed
+            };
+        });
+    };
 
 
 
@@ -243,8 +257,10 @@ export default function CashflowsDetails() {
             let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
             let overItem = cashflowCategoriesData[overIndex];
 
+
+
             // Always use the upper row as the target
-            if (activeIndex > overIndex && overItem.level !=activeItem.level) {
+            if ((activeIndex > overIndex) && (overItem.level != activeItem.level || delta.x > 0)) {
                 // If moving up, set `overItem` to the item above `over`, if it exists
                 overIndex = overIndex > 0 ? overIndex - 1 : overIndex; // Use the item above if available
             }
@@ -315,6 +331,17 @@ export default function CashflowsDetails() {
                 console.error('Error updating positions in Firestore:', error);
                 setIsError(true);
             }
+
+            // Expand or collapse category if the item is a category
+            const category = cashflowCategoriesData.find(cat => cat.id === activeItem.id);
+            if (category) {
+                expandCategory(category.id);
+                // console.log(`Category ${category.id} toggled.`);
+            } else {
+                console.log("Category not found on drag start");
+            }
+
+
         },
         [cashflowCategoriesData, cashflowId]
     );
@@ -327,26 +354,26 @@ export default function CashflowsDetails() {
 
     function snapToGrid(args) {
         const { transform } = args;
-    
+
         let newX = Math.ceil(transform.x / gridSize) * gridSize;
-    
+
         // Calculate maximum left and right positions based on the level
         const maxLeft = -overIdLevel * gridSize;
-        const maxRight = ((newMaxLevel - overIdLevel)+1) * gridSize;
-    
+        const maxRight = ((newMaxLevel - overIdLevel) + 1) * gridSize;
+
         // Apply the calculated boundaries
         newX = Math.max(maxLeft, newX);   // Allow moving up to `overIdLevel` grids to the left
         newX = Math.min(newX, maxRight);  // Restrict right movement to `newMaxLevel - overIdLevel`
-    
+
         return {
             ...transform,
             x: newX,
             y: Math.ceil(transform.y / gridSize) * gridSize,
         };
     }
-    
-    
-    
+
+
+
 
     const handleDragStart = useCallback(async (event) => {
         const { id: activeId } = event.active;  // Get the active item's ID
@@ -371,7 +398,7 @@ export default function CashflowsDetails() {
         // Expand or collapse category if the item is a category
         const category = cashflowCategoriesData.find(cat => cat.id === activeId);
         if (category) {
-            toggleCategory(category.id);
+            collapseCategory(category.id);
             console.log(`Category ${category.id} toggled.`);
         } else {
             console.log("Category not found on drag start");
