@@ -9,9 +9,7 @@ import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuc
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
-import { createSnapModifier } from '@dnd-kit/modifiers';
 import { arrayMove } from '@dnd-kit/sortable';
-import { position } from "@chakra-ui/react";
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -25,21 +23,20 @@ export default function CashflowsDetails() {
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
     const [overIdLevel, setOverIdLevel] = useState();
 
-    useEffect(() => {
-        const cashflowsCollectionRef = collection(db, 'cashflow', cashflowId, 'categories');
+     // Fetch categories data only once initially to reduce continuous reads
+     useEffect(() => {
+        const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
 
+        // Only read data once, then manually update state when needed
         const unsubscribe = onSnapshot(cashflowsCollectionRef, (querySnapshot) => {
             try {
-                const data = querySnapshot.docs.map(doc => ({
+                const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
-                    ...doc.data()
+                    ...doc.data(),
                 }));
-
-                const sortedData = sortCategoriesRecursively(data);
-                console.log("sorted data", sortedData);
-                setCashflowCategoriesData(sortedData);
+                setCashflowCategoriesData(sortCategoriesRecursively(data));
             } catch (error) {
-                console.error('Error fetching and sorting categories:', error);
+                console.error("Error fetching and sorting categories:", error);
                 setIsError(true);
             }
         });
@@ -50,15 +47,14 @@ export default function CashflowsDetails() {
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
-            .filter(category => category.parentID === parentID)
+            .filter((category) => category.parentID === parentID)
             .sort((a, b) => a.position - b.position);
 
-        return filteredCategories.flatMap(category => [
+        return filteredCategories.flatMap((category) => [
             { ...category, level },
-            ...sortCategoriesRecursively(categories, category.id, level + 1)
+            ...sortCategoriesRecursively(categories, category.id, level + 1),
         ]);
     };
-
 
 
 
@@ -119,10 +115,9 @@ export default function CashflowsDetails() {
 
     const addNewCategory = async () => {
         try {
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const categoriesCollectionRef = collection(db, "cashflow", cashflowId, "categories");
 
-            const sortedAccounts = [...cashflowCategoriesData].filter(cat => cat.parentID === null);
+            const sortedAccounts = cashflowCategoriesData.filter((cat) => cat.parentID === null);
             const newRowPosition = sortedAccounts.length > 0
                 ? sortedAccounts[sortedAccounts.length - 1].position + 1
                 : 1;
@@ -131,23 +126,16 @@ export default function CashflowsDetails() {
                 categoryName: newCategory,
                 parentID: null,
                 created_at: new Date(),
-                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
-
+                position: parseFloat(newRowPosition.toFixed(10)),
             });
 
-            const newCategoryCreated = {
-                id: docRef.id,
-                categoryName: newCategory,
-                parentID: null,
-                created_at: new Date(),
-                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
-
-            };
-
-            setCashflowCategoriesData((prevData) => [...prevData, newCategoryCreated]);
+            setCashflowCategoriesData((prevData) => [
+                ...prevData,
+                { id: docRef.id, categoryName: newCategory, parentID: null, created_at: new Date(), position: newRowPosition },
+            ]);
             setIsSuccess(true);
         } catch (error) {
-            console.error('Error adding new category:', error);
+            console.error("Error adding new category:", error);
             setIsError(true);
         }
     };
@@ -399,7 +387,7 @@ export default function CashflowsDetails() {
         const category = cashflowCategoriesData.find(cat => cat.id === activeId);
         if (category) {
             collapseCategory(category.id);
-            console.log(`Category ${category.id} toggled.`);
+            // console.log(`Category ${category.id} toggled.`);
         } else {
             console.log("Category not found on drag start");
         }
