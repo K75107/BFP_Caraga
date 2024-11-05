@@ -331,7 +331,7 @@ export default function CashflowsDetails() {
     
         // Calculate maximum left and right positions based on the level
         const maxLeft = -overIdLevel * gridSize;
-        const maxRight = (newMaxLevel - overIdLevel) * gridSize;
+        const maxRight = ((newMaxLevel - overIdLevel)+1) * gridSize;
     
         // Apply the calculated boundaries
         newX = Math.max(maxLeft, newX);   // Allow moving up to `overIdLevel` grids to the left
