@@ -244,7 +244,7 @@ export default function CashflowsDetails() {
             let overItem = cashflowCategoriesData[overIndex];
 
             // Always use the upper row as the target
-            if (activeIndex > overIndex) {
+            if (activeIndex > overIndex && overItem.level !=activeItem.level) {
                 // If moving up, set `overItem` to the item above `over`, if it exists
                 overIndex = overIndex > 0 ? overIndex - 1 : overIndex; // Use the item above if available
             }
@@ -258,6 +258,7 @@ export default function CashflowsDetails() {
             } else if (overIndex < visibleCategories.length - 1) {
                 const nextItem = visibleCategories[overIndex + 1];
                 newRowPosition = (overItem.position + nextItem.position) / 2; // Midpoint between overItem and nextItem
+
             } else {
                 newRowPosition = overItem.position + 1; // Place it after the last item
             }
