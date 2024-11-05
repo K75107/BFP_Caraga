@@ -23,7 +23,7 @@ export default function CashflowsDetails() {
     const [selectedRowData, setSelectedRowData] = useState(null);
     const [showRightClickModal, setShowRightClickModal] = useState(false);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-
+    const [overIdLevel, setOverIdLevel] = useState();
 
     useEffect(() => {
         const cashflowsCollectionRef = collection(db, 'cashflow', cashflowId, 'categories');
@@ -236,24 +236,20 @@ export default function CashflowsDetails() {
         async (event) => {
             const { active, over, delta } = event;
             if (!over || active.id === over.id) return;
-    
+
             const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
             const activeItem = cashflowCategoriesData[activeIndex];
-    
+
             let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
             let overItem = cashflowCategoriesData[overIndex];
-    
-            console.log("overindexform top", overItem);
-    
+
             // Always use the upper row as the target
             if (activeIndex > overIndex) {
                 // If moving up, set `overItem` to the item above `over`, if it exists
                 overIndex = overIndex > 0 ? overIndex - 1 : overIndex; // Use the item above if available
             }
-    
-            console.log("original over item", over);
-            console.log("adjusted over index", overIndex);
-    
+
+
             // Determine new row position
             let newRowPosition;
             if (overIndex === 0 && delta.y < 0) {
@@ -265,13 +261,16 @@ export default function CashflowsDetails() {
             } else {
                 newRowPosition = overItem.position + 1; // Place it after the last item
             }
-    
+
             // Calculate new level based on grid movement
             const gridSize = 45;
             const gridMovement = Math.round(delta.x / gridSize);
             let newLevel = activeItem.level + gridMovement;
             newLevel = Math.max(0, newLevel);
-    
+
+
+
+
             let newParentID = null;
             if (newLevel > 0) {
                 for (let i = overIndex; i >= 0; i--) {
@@ -281,23 +280,23 @@ export default function CashflowsDetails() {
                     }
                 }
             }
-    
+
             const updatedCategories = cashflowCategoriesData.map((item) =>
                 item.id === active.id
                     ? { ...item, position: newRowPosition, level: newLevel, parentID: newParentID }
                     : item
             );
-    
+
             const finalUpdatedCategories = arrayMove(updatedCategories, activeIndex, overIndex);
-    
+
             // Reset positions sequentially after each change
             const resetCategories = finalUpdatedCategories.map((item, index) => ({
                 ...item,
                 position: index + 1, // Sequential positions
             }));
-    
+
             setCashflowCategoriesData(resetCategories);
-    
+
             const batch = writeBatch(db);
             resetCategories.forEach((category) => {
                 const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', category.id);
@@ -307,7 +306,7 @@ export default function CashflowsDetails() {
                     position: category.position,
                 });
             });
-    
+
             try {
                 await batch.commit();
                 setIsSuccess(true);
@@ -318,33 +317,66 @@ export default function CashflowsDetails() {
         },
         [cashflowCategoriesData, cashflowId]
     );
-    
 
 
 
+    const [newMaxLevel, setNewMaxLevel] = useState();
 
     const gridSize = 45;
 
     function snapToGrid(args) {
         const { transform } = args;
-
+    
+        let newX = Math.ceil(transform.x / gridSize) * gridSize;
+    
+        // Calculate maximum left and right positions based on the level
+        const maxLeft = -overIdLevel * gridSize;
+        const maxRight = (newMaxLevel - overIdLevel) * gridSize;
+    
+        // Apply the calculated boundaries
+        newX = Math.max(maxLeft, newX);   // Allow moving up to `overIdLevel` grids to the left
+        newX = Math.min(newX, maxRight);  // Restrict right movement to `newMaxLevel - overIdLevel`
+    
         return {
             ...transform,
-            x: Math.ceil(transform.x / gridSize) * gridSize,
+            x: newX,
             y: Math.ceil(transform.y / gridSize) * gridSize,
         };
     }
+    
+    
+    
 
-    const handleDragStart = useCallback((event) => {
-        const categoryId = event.active.id;
-        const category = cashflowCategoriesData.find(cat => cat.id === categoryId);
+    const handleDragStart = useCallback(async (event) => {
+        const { id: activeId } = event.active;  // Get the active item's ID
 
+        // Find the item in cashflowCategoriesData using the active ID
+        const activeIndex = cashflowCategoriesData.findIndex(item => item.id === activeId);
+        const activeItem = cashflowCategoriesData[activeIndex];
+
+        // Check if the item exists and set level if found
+        if (activeItem) {
+            setOverIdLevel(activeItem.level);
+        } else {
+            console.warn("Item not found for level setting on drag start");
+            return;  // Exit if item is not found
+        }
+
+
+        //Set the maxlevel
+        const maxLevel = Math.max(...Object.values(cashflowCategoriesData).map(item => item.level));
+        setNewMaxLevel(maxLevel);
+
+        // Expand or collapse category if the item is a category
+        const category = cashflowCategoriesData.find(cat => cat.id === activeId);
         if (category) {
-            toggleCategory(category.id); // Expands or collapses subcategories as expected
+            toggleCategory(category.id);
+            console.log(`Category ${category.id} toggled.`);
         } else {
             console.log("Category not found on drag start");
         }
     }, [cashflowCategoriesData, toggleCategory]);
+
 
 
     return (
