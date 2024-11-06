@@ -28,7 +28,9 @@ import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatem
 import CashFlowsReports from './routes/Accounting/Admin/CashFlow/cashflowsReports';
 import CashflowsDetails from './routes/Accounting/Admin/CashFlow/cashflowsDetails';
 
+import ChangesInEquityMain from './routes/Accounting/Admin/ChangesInEquity/changesInEquityMain';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
+
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
 import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
 import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
@@ -139,8 +141,18 @@ const router = createBrowserRouter([
       },
 
       {
-        path: 'changesInEquity',
-        element: <ChangesInEquity />,
+        path: 'changesInEquityMain',
+        element: <ChangesInEquityMain />,
+        children: [
+          {
+            path: 'changesInEquity',
+            element: <ChangesInEquity />,
+          },
+          {
+            index: true,
+            element: <Navigate to="changesInEquity" />,
+          },
+        ]
       },
       {
         path: 'generalLedger',

@@ -28,7 +28,7 @@ const Sidebar = () => {
     const currentPath = location.pathname;
     if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger') || path === '/main/reports/firestationReports' && currentPath.startsWith('/main/reports') || path === '/main/TrialBalance' && currentPath.startsWith('/main/TrialBalance') ||
       (path === '/main/balanceSheet' && currentPath.startsWith('/main/balanceSheet')) || (path === '/main/incomeStatement' && currentPath.startsWith('/main/incomeStatement')) 
-      || (path === '/main/collections' && currentPath.startsWith('/main/collections'))) {
+      || (path === '/main/collections' && currentPath.startsWith('/main/collections')) || (path === '/main/cashflowStatement' && currentPath.startsWith('/main/cashflowStatement')) || (path === '/main/changesInEquityMain' && currentPath.startsWith('/main/changesInEquityMain'))) {
       return true;
     }
     return currentPath === path;
@@ -85,7 +85,7 @@ const Sidebar = () => {
       { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },
       { path: '/main/balanceSheet', icon: isActive('/main/balanceSheet') ? <PiBookOpenTextFill size={18} /> : <PiBookOpenText size={18} />, label: 'Balance Sheet' },
       { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
-      { path: '/main/changesInEquity', icon: isActive('/main/changesInEquity') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
+      { path: '/main/changesInEquityMain', icon: isActive('/main/changesInEquityMain') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
       { section: 'Reports' },
       { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
         // Subcategories
