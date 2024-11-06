@@ -2,7 +2,7 @@ import React, { Fragment, useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -10,6 +10,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
+import { debounce } from 'lodash'; // Import debounce
+
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -23,8 +25,12 @@ export default function CashflowsDetails() {
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
     const [overIdLevel, setOverIdLevel] = useState();
 
-     // Fetch categories data only once initially to reduce continuous reads
-     useEffect(() => {
+    //For input
+    const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
+    const [editValue, setEditValue] = useState();
+
+    // Fetch categories data only once initially to reduce continuous reads
+    useEffect(() => {
         const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
 
         // Only read data once, then manually update state when needed
@@ -125,6 +131,7 @@ export default function CashflowsDetails() {
             const docRef = await addDoc(categoriesCollectionRef, {
                 categoryName: newCategory,
                 parentID: null,
+                amount: 0,
                 created_at: new Date(),
                 position: parseFloat(newRowPosition.toFixed(10)),
             });
@@ -154,6 +161,7 @@ export default function CashflowsDetails() {
             const docRef = await addDoc(categoriesCollectionRef, {
                 categoryName: 'New Subcategory',
                 parentID: selectedRowData.id,
+                amount: 0,
                 created_at: new Date(),
                 position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
 
@@ -163,6 +171,7 @@ export default function CashflowsDetails() {
                 id: docRef.id,
                 categoryName: 'New Subcategory',
                 parentID: selectedRowData.id,
+                amount: 0,
                 created_at: new Date(),
                 position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
             };
@@ -188,12 +197,58 @@ export default function CashflowsDetails() {
         }
     };
 
+
+    function getTotalAmountForCategory(categoryId, data) {
+        // Start with the amount of the current category
+        const currentCategory = data.find(cat => cat.id === categoryId);
+        let totalAmount = currentCategory ? currentCategory.amount || 0 : 0;
+
+        // Find all subcategories with the parentID matching the current category's id
+        const subcategories = data.filter(subCat => subCat.parentID === categoryId);
+
+        // Recursively add up the amount for each subcategory
+        subcategories.forEach(subCat => {
+            totalAmount += getTotalAmountForCategory(subCat.id, data);
+        });
+
+        return totalAmount;
+    }
+
+    function getLeafCategoryAmountTotal(categoryId, data) {
+        // Find all subcategories with the parentID matching the given categoryId
+        const subcategories = data.filter(subCat => subCat.parentID === categoryId);
+
+        // Initialize the total amount
+        let totalAmount = 0;
+
+        subcategories.forEach(subCat => {
+            // Check if the subcategory has any further subcategories
+            const hasChildren = data.some(cat => cat.parentID === subCat.id);
+
+            if (!hasChildren) {
+                // If no children, add its amount to the total
+                totalAmount += subCat.amount || 0;
+            } else {
+                // If it has children, recursively calculate the total for those children
+                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
+            }
+        });
+
+        return totalAmount;
+    }
+
     function SortableRow({ category, handleRightClick }) {
         const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: category.id });
         const style = {
             transition,
             transform: CSS.Transform.toString(transform),
         };
+
+        const hasSubcategories = category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id);
+
+        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cashflowCategoriesData);
+
+
 
         return (
             <tr
@@ -213,20 +268,66 @@ export default function CashflowsDetails() {
                     </span>
 
                     {/* Category Name */}
-                    <span>{category.categoryName}</span>
+                    <span>
+                        {editingCell === category.id && editValue.field === 'categoryName' ? (
+                            <input
+                                type="text"
+                                className="border focus:outline-none  px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'categoryName', value: e.target.value })}
+                                onBlur={() => handleCellChange(category.id, 'categoryName', editValue.value)}
+                                autoFocus
+                            />
+                        ) : (
+                            <span
+                                onClick={() => {
+                                    setEditingCell(category.id);
+                                    setEditValue({ field: 'categoryName', value: category.categoryName || '' });
+                                }}
+                                className="block hover:bg-gray-100 px-2 py-1"
+                            >
+                                {category.categoryName|| '-'}
+                            </span>
+                        )}</span>
 
                     {/* Toggle Button at the end */}
                     {(category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
-                            className="mr-2 text-blue-500"
+                            className="mr-2 text-blue-500 px-5"
                         >
                             {expandedCategories[category.id] ? "▾" : "▸"}
                         </button>
                     )}
 
                 </td>
-                <td className="px-2 py-3 text-center">{/* Period data if any */}</td>
+
+                <td className="px-2 py-2 w-56 h-6">
+                    {hasSubcategories ? (
+                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
+                    ) : (
+                        editingCell === category.id && editValue.field === 'amount' ? (
+                            <input
+                                type="number"
+                                className="border focus:outline-none w-56 h-8 px-2 py-1"
+                                value={editValue.value}
+                                onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
+                                onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
+                                autoFocus
+                            />
+                        ) : (
+                            <span
+                                onClick={() => {
+                                    setEditingCell(category.id);
+                                    setEditValue({ field: 'amount', value: category.amount || '' });
+                                }}
+                                className="block hover:bg-gray-100 w-56 h-8 px-2 py-1"
+                            >
+                                {formatNumber(category.amount) || '-'}
+                            </span>
+                        )
+                    )}
+                </td>
                 <td className="px-2 py-3 text-center">{/* Any actions */}</td>
             </tr>
         );
@@ -394,7 +495,69 @@ export default function CashflowsDetails() {
     }, [cashflowCategoriesData, toggleCategory]);
 
 
+    //For the input
+    // Function to format numbers with commas and handle empty/null cases
+    const formatNumber = (num) => {
+        if (num === null || num === undefined || isNaN(num) || num === '') {
+            return '-'; // Return '-' if no value
+        }
+        return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
 
+    const handleCellChange = async (categoryId, field, newValue) => {
+        try {
+            // Ensure newValue is treated as a number, if applicable
+            const numericValue = field === "amount" ? parseFloat(newValue) : newValue;
+
+            // Find the target category by ID
+            const targetCategory = cashflowCategoriesData.find(cat => cat.id === categoryId);
+
+            if (targetCategory) {
+
+                // Only update if there is a change in value
+                if (targetCategory[field] === numericValue) {
+                    console.log('No changes detected, skipping update.');
+                    return; // Exit early if no changes are made
+                }
+
+
+                // Optimistically update local state immediately
+                setCashflowCategoriesData(prevData =>
+                    prevData.map(category =>
+                        category.id === categoryId ? { ...category, [field]: numericValue } : category
+                    )
+                );
+
+                // Debounced Firebase update to avoid frequent writes
+                debouncedUpdate(categoryId, field, numericValue);
+
+
+                // Clear editing state after optimistic update
+                setEditingCell(null);
+                setEditValue({ field: '', value: '' });
+
+            } else {
+                console.log("Category not found");
+            }
+        } catch (error) {
+            console.error("Error updating category:", error);
+        }
+    };
+
+    // Debounced function for Firebase update
+    const debouncedUpdate = debounce(async (categoryId, field, newValue) => {
+        try {
+            // Get the reference to the specific category document in Firestore
+            const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', categoryId);
+
+            // Update the specific field of the category in Firestore
+            await updateDoc(categoryDocRef, { [field]: newValue });
+            console.log('Category field updated in Firestore successfully.');
+
+        } catch (error) {
+            console.error('Error updating category field in Firestore:', error);
+        }
+    }, 1000); // Debounce delay set to 1 second
     return (
         <Fragment>
 
