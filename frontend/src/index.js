@@ -30,6 +30,7 @@ import CashflowsDetails from './routes/Accounting/Admin/CashFlow/cashflowsDetail
 
 import ChangesInEquityMain from './routes/Accounting/Admin/ChangesInEquity/changesInEquityMain';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
+import ChangesInEquityDetails from './routes/Accounting/Admin/ChangesInEquity/changesInEquityDetails';
 
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
 import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
@@ -147,6 +148,10 @@ const router = createBrowserRouter([
           {
             path: 'changesInEquity',
             element: <ChangesInEquity />,
+          },
+          {
+            path: 'changesInEquityDetails/:cEquityId',
+            element: <ChangesInEquityDetails />,
           },
           {
             index: true,
