@@ -1,8 +1,8 @@
-import React, { Fragment, useState, useEffect, useCallback } from "react";
+import React, { Fragment, useState, useEffect, useCallback,useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -27,7 +27,7 @@ export default function CashflowsDetails() {
 
     //For input
     const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
-    const [editValue, setEditValue] = useState();
+    const [editValue, setEditValue] = useState({ field: '', value: '' });
 
     // Fetch categories data only once initially to reduce continuous reads
     useEffect(() => {
@@ -121,63 +121,39 @@ export default function CashflowsDetails() {
 
     const addNewCategory = async () => {
         try {
-            const categoriesCollectionRef = collection(db, "cashflow", cashflowId, "categories");
-
-            const sortedAccounts = cashflowCategoriesData.filter((cat) => cat.parentID === null);
-            const newRowPosition = sortedAccounts.length > 0
-                ? sortedAccounts[sortedAccounts.length - 1].position + 1
-                : 1;
-
-            const docRef = await addDoc(categoriesCollectionRef, {
+            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
+            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            await addDoc(categoriesCollectionRef, {
                 categoryName: newCategory,
-                parentID: null,
-                amount: 0,
+                parentID: null, // No parent for main category
                 created_at: new Date(),
-                position: parseFloat(newRowPosition.toFixed(10)),
             });
 
-            setCashflowCategoriesData((prevData) => [
-                ...prevData,
-                { id: docRef.id, categoryName: newCategory, parentID: null, created_at: new Date(), position: newRowPosition },
-            ]);
-            setIsSuccess(true);
+            // No need to update `cashflowCategoriesData` manually here
+            setShowModal(false); // Close modal after adding the category
         } catch (error) {
-            console.error("Error adding new category:", error);
-            setIsError(true);
+            console.error('Error adding new category:', error);
         }
     };
 
+
+    // Function to add a new subcategory
     const addNewSubcategory = async () => {
-        if (!selectedRowData) return;
         try {
+            if (!selectedRowData) {
+                console.error('No category selected to add subcategory.');
+                return;
+            }
+
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
             const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
-
-            const siblings = cashflowCategoriesData.filter(cat => cat.parentID === selectedRowData.id);
-            const newRowPosition = siblings.length > 0
-                ? siblings[siblings.length - 1].position + 1
-                : 1;
-
-            const docRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'New Subcategory',
-                parentID: selectedRowData.id,
-                amount: 0,
+            await addDoc(categoriesCollectionRef, {
+                categoryName: '',
+                parentID: selectedRowData.id, // Assign the selected category's ID as the parent
                 created_at: new Date(),
-                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
-
             });
 
-            const newSubcategoryCreated = {
-                id: docRef.id,
-                categoryName: 'New Subcategory',
-                parentID: selectedRowData.id,
-                amount: 0,
-                created_at: new Date(),
-                position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
-            };
-
-            setCashflowCategoriesData((prevData) => [...prevData, newSubcategoryCreated]);
-            setIsSuccess(true);
+            setShowModal(false); // Close modal after adding subcategory
         } catch (error) {
             console.error('Error adding new subcategory:', error);
             setIsError(true);
@@ -237,6 +213,16 @@ export default function CashflowsDetails() {
         return totalAmount;
     }
 
+    const [inputWidth, setInputWidth] = useState('auto');
+    const spanRef = useRef(null);
+    
+    useEffect(() => {
+        if (spanRef.current) {
+            const width = spanRef.current.offsetWidth;
+            setInputWidth(`${width + 20}px`); // Add a little padding for comfort
+        }
+    }, [editValue.value]); // Re-run effect when editValue changes
+
     function SortableRow({ category, handleRightClick }) {
         const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: category.id });
         const style = {
@@ -259,7 +245,7 @@ export default function CashflowsDetails() {
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
-                    className="px-2 py-3 bg-white dark:bg-gray-800 flex items-center"
+                    className="px-2 w-full py-3 bg-white dark:bg-gray-800 flex items-center "
                     style={{ paddingLeft: `${45 * category.level}px` }}
                 >
                     {/* Drag Icon */}
@@ -270,25 +256,37 @@ export default function CashflowsDetails() {
                     {/* Category Name */}
                     <span>
                         {editingCell === category.id && editValue.field === 'categoryName' ? (
-                            <input
-                                type="text"
-                                className="border focus:outline-none  px-2 py-1"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'categoryName', value: e.target.value })}
-                                onBlur={() => handleCellChange(category.id, 'categoryName', editValue.value)}
-                                autoFocus
-                            />
+                            <>
+                                {/* Hidden span to measure the text width */}
+                                <span
+                                    ref={spanRef}
+                                    className="invisible absolute"
+                                    style={{ whiteSpace: 'pre' }}
+                                >
+                                    {editValue.value}
+                                </span>
+                                <input
+                                    type="text"
+                                    className="border w-auto text-[14px] focus:outline-none px-2 py-1"
+                                    value={editValue.value}
+                                    style={{ width: inputWidth }}
+                                    onChange={(e) => setEditValue({ field: 'categoryName', value: e.target.value })}
+                                    onBlur={() => handleCellChange(category.id, 'categoryName', editValue.value)}
+                                    autoFocus
+                                />
+                            </>
                         ) : (
                             <span
                                 onClick={() => {
                                     setEditingCell(category.id);
                                     setEditValue({ field: 'categoryName', value: category.categoryName || '' });
                                 }}
-                                className="block hover:bg-gray-100 px-2 py-1"
+                                className="block hover:bg-gray-100 px-1 py-1 "
                             >
-                                {category.categoryName|| '-'}
+                                {category.categoryName || '-'}
                             </span>
-                        )}</span>
+                        )}
+                    </span>
 
                     {/* Toggle Button at the end */}
                     {(category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id)) && (
@@ -309,7 +307,7 @@ export default function CashflowsDetails() {
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
                                 type="number"
-                                className="border focus:outline-none w-56 h-8 px-2 py-1"
+                                className="border focus:outline-none w-56 h-8 px-2 py-1 text-start"
                                 value={editValue.value}
                                 onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
                                 onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
@@ -321,7 +319,7 @@ export default function CashflowsDetails() {
                                     setEditingCell(category.id);
                                     setEditValue({ field: 'amount', value: category.amount || '' });
                                 }}
-                                className="block hover:bg-gray-100 w-56 h-8 px-2 py-1"
+                                className="block hover:bg-gray-100 w-full h-8 px-2 py-1 text-end"
                             >
                                 {formatNumber(category.amount) || '-'}
                             </span>
@@ -338,13 +336,98 @@ export default function CashflowsDetails() {
     const handleDragEnd = useCallback(
         async (event) => {
             const { active, over, delta } = event;
-            if (!over || active.id === over.id) return;
 
             const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
             const activeItem = cashflowCategoriesData[activeIndex];
 
             let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
             let overItem = cashflowCategoriesData[overIndex];
+
+            if (!over || active.id === over.id) {
+                // Moving to the right
+                if (delta.x > 0 && activeIndex > 0) {
+                    const aboveItem = cashflowCategoriesData[activeIndex - 1];
+                    const newParentID = aboveItem.id;
+                    const newLevel = activeItem.level + 1;
+
+                    // Find the last subcategory in the parent's subcategory chain
+                    let targetIndex = activeIndex;
+                    for (let i = activeIndex - 1; i < cashflowCategoriesData.length; i++) {
+                        if (cashflowCategoriesData[i].parentID === newParentID) {
+                            targetIndex = i + 1;
+                        } else if (cashflowCategoriesData[i].level <= aboveItem.level) {
+                            break;
+                        }
+                    }
+
+                    const updatedCategories = cashflowCategoriesData.map((item) =>
+                        item.id === active.id
+                            ? { ...item, parentID: newParentID, level: newLevel }
+                            : item
+                    );
+
+                    const finalCategories = arrayMove(updatedCategories, activeIndex, targetIndex);
+
+                    setCashflowCategoriesData(finalCategories);
+
+                    const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', active.id);
+                    await updateDoc(categoryDocRef, {
+                        parentID: newParentID,
+                        level: newLevel,
+                    });
+
+                    return;
+                }
+
+                // Moving to the left
+                if (delta.x < 0 && activeItem.level > 0) {
+                    const gridSize = 45;
+                    const gridMovementLeft = Math.abs(Math.round(delta.x / gridSize));
+                    let newLevel = activeItem.level - gridMovementLeft;
+
+                    // Find the ancestor's parentID and the end of its subcategory chain
+                    let newParentID = null;
+                    let currentAncestor = activeItem;
+                    for (let i = 0; i < gridMovementLeft; i++) {
+                        const parentIndex = cashflowCategoriesData.findIndex(
+                            item => item.id === currentAncestor.parentID
+                        );
+                        if (parentIndex === -1) break; // No more ancestors
+                        currentAncestor = cashflowCategoriesData[parentIndex];
+                    }
+                    newParentID = currentAncestor.parentID;
+
+                    // Find the last subcategory under the new ancestor
+                    let targetIndex = activeIndex;
+                    for (let i = activeIndex - 1; i < cashflowCategoriesData.length; i++) {
+                        if (cashflowCategoriesData[i].parentID === newParentID) {
+                            targetIndex = i + 1;
+                        } else if (cashflowCategoriesData[i].level <= newLevel) {
+                            break;
+                        }
+                    }
+
+                    const updatedCategories = cashflowCategoriesData.map((item) =>
+                        item.id === active.id
+                            ? { ...item, parentID: newParentID, level: newLevel }
+                            : item
+                    );
+
+                    const finalCategories = arrayMove(updatedCategories, activeIndex, targetIndex);
+
+                    setCashflowCategoriesData(finalCategories);
+
+                    const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', active.id);
+                    await updateDoc(categoryDocRef, {
+                        parentID: newParentID,
+                        level: newLevel,
+                    });
+
+                    return;
+                }
+
+                return;
+            }
 
 
 
@@ -558,6 +641,29 @@ export default function CashflowsDetails() {
             console.error('Error updating category field in Firestore:', error);
         }
     }, 1000); // Debounce delay set to 1 second
+
+
+    const handleDeleteRow = async () => {
+        if (!selectedRowData) return;
+        try {
+            const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', selectedRowData.id);
+
+            // Delete the account from Firestore
+            await deleteDoc(categoryDocRef);
+            setShowRightClickModal(false);
+
+
+        } catch (error) {
+            console.log("Error deleting document:", error);
+        }
+
+
+
+
+    }
+
+    
+
     return (
         <Fragment>
 
@@ -593,8 +699,9 @@ export default function CashflowsDetails() {
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
-                                    <th scope="col" className="px-2 py-3 w-[160px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[288px] text-center">Period</th>
+                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
+                                    <th scope="col" className="px-2 py-3 w-[80px] text-center">Period</th>
+                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
                                     <th scope="col" className="w-[20px]"></th>
                                 </tr>
                             </thead>
@@ -636,7 +743,11 @@ export default function CashflowsDetails() {
                         >
                             Category Name
                         </label>
-                        <button onClick={addNewCategory} className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium ml-2">
+                        <button onClick={(event) => {
+                            event.stopPropagation();
+                            addNewCategory();
+                        }}
+                            className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium ml-2">
                             + ADD CATEGORY
                         </button>
                     </div>
@@ -664,7 +775,7 @@ export default function CashflowsDetails() {
 
                         <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        // onClick={handleDeleteRow}
+                            onClick={handleDeleteRow}
                         >
                             Delete Row
                         </button>
