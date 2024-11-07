@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs,query,where } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -33,7 +33,7 @@ export default function CashflowsDetails() {
     //For Period
     const [cashflowList, setCashflowList] = useState([]);
     const [selectedPeriodId, setSelectedPeriodId] = useState();
-    const [periodData, setPeriodData] = useState([]);
+    const [periodDataCategories, setPeriodDataCategories] = useState([]);
     const [periodId, setPeriodId] = useState(null);
 
     useEffect(() => {
@@ -193,9 +193,7 @@ export default function CashflowsDetails() {
                         id: doc.id,
                         ...doc.data(),
                     }));
-
-                    // setCashflowCategoriesData(sortCategoriesRecursively(data));
-                    console.log("selected period categories", data);
+                    setPeriodDataCategories(sortCategoriesRecursively(data));
                 } catch (error) {
                     console.error("Error fetching and sorting categories:", error);
                     setIsError(true);
@@ -516,13 +514,136 @@ export default function CashflowsDetails() {
             transition,
             transform: CSS.Transform.toString(transform),
         };
-
+        console.log('hey')
         const hasSubcategories = category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id);
 
         const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cashflowCategoriesData);
 
 
+        const stringSimilarity = require('string-similarity');
+        // Get the parent category name from cashflowCategoriesData
+        const parentCategoryName = category.parentID
+            ? cashflowCategoriesData.find(item => item.id === category.parentID)?.categoryName
+            : null;
 
+        // Find matching item in periodData using level, categoryName, and parentCategoryName
+        const matchingPeriodItem = periodDataCategories.find(item => {
+            // Get the parent category name for the current item in periodData
+            const periodParentCategoryName = item.parentID
+                ? periodDataCategories.find(parentItem => parentItem.id === item.parentID)?.categoryName
+                : null;
+
+            // Ensure category names and parent category names are strings before comparing
+            const categoryNameMatch = item.categoryName && category.categoryName
+                ? stringSimilarity.compareTwoStrings(item.categoryName, category.categoryName) >= 0.8 // 0.8 threshold for similarity
+                : false; // If either categoryName is undefined, return false
+
+            const parentCategoryMatch = periodParentCategoryName && parentCategoryName
+                ? stringSimilarity.compareTwoStrings(periodParentCategoryName, parentCategoryName) >= 0.8 // 0.8 threshold for similarity
+                : true;  // If no parentID, assume it matches by default
+
+            return (
+                item.level === category.level &&
+                categoryNameMatch && // Use the similarity match for categoryName
+                parentCategoryMatch // Use the similarity match for parentCategoryName
+            );
+
+        });
+
+
+        
+
+        // Find the "Operating Activities" category in both periodDataCategories and cashflowCategoriesData
+        const operatingActivitiesCategoryPeriodData = periodDataCategories.find(item => 
+            item.categoryName === 'Operating Activities' && item.level === 0
+        );
+        
+        const operatingActivitiesCategoryCashflowData = cashflowCategoriesData.find(item => 
+            item.categoryName === 'Operating Activities' && item.level === 0
+        );
+        
+        if (operatingActivitiesCategoryPeriodData && operatingActivitiesCategoryCashflowData) {
+            // Get all categories under "Cash Inflows" and "Cash Outflows" inside "Operating Activities" for periodData
+            const cashInflowsCategoriesPeriodData = periodDataCategories.filter(item => 
+                item.parentID === operatingActivitiesCategoryPeriodData.id && 
+                (item.categoryName === 'Cash Inflows' || item.categoryName === 'Cash Outflows')
+            );
+        
+            // Get all categories under "Cash Inflows" and "Cash Outflows" inside "Operating Activities" for cashflowCategoriesData
+            const cashInflowsCategoriesCashflowData = cashflowCategoriesData.filter(item => 
+                item.parentID === operatingActivitiesCategoryCashflowData.id && 
+                (item.categoryName === 'Cash Inflows' || item.categoryName === 'Cash Outflows')
+            );
+        
+            // Function to recursively get all subcategories under Cash Inflows and Cash Outflows
+            const getAllSubcategories = (parentId, categories) => {
+                let result = [];
+                categories.forEach(item => {
+                    if (item.parentID === parentId) {
+                        result.push(item);
+                        result = result.concat(getAllSubcategories(item.id, categories)); // Recursively find subcategories
+                    }
+                });
+                return result;
+            };
+        
+            // Get all subcategories of Cash Inflows and Cash Outflows in periodData
+            const allCashInflowsSubcategoriesPeriodData = cashInflowsCategoriesPeriodData.flatMap(item =>
+                getAllSubcategories(item.id, periodDataCategories)
+            );
+        
+            // Get all subcategories of Cash Inflows and Cash Outflows in cashflowCategoriesData
+            const allCashInflowsSubcategoriesCashflowData = cashInflowsCategoriesCashflowData.flatMap(item =>
+                getAllSubcategories(item.id, cashflowCategoriesData)
+            );
+        
+            // Compare categories under Cash Inflows
+            const matchingCashInflows = [];
+            const nonMatchingCashInflows = [];
+        
+            allCashInflowsSubcategoriesPeriodData.forEach(periodItem => {
+                const match = allCashInflowsSubcategoriesCashflowData.find(cashflowItem => 
+                    stringSimilarity.compareTwoStrings(periodItem.categoryName, cashflowItem.categoryName) >= 0.8
+                );
+                if (match) {
+                    matchingCashInflows.push(periodItem);
+                } else {
+                    nonMatchingCashInflows.push(periodItem);
+                }
+            });
+        
+            // Compare categories under Cash Outflows
+            const matchingCashOutflows = [];
+            const nonMatchingCashOutflows = [];
+        
+            allCashInflowsSubcategoriesPeriodData.forEach(periodItem => {
+                const match = allCashInflowsSubcategoriesCashflowData.find(cashflowItem => 
+                    stringSimilarity.compareTwoStrings(periodItem.categoryName, cashflowItem.categoryName) >= 0.8
+                );
+                if (match) {
+                    matchingCashOutflows.push(periodItem);
+                } else {
+                    nonMatchingCashOutflows.push(periodItem);
+                }
+            });
+        
+            // Log matching and non-matching categories
+            console.log('Matching Cash Inflows Categories:');
+            console.log(matchingCashInflows);
+        
+            console.log('Non-Matching Cash Inflows Categories:');
+            console.log(nonMatchingCashInflows);
+        
+            console.log('Matching Cash Outflows Categories:');
+            console.log(matchingCashOutflows);
+        
+            console.log('Non-Matching Cash Outflows Categories:');
+            console.log(nonMatchingCashOutflows);
+        
+        } else {
+            console.log('Operating Activities category not found in either periodData or cashflowCategoriesData!');
+        }
+        
         return (
             <tr
                 ref={setNodeRef}
@@ -618,7 +739,10 @@ export default function CashflowsDetails() {
                         )
                     )}
                 </td>
-                <td className="px-2 py-3 text-center">{/* Any actions */}</td>
+                <td className="px-2 py-3 text-center">
+                    {/* Display matching data or fallback */}
+                    {matchingPeriodItem ? matchingPeriodItem.amount : '-'}
+                </td>
             </tr>
         );
     }
@@ -813,9 +937,7 @@ export default function CashflowsDetails() {
 
 
     const [newMaxLevel, setNewMaxLevel] = useState();
-
     const gridSize = 45;
-
     function snapToGrid(args) {
         const { transform } = args;
 
@@ -937,38 +1059,38 @@ export default function CashflowsDetails() {
 
     const handleDeleteRow = async () => {
         if (!selectedRowData) return;
-    
+
         try {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
             const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
-    
+
             const getAllSubcategories = async (parentId) => {
                 const subcategories = [];
                 const subcategoriesQuery = query(categoriesCollectionRef, where('parentID', '==', parentId));
                 const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-    
+
                 for (const subcategoryDoc of subcategoriesSnapshot.docs) {
                     subcategories.push(subcategoryDoc);
                     const nestedSubcategories = await getAllSubcategories(subcategoryDoc.id);
                     subcategories.push(...nestedSubcategories);
                 }
-    
+
                 return subcategories;
             };
-    
+
             const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
-    
+
             const batch = writeBatch(db);
-    
+
             const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
             batch.delete(categoryDocRef);
-    
+
             subcategoriesToDelete.forEach((subcategoryDoc) => {
                 batch.delete(subcategoryDoc.ref);
             });
-    
+
             await batch.commit();
-    
+
             setShowRightClickModal(false);
         } catch (error) {
             console.log("Error deleting document:", error);
