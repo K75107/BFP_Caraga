@@ -64,6 +64,7 @@ export default function Cashflows() {
                 created_at: new Date(),
                 description: cashflowDescription,
                 year: cashflowYear,
+                selectedPeriod: '',
             });
 
             const docSnapshot = await getDoc(docRef);
