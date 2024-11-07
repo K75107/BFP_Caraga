@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs,query,where } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, getDoc, query,where } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -36,6 +36,48 @@ export default function ChangesInEquityDetails() {
     const [periodData, setPeriodData] = useState([]);
     const [periodId, setPeriodId] = useState(null);
 
+    const [totalSurplusDeficit, setTotalSurplusDeficit] = useState(null);
+
+    const [cEquityPeriod, setcEquityPeriod] = useState('');
+
+    useEffect(() => {
+        const fetchChangesInEquity = async () => {
+            try {
+                const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+                const cEquityDoc = await getDoc(cEquityDocRef);
+    
+                if (cEquityDoc.exists()) {
+                    const data = cEquityDoc.data();
+                    
+                    // Reference to the incomestatement document using the incomestatementID from cEquityDoc data
+                    const incomestatementDocRef = doc(db, "incomestatement", data.incomestatementID);
+    
+                    // Fetch totalSurplusDeficit from incomestatement
+                    const unsubscribe = onSnapshot(incomestatementDocRef, (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const incomeData = docSnapshot.data();
+                            setTotalSurplusDeficit(incomeData.totalSurplusDeficit); // Ensure totalSurplusDeficit exists in document
+                            setcEquityPeriod(data.year);
+                            console.log("Total Surplus/Deficit fetched:", incomeData.totalSurplusDeficit); // Log fetched data
+                        } else {
+                            console.warn("No such incomestatement document!");
+                        }
+                    });
+    
+                    return () => unsubscribe(); // Cleanup the listener on unmount
+                } else {
+                    console.error("ChangesInEquity document does not exist.");
+                }
+            } catch (error) {
+                console.error("Error fetching ChangesInEquity or incomestatement data:", error);
+            }
+        };
+    
+        fetchChangesInEquity();
+    }, [cEquityId]);
+    
+    
+
     useEffect(() => {
         const cEquityCollectionRef = collection(db, "ChangesInEquity", cEquityId, "categories");
 
@@ -57,6 +99,19 @@ export default function ChangesInEquityDetails() {
                     const addMainCategory = (name) => {
                         const ref = doc(cEquityCollectionRef);
                         batch.set(ref, {
+                            categoryName: name,
+                            parentID: null,
+                            created_at: new Date(),
+                            position: position++,
+                        });
+                        return ref.id;
+                    };
+
+                    // Function to add a main category
+                    const addSurplusDeficit = (name) => {
+                        const ref = doc(cEquityCollectionRef);
+                        batch.set(ref, {
+                            amount: totalSurplusDeficit,
                             categoryName: name,
                             parentID: null,
                             created_at: new Date(),
@@ -91,23 +146,22 @@ export default function ChangesInEquityDetails() {
                     };
 
                     // Add categories and subcategories
-                    const operatingId = addMainCategory('Operating Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', operatingId);
-                    addSubcategoryWithBlanks('Cash Outflows', operatingId);
+                    // const operatingId = addMainCategory('Operating Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', operatingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', operatingId);
 
-                    const investingId = addMainCategory('Investing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', investingId);
-                    addSubcategoryWithBlanks('Cash Outflows', investingId);
+                    // const investingId = addMainCategory('Investing Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', investingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', investingId);
 
-                    const financingId = addMainCategory('Financing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', financingId);
-                    addSubcategoryWithBlanks('Cash Outflows', financingId);
+                    // const financingId = addMainCategory('Financing Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', financingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', financingId);
 
                     // Additional standalone categories
-                    addMainCategory('Net Increase(Decrease) in Cash and Cash Equivalents');
-                    addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
-                    addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
-                    addMainCategory('Cash and Cash Equivalents at the End of the Period');
+                    // addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
+                    // addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
+                    // addMainCategory('Cash and Cash Equivalents at the End of the Period');
 
                     // Commit batch
                     await batch.commit();
@@ -292,54 +346,54 @@ export default function ChangesInEquityDetails() {
                 position: newRowPosition
             });
 
-            const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
+            // const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
 
-            // Add "Cash Inflows" and "Cash Outflows" as subcategories
-            const inflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Inflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 10
-            });
+            // // Add "Cash Inflows" and "Cash Outflows" as subcategories
+            // const inflowsRef = await addDoc(categoriesCollectionRef, {
+            //     categoryName: 'Cash Inflows',
+            //     parentID: mainCategoryId, // Set as child of the new main category
+            //     created_at: new Date(),
+            //     position: newRowPosition + 10
+            // });
 
-            const outflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Outflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 20
-            });
+            // const outflowsRef = await addDoc(categoriesCollectionRef, {
+            //     categoryName: 'Cash Outflows',
+            //     parentID: mainCategoryId, // Set as child of the new main category
+            //     created_at: new Date(),
+            //     position: newRowPosition + 20
+            // });
 
-            // Add blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 11
-            });
+            // // Add blank row under "Cash Inflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 11
+            // });
 
-            // Add another blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 12
-            });
+            // // Add another blank row under "Cash Inflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 12
+            // });
 
-            // Add blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 21
-            });
+            // // Add blank row under "Cash Outflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 21
+            // });
 
-            // Add another blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 22
-            });
+            // // Add another blank row under "Cash Outflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 22
+            // });
 
             setShowModal(false); // Close modal after adding the category
         } catch (error) {
@@ -1031,31 +1085,46 @@ export default function ChangesInEquityDetails() {
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                                    <th scope="col" className="w-[20px]"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                    {visibleCategories.map((category) => (
-                                        <SortableRow
-                                            key={category.id}
-                                            category={category}
-                                            handleRightClick={handleRightClick}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </tbody>
-                        </table>
-                    </div>
-                </DndContext>
+    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
+                    <th scope="col" className="w-[20px]"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {/* Fixed row for Surplus/Deficit */}
+                <tr className="border-b">
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                        Surplus/(Deficit) for the period
+                    </td>
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                        {totalSurplusDeficit !== null ? totalSurplusDeficit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                    </td>
+                    <td className="px-2 py-3 text-center"></td>
+                    <td className="px-2 py-3 text-center"></td>
+                    <td className="px-2 py-3 text-center"></td>
+                </tr>
+
+                {/* Sortable rows for other categories */}
+                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                    {visibleCategories.map((category) => (
+                        <SortableRow
+                            key={category.id}
+                            category={category}
+                            handleRightClick={handleRightClick}
+                        />
+                    ))}
+                </SortableContext>
+            </tbody>
+        </table>
+    </div>
+</DndContext>
+
             </div>
 
             <Modal isVisible={showModal}>

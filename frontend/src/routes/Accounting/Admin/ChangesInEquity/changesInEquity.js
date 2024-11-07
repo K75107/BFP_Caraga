@@ -22,7 +22,7 @@ export default function ChangesInEquity() {
 
     // FETCH INCOME STATEMENT
     const [ListIncomeStatement, setListIncomeStatement] = useState([]);
-    const [selectedIncomeStatement, setSelectedIncomeStatement] = useState("");
+    const [selectedIncomeStatement, setSelectedIncomeStatement] = useState('');
 
     //  Fields
     const [cEquityDescription, setcEquityDescription] = useState('');
@@ -172,7 +172,7 @@ export default function ChangesInEquity() {
                                 role="tab"
                                 aria-controls="profile"
                                 aria-selected="false"
-                                onClick={()=>navigate('/main/cashflowStatement/generatedReports')}
+                                onClick={()=>navigate('/main/changesInEquityMain/changesInEquityReports')}
                             >
                                 Generated Reports
                             </button>
