@@ -205,8 +205,7 @@ export default function CashflowsDetails() {
                     const cashInflowsIds = operatingActivitiesCashInflows.map(period => period.id);
                     const operatingActivitiesCashInflowsCategories = sortedPeriodData.filter(period => cashInflowsIds.includes(period.parentID));
 
-                    
-                    const 
+                 
 
 
 
