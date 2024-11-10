@@ -1,9 +1,10 @@
 import React, { Fragment, useState, useEffect } from "react";
 import Modal from "../../../../components/Modal";
 import { db } from "../../../../config/firebase-config";
-import { collection, getDocs, addDoc, getDoc,deleteDoc,doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, getDoc,deleteDoc,doc, onSnapshot } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
+import { setYear } from "date-fns";
 
 export default function ChangesInEquity() {
     const navigate = useNavigate();
@@ -19,12 +20,33 @@ export default function ChangesInEquity() {
     // UPDATED YEAR
     const [years, setYears] = useState([]);
 
+    // FETCH INCOME STATEMENT
+    const [ListIncomeStatement, setListIncomeStatement] = useState([]);
+    const [selectedIncomeStatement, setSelectedIncomeStatement] = useState('');
+
     //  Fields
     const [cEquityDescription, setcEquityDescription] = useState('');
     const [cEquityYear, setcEquityYear] = useState('');
 
     //DELETE LEDGER ID
     const [deletecEquityID, setDeletecEquityID] = useState(null);
+
+    // Fetch Income Statement useEffect
+    useEffect(() => {
+        const listLedgersRef = collection(db, 'incomestatement');
+        const unsubscribeLedger = onSnapshot(listLedgersRef, (snapshot) => {
+            const ListIncomeStatement = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Fetched Income Statements:", ListIncomeStatement); // Debugging
+            setListIncomeStatement(ListIncomeStatement);
+        }, (error) => {
+            console.error('Error fetching Income Statement:', error);
+        });
+
+        // Cleanup subscription on unmount
+        return () => {
+            unsubscribeLedger();
+        };
+    }, []);
 
     useEffect(() => {
         const currentYear = new Date().getFullYear();
@@ -64,6 +86,7 @@ export default function ChangesInEquity() {
                 created_at: new Date(),
                 description: cEquityDescription,
                 year: cEquityYear,
+                incomestatementID: selectedIncomeStatement, 
             });
 
             const docSnapshot = await getDoc(docRef);
@@ -149,7 +172,7 @@ export default function ChangesInEquity() {
                                 role="tab"
                                 aria-controls="profile"
                                 aria-selected="false"
-                                onClick={()=>navigate('/main/cashflowStatement/generatedReports')}
+                                onClick={()=>navigate('/main/changesInEquityMain/changesInEquityReports')}
                             >
                                 Generated Reports
                             </button>
@@ -181,7 +204,7 @@ export default function ChangesInEquity() {
                                 <tr
                                     className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                                     key={cEquity.id}
-                                    onClick={()=> navigate(`/main/cashflowStatement/cashflows/${cEquity.id}`)}
+                                    onClick={()=> navigate(`/main/changesInEquityMain/changesInEquityDetails/${cEquity.id}`)}
                                 >
                                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {cEquity.description || ''}
@@ -212,7 +235,7 @@ export default function ChangesInEquity() {
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add Changes in Equity
                         </h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false) & setSelectedIncomeStatement("") & setcEquityYear("") & setcEquityDescription("")}>×</button>
                     </div>
 
                     <hr className="border-t border-[#7694D4] my-3" />
@@ -256,7 +279,22 @@ export default function ChangesInEquity() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end py-3 px-4">
+                    <div className="flex justify-between py-3 px-4">
+                    <form className="max-w-sm mt-5">
+                            <select
+                                id="incomeStatementSelect"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                value={selectedIncomeStatement}
+                                onChange={(e) => setSelectedIncomeStatement(e.target.value)}
+                            >
+                                <option value="">Select Income Statement</option>
+                                {ListIncomeStatement.map((incomestatement) => (
+                                    <option key={incomestatement.id} value={incomestatement.id}>
+                                        {incomestatement.description || incomestatement.name || "No Description"}
+                                    </option>
+                                ))}
+                            </select>
+                        </form>
                         <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" onClick={addNewcEquity}>ADD</button>
                     </div>
                 </div>
