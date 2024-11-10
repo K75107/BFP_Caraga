@@ -198,14 +198,15 @@ export default function CashflowsDetails() {
                     const sortedPeriodData = sortCategoriesRecursively(data);
 
                     // 
-                    const cashflowOperatingActivities = sortedPeriodData.find(period => period.categoryName === "Operating Activities");
+                    const operatingActivities = sortedPeriodData.find(period => period.categoryName === "Operating Activities");
                     const operatingActivitiesPeriod = sortedPeriodData.filter(period => period.parentID === operatingActivities.id);
                     const operatingActivitiesCashInflows = operatingActivitiesPeriod.filter(period => period.categoryName === 'Cash Inflows')
                     // Get the IDs of all "Cash Inflows" periods
                     const cashInflowsIds = operatingActivitiesCashInflows.map(period => period.id);
                     const operatingActivitiesCashInflowsCategories = sortedPeriodData.filter(period => cashInflowsIds.includes(period.parentID));
 
-                  
+                    
+                    const 
 
 
 
