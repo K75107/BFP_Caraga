@@ -1097,19 +1097,6 @@ export default function ChangesInEquityDetails() {
                 </tr>
             </thead>
             <tbody>
-                {/* Fixed row for Surplus/Deficit */}
-                <tr className="border-b">
-                    <td className="px-2 py-3 font-bold text-gray-700">
-                        Surplus/(Deficit) for the period
-                    </td>
-                    <td className="px-2 py-3 font-bold text-gray-700">
-                        {totalSurplusDeficit !== null ? totalSurplusDeficit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
-                    </td>
-                    <td className="px-2 py-3 text-center"></td>
-                    <td className="px-2 py-3 text-center"></td>
-                    <td className="px-2 py-3 text-center"></td>
-                </tr>
-
                 {/* Sortable rows for other categories */}
                 <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
                     {visibleCategories.map((category) => (
@@ -1121,6 +1108,26 @@ export default function ChangesInEquityDetails() {
                     ))}
                 </SortableContext>
             </tbody>
+            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
+                {/* Fixed row for Surplus/Deficit */}
+                <tr className="border-b">
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                        Surplus/(Deficit) for the period
+                    </td>
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                        {totalSurplusDeficit !== null ? totalSurplusDeficit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                    </td>
+                    <td></td>
+                    <td></td>
+
+                </tr>
+                        <tr>
+                            <td className="px-2 py-3">Balance</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
         </table>
     </div>
 </DndContext>
