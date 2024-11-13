@@ -5,6 +5,8 @@ import { collection, getDocs, addDoc, getDoc,deleteDoc,doc, onSnapshot } from "f
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import { setYear } from "date-fns";
+import SearchBar from "../../../../components/searchBar";
+import AddButton from "../../../../components/addButton";
 
 export default function ChangesInEquity() {
     const navigate = useNavigate();
@@ -144,51 +146,22 @@ export default function ChangesInEquity() {
                 </div>
             )}
 
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+            <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes in Equity</h1>
-                </div>
-                {/* Buttons */}
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
-                        <li className="me-2" role="presentation">
-                            <button
-                                className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                                id="profile-styled-tab"
-                                type="button"
-                                role="tab"
-                                aria-controls="profile"
-                                aria-selected="false"
+                    <div class="flex space-x-4">
+                        <SearchBar
+                            placeholder="Search..."
 
-                            >
-                                Changes in Equity
-                            </button>
-                        </li>
-                        <li className="me-2" role="presentation">
-                            <button
-                                className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                                id="profile-styled-tab"
-                                type="button"
-                                role="tab"
-                                aria-controls="profile"
-                                aria-selected="false"
-                                onClick={()=>navigate('/main/changesInEquityMain/changesInEquityReports')}
-                            >
-                                Generated Reports
-                            </button>
-                        </li>
-                        <li className="ml-auto">
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-                            >
-                                + ADD CHANGES IN EQUITY
-                            </button>
-                        </li>
-                    </ul>
+                        />
+                        <AddButton
+                            onClick={() => setShowModal(true)}
+                            label="GENERATE CHANGES IN EQUITY"
+                        />
+                    </div>
                 </div>
 
-                <hr className="border-t border-[#7694D4] my-4" />
+                <hr className="border-t border-[#7694D4] my-2" />
 
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">

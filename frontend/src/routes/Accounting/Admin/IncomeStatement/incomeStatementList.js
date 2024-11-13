@@ -162,23 +162,23 @@ export default function IncomeStatementList() {
             </nav>
             {/**Breadcrumbs */}
 
-            
+
 
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Income Statement</h1>
                 <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search..."
+                    <SearchBar
+                        placeholder="Search..."
 
-                        />
-                        <AddButton
-                           onClick={() => {
+                    />
+                    <AddButton
+                        onClick={() => {
                             setCurrentModal(1);
                             setShowModal(true);
                         }}
-                            label="ADD ACCOUNT"
-                        />
-                    </div>
+                        label="GENERATE INCOME STATEMENT"
+                    />
+                </div>
             </div>
 
             <hr className="border-t border-[#7694D4] my-2" />

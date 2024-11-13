@@ -7,6 +7,8 @@ import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
+import SearchBar from "../../../../components/searchBar";
+import AddButton from "../../../../components/addButton";
 
 export default function BalanceSheet() {
 
@@ -166,29 +168,30 @@ export default function BalanceSheet() {
             {/**Breadcrumbs */}
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
-                <button
-                    className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-                    onClick={() => {
-                        setCurrentModal(1);
-                        setShowModal(true);
-                    }}
-                >
-                    + GENERATE BALANCE SHEET
-                </button>
+                <div class="flex space-x-4">
+                        <SearchBar
+                            placeholder="Search..."
+
+                        />
+                        <AddButton
+                            onClick={() => setShowModal(true)}
+                            label="GENERATE BALANCE SHEET"
+                        />
+                    </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-4" />
+            <hr className="border-t border-[#7694D4] my-2" />
 
             {/* TABLE */}
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
                             <th scope="col" className="px-6 py-3">DESCRIPTION</th>
                             <th scope="col" className="px-6 py-3">Start Date</th>
                             <th scope="col" className="px-6 py-3">End Date</th>
                             <th scope="col" className="px-6 py-3">TOTAL NET ASSETS/EQUITY</th>
-                            <th scope="col" className="px-6 py-3"><span className="sr-only">View</span></th>
+                            <th scope="col" className="px-6 py-3 text-left">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -212,7 +215,7 @@ export default function BalanceSheet() {
                                         ? balanceSheet.totalNetAssets.toLocaleString()
                                         : ""}
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4 text-left">
                                     <span
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
                                         onClick={(e) => {
