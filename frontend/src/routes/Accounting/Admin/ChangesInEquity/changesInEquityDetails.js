@@ -38,7 +38,46 @@ export default function ChangesInEquityDetails() {
 
     const [totalSurplusDeficit, setTotalSurplusDeficit] = useState(null);
 
+    const [periodTotal, setPeriodTotal] = useState(0);
+
     const [cEquityPeriod, setcEquityPeriod] = useState('');
+
+    // Function to recursively calculate the total for a main category and its subcategories
+    const calculateCategoryTotal = (categoryId) => {
+        // Find direct subcategories of this category
+        const subcategories = cEquityCategoriesData.filter(
+            subcategory => subcategory.parentID === categoryId
+        );
+
+        // If no subcategories, return this category's amount
+        if (subcategories.length === 0) {
+            const mainCategory = cEquityCategoriesData.find(category => category.id === categoryId);
+            return mainCategory ? mainCategory.amount || 0 : 0;
+        }
+
+        // If subcategories exist, sum up their amounts recursively
+        return subcategories.reduce((acc, subcategory) => {
+            return acc + calculateCategoryTotal(subcategory.id);
+        }, 0);
+    };
+
+    // Calculate total for all main categories
+    useEffect(() => {
+        const calculateMainCategoryTotal = () => {
+            const mainCategoryTotal = cEquityCategoriesData
+                .filter(category => !category.parentID)  // Only main categories
+                .reduce((acc, mainCategory) => {
+                    // Add either the main category's amount or its calculated total with subcategories
+                    return acc + calculateCategoryTotal(mainCategory.id);
+                }, 0);
+
+            // Add surplus/deficit to the main category total
+            const total = mainCategoryTotal + (totalSurplusDeficit || 0);
+            setPeriodTotal(total);
+        };
+
+        calculateMainCategoryTotal();
+    }, [cEquityCategoriesData, totalSurplusDeficit]);
 
     useEffect(() => {
         const fetchChangesInEquity = async () => {
@@ -1115,7 +1154,7 @@ export default function ChangesInEquityDetails() {
                         Surplus/(Deficit) for the period
                     </td>
                     <td className="px-2 py-3 font-bold text-gray-700">
-                        {totalSurplusDeficit !== null ? totalSurplusDeficit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                    {totalSurplusDeficit?.toLocaleString() || '-'}
                     </td>
                     <td></td>
                     <td></td>
@@ -1123,7 +1162,7 @@ export default function ChangesInEquityDetails() {
                 </tr>
                         <tr>
                             <td className="px-2 py-3">Balance</td>
-                            <td></td>
+                            <td className="font-bold">{periodTotal.toLocaleString()}</td>
                             <td></td>
                             <td></td>
                         </tr>
@@ -1159,6 +1198,7 @@ export default function ChangesInEquityDetails() {
                         <button onClick={(event) => {
                             event.stopPropagation();
                             addNewCategory();
+                            setNewCategory('');
                         }}
                             className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium ml-2">
                             + ADD CATEGORY
