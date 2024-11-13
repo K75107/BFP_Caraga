@@ -4,7 +4,8 @@ import { Button, Input, Label, Select } from 'flowbite-react';
 import 'react-datepicker/dist/react-datepicker.css';
 import Modal from "../../../components/Modal";
 import { useNavigate } from "react-router-dom";
-
+import AddButton from "../../../components/addButton";
+import SearchBar from "../../../components/searchBar";
 
 // Firebase
 import { auth } from "../../../config/firebase-config";
@@ -154,10 +155,10 @@ export default function Users() {
 
       //---------------------------------------------Alerts---------------------------------------
       setIsError(true);
-             const timer = setTimeout(() => {
-                setIsError(false);
-             }, 2000)
-             return () => clearTimeout(timer);
+      const timer = setTimeout(() => {
+        setIsError(false);
+      }, 2000)
+      return () => clearTimeout(timer);
       //---------------------------------------------Alerts---------------------------------------
     }
     setShowModal(false);
@@ -186,20 +187,29 @@ export default function Users() {
       )}
       {/**---------------------------------------------Alerts--------------------------------------- */}
 
-      <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+      <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
         <div className="flex justify-between w-full">
           <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Manage Users</h1>
-          <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>ADD USERS</button>
+          <div class="flex space-x-4">
+            <SearchBar
+              placeholder="Search..."
+              
+            />
+            <AddButton
+              onClick={() => setShowModal(true)}
+              label="ADD LEDGER"
+            />
+          </div>
         </div>
 
-        <hr className="border-t border-[#7694D4] my-4" />
+        <hr className="border-t border-[#7694D4] my-2" />
 
         {/* TABLE */}
         <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
           <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" className="px-6 py-3">USER</th>
+                <th scope="col" className="px-6 py-3 ">USER</th>
                 <th scope="col" className="px-6 py-3">LOCATION</th>
                 <th scope="col" className="px-6 py-3">EMAIL</th>
                 <th scope="col" className="px-6 py-3">USERTYPE</th>
@@ -209,8 +219,8 @@ export default function Users() {
             </thead>
             <tbody>
               {usersList.map((user, index) => (
-                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                  <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center">
+                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">
+                  <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
                     <div
                       className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
                       style={{
@@ -228,18 +238,18 @@ export default function Users() {
 
                     {user?.username || 'Unknown'}
                   </td>
-                  <td className="px-6 py-4">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
-                  <td className="px-6 py-4">{user?.email || 'N/A'}</td>
-                  <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
+                  <td className="px-6 py-2">{user?.email || 'N/A'}</td>
+                  <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                     {user?.usertype || 'N/A'}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2">
                     <span
                       className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
                         }`}
                     ></span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-2 text-right">
                     <button className="text-blue-600 hover:underline">View</button>
                   </td>
                 </tr>

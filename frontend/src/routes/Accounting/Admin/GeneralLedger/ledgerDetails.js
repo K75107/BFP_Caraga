@@ -12,7 +12,7 @@ import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { debounce } from 'lodash'; // Import debounce
 import { useNavigate } from 'react-router-dom';
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
-
+import SearchBar from '../../../../components/searchBar';
 
 export default function LedgerDetails() {
 
@@ -663,7 +663,7 @@ export default function LedgerDetails() {
       <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
           <li class="inline-flex items-center">
-            <button onClick={()=>navigate("/main/generalLedger/")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+            <button onClick={() => navigate("/main/generalLedger/")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
               <RiBook2Fill className="mr-2"></RiBook2Fill>
               General Ledger
             </button>
@@ -687,52 +687,16 @@ export default function LedgerDetails() {
       </div>
 
       <div className="flex flex-col items-center justify-between p-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
-        {/* Search Form */}
-        <div className="w-full md:w-1/2">
-          <form className="flex items-center">
-            <label htmlFor="search" className="sr-only">Search</label>
-            <div className="relative w-full">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <svg
-                  aria-hidden="true"
-                  className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <input
-                type="text"
-                id="search"
-                className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                placeholder="Search Account Title"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)} // Update search query
-                autoComplete="off"
-              />
-              {/* Autocomplete dropdown */}
-              {searchQuery && (
-                <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg">
-                  {filteredAccountTitles.map((title) => (
-                    <li
-                      key={title.id}
-                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                      onClick={() => setSearchQuery(title.accountTitle)} // Select account title on click
-                    >
-                      {title.accountTitle}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </form>
-        </div>
+
+        <SearchBar
+          placeholder="Search Account Title"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          listSource={filteredAccountTitles}
+          field="accountTitle"
+
+        />
+
 
 
         {/* Buttons and Dropdowns */}
