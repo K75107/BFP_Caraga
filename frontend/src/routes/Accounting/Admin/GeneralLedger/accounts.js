@@ -120,104 +120,105 @@ export default function Accounts() {
                     </div>
                 </div>
                 <hr className="border-t border-[#7694D4] my-2" />
-
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
-                        <tr>
-                            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
-                            <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
-                            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TYPE</th>
-                            <th scope="col" className="px-2 py-3 w-72">ACTIONS</th>
-                        </tr>
-                    </thead>
-                </table>
-                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                    <table className='w-full overflow-x-visible text-[14px]'>
-
-                        <tbody>
-                            {accountsData.map((account) => (
-                                <tr
-                                    key={account.id}
-                                    className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                                >
-                                    {/*ACCOUNT TITLE*/}
-                                    <td
-                                        className="table-cell px-2 py-3 w-72"
-                                    >
-                                        {account["AccountTitle"] || "No Title"}
-                                    </td>
-
-                                    {/* Editable Account Code */}
-                                    <td className="table-cell px-2 py-3 w-48">
-                                        {editing.id === account.id && editing.field === "AccountCode" ? (
-                                            <input
-                                                type="text"
-                                                value={editing.value}
-                                                onChange={handleInputChange}
-                                                className="w-[100px] px-1 py-1 border rounded"
-                                                autoFocus
-                                            />
-                                        ) : (
-                                            <span
-                                                onClick={() => handleEdit(account.id, "AccountCode", account["AccountCode"])}
-                                                className="cursor-pointer"
-                                            >
-                                                {account["AccountCode"] || "Not Set"}
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    {/* Editable Account Type */}
-                                    <td className="table-cell px-2 py-3 w-72">
-                                        {editing.id === account.id && editing.field === "AccountType" ? (
-                                            <select
-                                                value={editing.value}
-                                                onChange={handleInputChange}
-                                                className="w-[200px] px-2 py-1 border rounded"
-                                            >
-                                                <option value="Assets">Assets</option>
-                                                <option value="Liabilities">Liabilities</option>
-                                                <option value="Equity">Equity</option>
-                                                <option value="Revenue">Revenue</option>
-                                                <option value="Expenses">Expenses</option>
-                                                <option value="Contra Assets">Contra Assets</option>
-                                                <option value="Subsidy">Subsidy</option>
-                                            </select>
-                                        ) : (
-                                            <span
-                                                onClick={() => handleEdit(account.id, "AccountType", account["AccountType"])}
-                                                className="cursor-pointer"
-                                            >
-                                                {account["AccountType"] || "Not Set"}
-                                            </span>
-                                        )}
-                                    </td>
-                                    {/* Action buttons */}
-                                    <td className="table-cell px-2 py-3 w-72">
-                                        {editing.id === account.id ? (
-                                            <Fragment>
-                                                <button
-                                                    onClick={handleSave}
-                                                    className="mr-2 px-4 py-1 bg-blue-500 text-white rounded"
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    onClick={handleCancel}
-                                                    className="px-4 py-1 bg-red-500 text-white rounded"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </Fragment>
-                                        ) : (
-                                            <span></span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-
+                <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 w-72">ACCOUNT TITLE</th>
+                                <th scope="col" className="px-5 py-3 w-48">ACCOUNT CODE</th>
+                                <th scope="col" className="px-4 py-3 w-72">ACCOUNT TYPE</th>
+                                <th scope="col" className="px-6 py-3 w-72">ACTIONS</th>
+                            </tr>
+                        </thead>
                     </table>
+                    <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                        <table className='w-full overflow-x-visible text-[14px]'>
+
+                            <tbody>
+                                {accountsData.map((account) => (
+                                    <tr
+                                        key={account.id}
+                                        className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                    >
+                                        {/*ACCOUNT TITLE*/}
+                                        <td
+                                            className="table-cell px-6 py-3 w-72"
+                                        >
+                                            {account["AccountTitle"] || "No Title"}
+                                        </td>
+
+                                        {/* Editable Account Code */}
+                                        <td className="table-cell px-6 py-3 w-48">
+                                            {editing.id === account.id && editing.field === "AccountCode" ? (
+                                                <input
+                                                    type="text"
+                                                    value={editing.value}
+                                                    onChange={handleInputChange}
+                                                    className="w-[100px] px-1 py-1 border rounded"
+                                                    autoFocus
+                                                />
+                                            ) : (
+                                                <span
+                                                    onClick={() => handleEdit(account.id, "AccountCode", account["AccountCode"])}
+                                                    className="cursor-pointer"
+                                                >
+                                                    {account["AccountCode"] || "Not Set"}
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        {/* Editable Account Type */}
+                                        <td className="table-cell px-6 py-3 w-72">
+                                            {editing.id === account.id && editing.field === "AccountType" ? (
+                                                <select
+                                                    value={editing.value}
+                                                    onChange={handleInputChange}
+                                                    className="w-[200px] px-6 py-1 border rounded"
+                                                >
+                                                    <option value="Assets">Assets</option>
+                                                    <option value="Liabilities">Liabilities</option>
+                                                    <option value="Equity">Equity</option>
+                                                    <option value="Revenue">Revenue</option>
+                                                    <option value="Expenses">Expenses</option>
+                                                    <option value="Contra Assets">Contra Assets</option>
+                                                    <option value="Subsidy">Subsidy</option>
+                                                </select>
+                                            ) : (
+                                                <span
+                                                    onClick={() => handleEdit(account.id, "AccountType", account["AccountType"])}
+                                                    className="cursor-pointer"
+                                                >
+                                                    {account["AccountType"] || "Not Set"}
+                                                </span>
+                                            )}
+                                        </td>
+                                        {/* Action buttons */}
+                                        <td className="table-cell px-6 py-3 w-72">
+                                            {editing.id === account.id ? (
+                                                <Fragment>
+                                                    <button
+                                                        onClick={handleSave}
+                                                        className="mr-2 px-4 py-1 bg-blue-500 text-white rounded"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancel}
+                                                        className="px-4 py-1 bg-red-500 text-white rounded"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </Fragment>
+                                            ) : (
+                                                <span></span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+
+                        </table>
+                    </div>
                 </div>
 
             </div>
@@ -246,14 +247,14 @@ export default function Accounts() {
                         <input
                             type="text"
                             id="default_outlined1"
-                            className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                            className="block px-6.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                             placeholder=" "
                             value={newAccountTitle}
                             onChange={(e) => setNewAccountTitle(e.target.value)}
                         />
                         <label
                             htmlFor="default_outlined1"
-                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-6 peer-focus:px-6 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
                         >
                             Ledger Description
                         </label>
@@ -264,14 +265,14 @@ export default function Accounts() {
                         <input
                             type="text"
                             id="default_outlined1"
-                            className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                            className="block px-6.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                             placeholder=" "
                             value={newAccountCode}
                             onChange={(e) => setNewAccountCode(e.target.value)}
                         />
                         <label
                             htmlFor="default_outlined1"
-                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-6 peer-focus:px-6 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
                         >
                             Account Code
                         </label>
@@ -283,7 +284,7 @@ export default function Accounts() {
                     <div className="relative w-80 m-5">
                         <select
                             id="account-type"
-                            className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                            className="block px-6.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                             value={newAccountType}
                             onChange={(e) => setNewAccountType(e.target.value)}
                         >
@@ -298,7 +299,7 @@ export default function Accounts() {
                         </select>
                         <label
                             htmlFor="account-type"
-                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                            className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-6 peer-focus:px-6 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
                         >
                             Account Type
                         </label>

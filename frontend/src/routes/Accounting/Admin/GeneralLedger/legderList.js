@@ -8,7 +8,7 @@ import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import AddButton from "../../../../components/addButton";
-
+import SearchBar from "../../../../components/searchBar";
 
 
 export default function LedgerList() {
@@ -167,28 +167,13 @@ export default function LedgerList() {
 
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
                 <div class="flex space-x-4">
-                    {/* Modern Search Form */}
-                    <div className="w-72 h-10">
-                        <form className="flex items-center rounded-full h-10">
-                            <div className="relative w-full h-10">
-                                <input
-                                    type="text"
-                                    id="search"
-                                    className="h-10 border-transparent focus:border-transparent focus:ring-0 w-full bg-gray-100 pl-8 pr-4 py-2 text-gray-900 dark:text-white text-sm rounded-full focus:outline-none focus:ring-0"
-                                    placeholder="Search..."
-                                    autoComplete="off"
-                                />
-                                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <IoSearch className="text-gray-500" />
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
+                    <SearchBar
+                        placeholder="Search..."
+                    />
 
                     <AddButton
                         onClick={() => setShowModal(true)}
-                        label = "ADD LEDGER"
+                        label="ADD LEDGER"
                     />
                 </div>
             </div>

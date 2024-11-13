@@ -14,7 +14,8 @@ import {
     getDoc
 } from "firebase/firestore";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
-
+import AddButton from "../../../../components/addButton";
+import SearchBar from "../../../../components/searchBar";
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -30,11 +31,11 @@ export default function IncomeStatementList() {
     const [incomeStatementDescription, setIncomeStatementDescription] = useState("");
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [totalNetSurplusDeficit, settotalNetSurplusDeficit] = useState("");   
+    const [totalNetSurplusDeficit, settotalNetSurplusDeficit] = useState("");
     const [deleteIncomeStatementID, setDeleteIncomeStatementID] = useState(null);
     const [isSuccess, setIsSuccess] = useState(false);
     const [isError, setIsError] = useState(false);
-  
+
     // Add New Income Statement to Firestore
     const addNewIncomeStatement = async () => {
         try {
@@ -45,7 +46,7 @@ export default function IncomeStatementList() {
                 created_at: new Date(),
                 description: incomeStatementDescription,
                 start_date: startDate,
-                end_date: endDate,  
+                end_date: endDate,
                 ledgerID: selectedLedger,
                 totalSurplusDeficit: totalNetSurplusDeficit,
             });
@@ -59,8 +60,8 @@ export default function IncomeStatementList() {
             setSelectedLedger("");
 
 
-             // Navigate to the newly created Income Statement's details page
-             navigate(`/main/incomeStatement/incomeStatementDetails/${docRef.id}`, {
+            // Navigate to the newly created Income Statement's details page
+            navigate(`/main/incomeStatement/incomeStatementDetails/${docRef.id}`, {
                 state: { successMessage: 'New Income Statement Created' }
             });
 
@@ -70,7 +71,7 @@ export default function IncomeStatementList() {
                 setIsSuccess(false);
             }, 3000)
             return () => clearTimeout(timer);
-            {/**---------------------------------------------Alerts--------------------------------------- */ } 
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
         } catch (err) {
             console.error("Error adding document:", err);
         }
@@ -81,28 +82,28 @@ export default function IncomeStatementList() {
         if (!deleteIncomeStatementID) return;
 
         try {
-             // Delete the document from Firestore
-             await deleteDoc(doc(db, "incomestatement", deleteIncomeStatementID));
+            // Delete the document from Firestore
+            await deleteDoc(doc(db, "incomestatement", deleteIncomeStatementID));
 
-             // Remove the deleted balance sheet from the local state
-             setIncomeStatementList((prevList) => prevList.filter((sheet) => sheet.id !== deleteIncomeStatementID));
- 
-             // Close the delete modal and reset state
-             setShowDeleteModal(false);
-             setDeleteIncomeStatementID(null);
- 
-             {/**---------------------------------------------Alerts--------------------------------------- */ }
-             setIsError(true);
-             const timer = setTimeout(() => {
-                 setIsError(false);
-             }, 3000)
-             return () => clearTimeout(timer);
-             {/**---------------------------------------------Alerts--------------------------------------- */ }
- 
-         } catch (err) {
-             console.error("Error deleting document:", err);
-         }
-     };
+            // Remove the deleted balance sheet from the local state
+            setIncomeStatementList((prevList) => prevList.filter((sheet) => sheet.id !== deleteIncomeStatementID));
+
+            // Close the delete modal and reset state
+            setShowDeleteModal(false);
+            setDeleteIncomeStatementID(null);
+
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setIsError(true);
+            const timer = setTimeout(() => {
+                setIsError(false);
+            }, 3000)
+            return () => clearTimeout(timer);
+            {/**---------------------------------------------Alerts--------------------------------------- */ }
+
+        } catch (err) {
+            console.error("Error deleting document:", err);
+        }
+    };
 
     // Fetching income statement list from Firestore
     const getIncomeStatementList = async () => {
@@ -139,14 +140,14 @@ export default function IncomeStatementList() {
 
     return (
         <Fragment>
-           
+
             {isError && (
                 <div className="absolute top-4 right-4">
                     <SuccessUnsuccessfulAlert isError={isError} message={'Income Statement Deleted'} icon={'wrong'} />
                 </div>
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
-             {/**Breadcrumbs */}
+            {/**Breadcrumbs */}
             <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
@@ -161,32 +162,37 @@ export default function IncomeStatementList() {
             </nav>
             {/**Breadcrumbs */}
 
+            
 
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Income Statement</h1>
-                <button
-                    className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-                    onClick={() => {
-                        setCurrentModal(1);
-                        setShowModal(true);
-                    }}
-                >
-                    + GENERATE INCOME STATEMENT
-                </button>
+                <div class="flex space-x-4">
+                        <SearchBar
+                            placeholder="Search..."
+
+                        />
+                        <AddButton
+                           onClick={() => {
+                            setCurrentModal(1);
+                            setShowModal(true);
+                        }}
+                            label="ADD ACCOUNT"
+                        />
+                    </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-4" />
+            <hr className="border-t border-[#7694D4] my-2" />
 
             {/* TABLE */}
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
                         <tr>
                             <th scope="col" className="px-6 py-3">DESCRIPTION</th>
                             <th scope="col" className="px-6 py-3">Start Date</th>
                             <th scope="col" className="px-6 py-3">End Date</th>
                             <th scope="col" className="px-6 py-3">TOTAL SURPLUS/DEFICIT</th>
-                            <th scope="col" className="px-6 py-3"><span className="sr-only">View</span></th>
+                            <th scope="col" className="px-6 py-3 text-left">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -206,11 +212,11 @@ export default function IncomeStatementList() {
                                     {incomeStatement.end_date ? incomeStatement.end_date.toDate().toLocaleDateString() : "N/A"}
                                 </td>
                                 <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
-                                {incomeStatement.totalSurplusDeficit !== undefined && incomeStatement.totalSurplusDeficit !== null
+                                    {incomeStatement.totalSurplusDeficit !== undefined && incomeStatement.totalSurplusDeficit !== null
                                         ? incomeStatement.totalSurplusDeficit.toLocaleString()
                                         : ""}
                                 </td>
-                                <td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4 text-left">
                                     <span
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
                                         onClick={(e) => {
@@ -268,7 +274,7 @@ export default function IncomeStatementList() {
                 </Modal>
             )}
 
-{showModal && currentModal === 2 && (
+            {showModal && currentModal === 2 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[600px] h-auto rounded py-2 px-4">
                         <div className="flex justify-between">
@@ -350,74 +356,74 @@ export default function IncomeStatementList() {
                 </Modal>
             )}
 
-           {/* DELETE CONFIRMATION MODAL */}
-{showDeleteModal && (
-    <Modal isVisible={showDeleteModal}>
-        <div className="relative p-4 w-full max-w-md max-h-full">
-            <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                <button 
-                    type="button" 
-                    className="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                    onClick={() => setShowDeleteModal(false)}
-                >
-                    <svg 
-                        className="w-3 h-3" 
-                        aria-hidden="true" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 14 14"
-                    >
-                        <path 
-                            stroke="currentColor" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M1 1l6 6m0 0l6 6M7 7l6-6M7 7l-6 6" 
-                        />
-                    </svg>
-                    <span className="sr-only">Close modal</span>
-                </button>
-                <div className="p-4 md:p-5 text-center">
-                    <svg 
-                        className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" 
-                        aria-hidden="true" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 20 20"
-                    >
-                        <path 
-                            stroke="currentColor" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" 
-                        />
-                    </svg>
-                    <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-                        Are you sure you want to delete this Income Statement?
-                    </h3>
-                    <button 
-                        type="button" 
-                        className="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
-                        onClick={deleteIncomeStatement}
-                    >
-                        Yes, I'm sure
-                    </button>
-                    <button 
-                        type="button" 
-                        className="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-                        onClick={() => {
-                            setShowDeleteModal(false);
-                            setDeleteIncomeStatementID(null);
-                        }}
-                    >
-                        No, cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </Modal>
-)}
+            {/* DELETE CONFIRMATION MODAL */}
+            {showDeleteModal && (
+                <Modal isVisible={showDeleteModal}>
+                    <div className="relative p-4 w-full max-w-md max-h-full">
+                        <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                            <button
+                                type="button"
+                                className="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                <svg
+                                    className="w-3 h-3"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 14 14"
+                                >
+                                    <path
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M1 1l6 6m0 0l6 6M7 7l6-6M7 7l-6 6"
+                                    />
+                                </svg>
+                                <span className="sr-only">Close modal</span>
+                            </button>
+                            <div className="p-4 md:p-5 text-center">
+                                <svg
+                                    className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                    />
+                                </svg>
+                                <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+                                    Are you sure you want to delete this Income Statement?
+                                </h3>
+                                <button
+                                    type="button"
+                                    className="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                                    onClick={deleteIncomeStatement}
+                                >
+                                    Yes, I'm sure
+                                </button>
+                                <button
+                                    type="button"
+                                    className="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setDeleteIncomeStatementID(null);
+                                    }}
+                                >
+                                    No, cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </Fragment>
     );
 }

@@ -12,7 +12,8 @@ import {
     onSnapshot
 } from "firebase/firestore";
 import { PiListChecks, PiListChecksFill } from "react-icons/pi";
-
+import SearchBar from "../../../../components/searchBar";
+import AddButton from "../../../../components/addButton";
 
 export default function TrialBalanceList() {
     const navigate = useNavigate();
@@ -133,38 +134,42 @@ export default function TrialBalanceList() {
                 </ol>
             </nav>
             {/**Breadcrumbs */}
-
+            
 
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Trial Balance</h1>
-                <button
-                    className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-                    onClick={() => {
-                        setCurrentModal(1);
-                        setShowModal(true);
-                    }}
-                >
-                    + GENERATE TRIAL BALANCE
-                </button>
+                <div class="flex space-x-4">
+                    <SearchBar
+                        placeholder="Search..."
+                    />
+
+                    <AddButton
+                        onClick={() => {
+                            setCurrentModal(1);
+                            setShowModal(true);
+                        }}
+                        label="GENERATE TRIAL BALANCE"
+                    />
+                </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-4" />
-
+            <hr className="border-t border-[#7694D4] my-2" />
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
             {/* TABLE */}
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
                     <tr>
-                        <th scope="col" className="px-2 py-3 w-72">
+                        <th scope="col" className="px-6 py-3 w-72">
                             DESCRIPTION
                         </th>
-                        <th scope="col" className="px-2 py-3 w-72">
+                        <th scope="col" className="px-5 py-3 w-72">
                             Start Date
                         </th>
-                        <th scope="col" className="px-2 py-3 w-72">
+                        <th scope="col" className="px-4 py-3 w-72">
                             End Date
                         </th>
-                        <th scope="col" className="px-2 py-3 w-72">
-                            <span className="sr-only">View</span>
+                        <th scope="col" className="pr-8 py-3 w-72 text-center">
+                            ACTIONS
                         </th>
                     </tr>
                 </thead>
@@ -180,17 +185,17 @@ export default function TrialBalanceList() {
                                 onClick={() => navigate(`/main/TrialBalance/TrialBalanceDetails/${trialbalance.id}`)}
                             >
                                 <td
-                                    className="table-cell px-2 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                    className="table-cell px-6 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                                 >
                                     {trialbalance.description || "No Description"}
                                 </td>
-                                <td className="table-cell px-2 py-3 w-72">
+                                <td className="table-cell px-6 py-3 w-72">
                                     {trialbalance.start_date ? new Date(trialbalance.start_date.seconds * 1000).toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="table-cell px-2 py-3 w-72">
+                                <td className="table-cell px-6 py-3 w-72">
                                     {trialbalance.end_date ? new Date(trialbalance.end_date.seconds * 1000).toLocaleDateString() : "N/A"}
                                 </td>
-                                <td className="table-cell px-2 py-3 w-72 text-right">
+                                <td className="table-cell px-6 py-3 w-72 text-center">
                                     <span
                                         className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
                                         onClick={(e) => {
@@ -206,6 +211,7 @@ export default function TrialBalanceList() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             {/* MODALS */}
@@ -291,15 +297,15 @@ export default function TrialBalanceList() {
                                 <input
                                     type="text"
                                     id="description"
-                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                    className="block px-6.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                                     placeholder=" "
                                     value={trialBalanceDescription}
                                     onChange={(e) => setTrialBalanceDescription(e.target.value)}
                                 />
                                 <label
                                     htmlFor="description"
-                                    className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 
-                                    peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 
+                                    className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-6 
+                                    peer-focus:px-6 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 
                                     peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 
                                     peer-placeholder-shown:top-1/2 peer-focus:top-2 
                                     peer-focus:scale-75 peer-focus:-translate-y-4 start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
