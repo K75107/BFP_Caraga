@@ -1162,7 +1162,7 @@ export default function ChangesInEquityDetails() {
                 </tr>
                         <tr>
                             <td className="px-2 py-3">Balance</td>
-                            <td className="font-bold">{periodTotal.toLocaleString()}</td>
+                            <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
                             <td></td>
                             <td></td>
                         </tr>

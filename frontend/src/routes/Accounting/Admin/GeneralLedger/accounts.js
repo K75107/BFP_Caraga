@@ -16,6 +16,16 @@ export default function Accounts() {
     const [newAccountCode, setNewAccountCode] = useState('');
     const [newAccountType, setNewAccountType] = useState('');
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredAccountsData, setFilteredAccountsData] = useState([]); // New state for filtered data
+
+    useEffect(() => {
+        const filteredAccounts = accountsData.filter((account) =>
+            account.AccountTitle.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredAccountsData(filteredAccounts);
+    }, [searchQuery, accountsData]);
+
     useEffect(() => {
         const fetchAccountsData = async () => {
             try {
@@ -110,8 +120,11 @@ export default function Accounts() {
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Saved Account Titles</h1>
                     <div class="flex space-x-4">
                         <SearchBar
-                            placeholder="Search..."
-
+                        placeholder="Search Account Title"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        listSource={filteredAccountsData}
+                        field="accountTitle"
                         />
                         <AddButton
                             onClick={() => setShowModal(true)}
@@ -135,7 +148,7 @@ export default function Accounts() {
                         <table className='w-full overflow-x-visible text-[14px]'>
 
                             <tbody>
-                                {accountsData.map((account) => (
+                                {filteredAccountsData.map((account) => (
                                     <tr
                                         key={account.id}
                                         className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
