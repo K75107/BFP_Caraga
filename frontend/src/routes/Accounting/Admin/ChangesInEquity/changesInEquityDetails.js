@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, getDoc, query,where } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -10,20 +10,17 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
-import { current } from "@reduxjs/toolkit";
-import stringSimilarity from 'string-similarity';
-import { isEqual } from 'lodash';
 
 
 
-export default function CashflowsDetails() {
+export default function ChangesInEquityDetails() {
     const [showModal, setShowModal] = useState(false);
     const [showModalPeriod, setShowModalPeriod] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [newCategory, setNewCategory] = useState('');
-    const { cashflowId } = useParams();
-    const [cashflowCategoriesData, setCashflowCategoriesData] = useState([]);
+    const { cEquityId } = useParams();
+    const [cEquityCategoriesData, setcEquityCategoriesData] = useState([]);
     const [selectedRowData, setSelectedRowData] = useState(null);
     const [showRightClickModal, setShowRightClickModal] = useState(false);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
@@ -34,35 +31,112 @@ export default function CashflowsDetails() {
     const [editValue, setEditValue] = useState({ field: '', value: '' });
 
     //For Period
-    const [cashflowList, setCashflowList] = useState([]);
+    const [cEquityList, setcEquityList] = useState([]);
     const [selectedPeriodId, setSelectedPeriodId] = useState();
-    const [periodDataCategories, setPeriodDataCategories] = useState([]);
+    const [periodData, setPeriodData] = useState([]);
     const [periodId, setPeriodId] = useState(null);
 
-    const [mergedCategories, setMergedCategories] = useState([]);
+    const [totalSurplusDeficit, setTotalSurplusDeficit] = useState(null);
+
+    const [periodTotal, setPeriodTotal] = useState(0);
+
+    const [cEquityPeriod, setcEquityPeriod] = useState('');
+
+    // Function to recursively calculate the total for a main category and its subcategories
+    const calculateCategoryTotal = (categoryId) => {
+        // Find direct subcategories of this category
+        const subcategories = cEquityCategoriesData.filter(
+            subcategory => subcategory.parentID === categoryId
+        );
+
+        // If no subcategories, return this category's amount
+        if (subcategories.length === 0) {
+            const mainCategory = cEquityCategoriesData.find(category => category.id === categoryId);
+            return mainCategory ? mainCategory.amount || 0 : 0;
+        }
+
+        // If subcategories exist, sum up their amounts recursively
+        return subcategories.reduce((acc, subcategory) => {
+            return acc + calculateCategoryTotal(subcategory.id);
+        }, 0);
+    };
+
+    // Calculate total for all main categories
+    useEffect(() => {
+        const calculateMainCategoryTotal = () => {
+            const mainCategoryTotal = cEquityCategoriesData
+                .filter(category => !category.parentID)  // Only main categories
+                .reduce((acc, mainCategory) => {
+                    // Add either the main category's amount or its calculated total with subcategories
+                    return acc + calculateCategoryTotal(mainCategory.id);
+                }, 0);
+
+            // Add surplus/deficit to the main category total
+            const total = mainCategoryTotal + (totalSurplusDeficit || 0);
+            setPeriodTotal(total);
+        };
+
+        calculateMainCategoryTotal();
+    }, [cEquityCategoriesData, totalSurplusDeficit]);
 
     useEffect(() => {
-        // References for cashflow data
-        const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
-        const cashflowListRef = collection(db, "cashflow");
-        const cashflowRef = doc(db, "cashflow", cashflowId);
-    
-        // Listener for cashflow categories data
-        const unsubscribe = onSnapshot(cashflowsCollectionRef, async (querySnapshot) => {
+        const fetchChangesInEquity = async () => {
             try {
+                const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+                const cEquityDoc = await getDoc(cEquityDocRef);
+    
+                if (cEquityDoc.exists()) {
+                    const data = cEquityDoc.data();
+                    
+                    // Reference to the incomestatement document using the incomestatementID from cEquityDoc data
+                    const incomestatementDocRef = doc(db, "incomestatement", data.incomestatementID);
+    
+                    // Fetch totalSurplusDeficit from incomestatement
+                    const unsubscribe = onSnapshot(incomestatementDocRef, (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const incomeData = docSnapshot.data();
+                            setTotalSurplusDeficit(incomeData.totalSurplusDeficit); // Ensure totalSurplusDeficit exists in document
+                            setcEquityPeriod(data.year);
+                            console.log("Total Surplus/Deficit fetched:", incomeData.totalSurplusDeficit); // Log fetched data
+                        } else {
+                            console.warn("No such incomestatement document!");
+                        }
+                    });
+    
+                    return () => unsubscribe(); // Cleanup the listener on unmount
+                } else {
+                    console.error("ChangesInEquity document does not exist.");
+                }
+            } catch (error) {
+                console.error("Error fetching ChangesInEquity or incomestatement data:", error);
+            }
+        };
+    
+        fetchChangesInEquity();
+    }, [cEquityId]);
+    
+    
+
+    useEffect(() => {
+        const cEquityCollectionRef = collection(db, "ChangesInEquity", cEquityId, "categories");
+
+        const fetchAndInitializeCategories = async () => {
+            try {
+                const querySnapshot = await getDocs(cEquityCollectionRef);
                 const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
-    
+                setcEquityCategoriesData(sortCategoriesRecursively(data));
+
                 // Initialize data if empty
                 if (data.length === 0) {
-                    const batch = writeBatch(cashflowsCollectionRef.firestore);
+                    const batch = writeBatch(cEquityCollectionRef.firestore);
                     let position = 1;
-    
+
                     // Function to add a main category
                     const addMainCategory = (name) => {
-                        const ref = doc(cashflowsCollectionRef);
+                        const ref = doc(cEquityCollectionRef);
                         batch.set(ref, {
                             categoryName: name,
                             parentID: null,
@@ -71,247 +145,88 @@ export default function CashflowsDetails() {
                         });
                         return ref.id;
                     };
-    
+
+                    // Function to add a main category
+                    const addSurplusDeficit = (name) => {
+                        const ref = doc(cEquityCollectionRef);
+                        batch.set(ref, {
+                            amount: totalSurplusDeficit,
+                            categoryName: name,
+                            parentID: null,
+                            created_at: new Date(),
+                            position: position++,
+                        });
+                        return ref.id;
+                    };
+
                     // Function to add inflows/outflows with blank rows
                     const addSubcategoryWithBlanks = (name, parentId) => {
-                        const ref = doc(cashflowsCollectionRef);
+                        const ref = doc(cEquityCollectionRef);
                         batch.set(ref, {
                             categoryName: name,
                             parentID: parentId,
                             created_at: new Date(),
                             position: position++,
                         });
-    
+
                         // Add two blank rows
-                        batch.set(doc(cashflowsCollectionRef), {
+                        batch.set(doc(cEquityCollectionRef), {
                             categoryName: '',
                             parentID: ref.id,
                             created_at: new Date(),
                             position: position++,
                         });
-                        batch.set(doc(cashflowsCollectionRef), {
+                        batch.set(doc(cEquityCollectionRef), {
                             categoryName: '',
                             parentID: ref.id,
                             created_at: new Date(),
                             position: position++,
                         });
                     };
-    
+
                     // Add categories and subcategories
-                    const operatingId = addMainCategory('Operating Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', operatingId);
-                    addSubcategoryWithBlanks('Cash Outflows', operatingId);
-    
-                    const investingId = addMainCategory('Investing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', investingId);
-                    addSubcategoryWithBlanks('Cash Outflows', investingId);
-    
-                    const financingId = addMainCategory('Financing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', financingId);
-                    addSubcategoryWithBlanks('Cash Outflows', financingId);
-    
+                    // const operatingId = addMainCategory('Operating Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', operatingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', operatingId);
+
+                    // const investingId = addMainCategory('Investing Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', investingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', investingId);
+
+                    // const financingId = addMainCategory('Financing Activities');
+                    // addSubcategoryWithBlanks('Cash Inflows', financingId);
+                    // addSubcategoryWithBlanks('Cash Outflows', financingId);
+
                     // Additional standalone categories
-                    addMainCategory('Net Increase(Decrease) in Cash and Cash Equivalents');
-                    addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
-                    addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
-                    addMainCategory('Cash and Cash Equivalents at the End of the Period');
-    
+                    // addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
+                    // addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
+                    // addMainCategory('Cash and Cash Equivalents at the End of the Period');
+
                     // Commit batch
                     await batch.commit();
-                } else {
-                    setCashflowCategoriesData(sortCategoriesRecursively(data));
                 }
-    
-                // Get Cashflow Data
-                if (periodId) {
-                    const cashflowsCollectionsDataRef = collection(db, "cashflow", periodId, "categories");
-    
-                    // Sort `cashflowCategoriesData` only once outside the listener
-                    const sortedCurrentYearData = sortCategoriesRecursively(cashflowCategoriesData);
-    
-                    // Listener for selected period data
-                    const unsubscribePeriodData = onSnapshot(cashflowsCollectionsDataRef, async (querySnapshot) => {
-                        try {
-                            const periodData = querySnapshot.docs.map((doc) => ({
-                                id: doc.id,
-                                ...doc.data(),
-                            }));
-                            const sortedPeriodData = sortCategoriesRecursively(periodData);
-    
-                            let mergedData = [...sortedCurrentYearData];
-                            const similarityThreshold = 0.8;
-    
-                            sortedPeriodData.forEach(periodCategory => {
-                                // Skip main categories "Cash Inflows" and "Cash Outflows"
-                                if (periodCategory.categoryName === "Cash Inflows" || periodCategory.categoryName === "Cash Outflows") {
-                                    return;
-                                }
-    
-                                const existingIndex = mergedData.findIndex(currentCategory =>
-                                    stringSimilarity.compareTwoStrings(currentCategory.categoryName, periodCategory.categoryName) >= similarityThreshold &&
-                                    currentCategory.level === periodCategory.level &&
-                                    currentCategory.parentID === periodCategory.parentID
-                                );
-    
-                                if (periodCategory.categoryName !== "") {
-                                    const existingIndex = mergedData.findIndex(
-                                        mergedEntry => stringSimilarity.compareTwoStrings(mergedEntry.categoryName, periodCategory.categoryName) >= similarityThreshold
-                                    );
-    
-                                    if (existingIndex !== -1) {
-                                        // Update matched entry with amountPeriod
-                                        mergedData[existingIndex] = {
-                                            ...mergedData[existingIndex],
-                                            amountPeriod: periodCategory.amount
-                                        };
-                                    } else {
-                                        // Step 1: Traverse the hierarchy in sortedPeriodData to build the parent structure in mergedData
-                                        let currentParentId = periodCategory.parentID;
-                                        let currentCategory = periodCategory;
-    
-                                        // Create an array to store the hierarchy path
-                                        const hierarchyPath = [];
-    
-                                        // Traverse up to the top-level parent, collecting each level
-                                        while (currentParentId) {
-                                            const parentCategory = sortedPeriodData.find(category => category.id === currentParentId);
-                                            if (!parentCategory) break;
-                                            hierarchyPath.unshift(parentCategory);
-                                            currentParentId = parentCategory.parentID;
-                                        }
-    
-                                        // Step 2: Traverse or create the hierarchy path in mergedData
-                                        let lastParentId = null;
-    
-                                        hierarchyPath.forEach(levelCategory => {
-                                            // Check if the category already exists in mergedData
-                                            let existingCategory = mergedData.find(cat => cat.categoryName === levelCategory.categoryName && cat.parentID === lastParentId);
-                                            if (!existingCategory) {
-                                                // Create new entry in mergedData if it doesn't exist
-                                                existingCategory = {
-                                                    ...levelCategory,
-                                                    id: `merged_${Date.now()}_${Math.random()}`, // Generate unique ID
-                                                    parentID: lastParentId,
-                                                    position: mergedData.filter(item => item.parentID === lastParentId).length + 1, // Position within the parent
-                                                    amount: 0,
-                                                };
-                                                mergedData.push(existingCategory);
-                                            }
-    
-                                            // Set this as the last parent for the next iteration
-                                            lastParentId = existingCategory.id;
-                                        });
-    
-                                        // Step 3: Finally, add the periodCategory itself under its immediate parent in the hierarchy
-                                        const newEntry = {
-                                            ...periodCategory,
-                                            parentID: lastParentId,
-                                            amountPeriod: periodCategory.amount,
-                                            position: mergedData.filter(item => item.parentID === lastParentId).length + 1,
-                                            amount: 0,
-                                        };
-                                        mergedData.push(newEntry);
-                                    }
-                                }
-                            });
-    
-                            // Sort categories recursively and reassign positions
-                            const sortedData = sortCategoriesRecursively(mergedData);
-                            sortedData.forEach((item, index) => {
-                                item.position = index;  // Reassign position based on the sorted order
-                            });
-    
-                            // Only set mergedData if there are actual changes
-                            if (!isEqual(mergedData, sortedData)) {
-                                setCashflowCategoriesData(sortedData);
-                            }
-    
-                            console.log("Sorted and Updated Merged Data:", sortedData);
-                            
-
-                        } catch (error) {
-                            console.error("Error updating merged categories:", error);
-                        }
-                    });
-    
-                    // Return function to clean up nested listener
-                    return () => {
-                        unsubscribePeriodData();
-                    };
-                }
-    
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
                 setIsError(true);
             }
-        });
-    
-        // Listener for list of cashflows
-        const unsubscribeCashflowList = onSnapshot(cashflowListRef, (querySnapshot) => {
-            try {
-                const data = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setCashflowList(data);
-    
-            } catch (error) {
-                console.log("Error fetching period list", error);
-            }
-        });
-    
-        // Listener for selected period data
-        const unsubscribeCashflow = onSnapshot(cashflowRef, async (docSnapshot) => {
-            try {
-                if (docSnapshot.exists()) {
-                    const data = { id: docSnapshot.id, ...docSnapshot.data() };
-                    setPeriodId(data.selectedPeriod);
-                } else {
-                    console.log("No such document!");
-                }
-            } catch (error) {
-                console.log("Error fetching period data", error);
-            }
-        });
-    
-        // Cleanup function to unsubscribe from all listeners
-        return () => {
-            unsubscribe();
-            unsubscribeCashflowList();
-            unsubscribeCashflow();
         };
-    }, [cashflowId, periodId]);
-    
+
+        fetchAndInitializeCategories();
+    }, [cEquityId]);
 
     // Fetch categories data only once initially to reduce continuous reads
     useEffect(() => {
 
-        // For cashflow data
-        const cashflowsCollectionsDAtaRef = collection(db, "cashflow", cashflowId, "categories");
-
-        //Get cashflowcategories Data
-        const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
+        // For Changes in Equity data
+        const cEquityCollectionsDAtaRef = collection(db, "ChangesInEquity", cEquityId, "categories");
+        const unsubscribe = onSnapshot(cEquityCollectionsDAtaRef, async (querySnapshot) => {
             try {
                 const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
 
-                setCashflowCategoriesData(sortCategoriesRecursively(data));
-                
-                //Get Cashflow Data
-
-
-                //Merge Cashflow and SelectedPeriod
-
-
-                //Store in a new collection under the collection collection(db, "cashflow", cashflowId)
-
-
-
-
-
-
+                setcEquityCategoriesData(sortCategoriesRecursively(data));
 
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
@@ -319,15 +234,15 @@ export default function CashflowsDetails() {
             }
         });
 
-        // For list of cashflows
-        const cashflowListRef = collection(db, "cashflow");
-        const unsubscribeCashflowList = onSnapshot(cashflowListRef, (querySnapshot) => {
+        // For list of Changes In Equity
+        const cEquityListRef = collection(db, "ChangesInEquity");
+        const unsubscribecEquityList = onSnapshot(cEquityListRef, (querySnapshot) => {
             try {
                 const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
-                setCashflowList(data);
+                setcEquityList(data);
 
             } catch (error) {
                 console.log("Error fetching period list", error);
@@ -335,8 +250,8 @@ export default function CashflowsDetails() {
         });
 
         // For SelectedPeriodData
-        const cashflowRef = doc(db, "cashflow", cashflowId)
-        const unsubscribeCashflow = onSnapshot(cashflowRef, async (docSnapshot) => {
+        const cEquityRef = doc(db, "ChangesInEquity", cEquityId)
+        const unsubscribecEquity = onSnapshot(cEquityRef, async (docSnapshot) => {
 
             try {
                 if (docSnapshot.exists()) {
@@ -353,132 +268,35 @@ export default function CashflowsDetails() {
         })
 
         return () => {
-            unsubscribeCashflow();
-            unsubscribeCashflowList();
+            unsubscribecEquity();
+            unsubscribecEquityList();
             unsubscribe();
         };
-    }, [cashflowId]);
+    }, [cEquityId]);
 
 
+    useEffect(() => {
+        if (periodId) {
+            // For SelectedPeriodData
+            // For Changes In Equity data
+            const cEquityCollectionsDAtaRef = collection(db, "ChangesInEquity", periodId, "categories");
+            const unsubscribe = onSnapshot(cEquityCollectionsDAtaRef, async (querySnapshot) => {
+                try {
+                    const data = querySnapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
 
-    // useEffect(() => {
-
-    //     if (periodId) {
-    //         const cashflowsCollectionsDataRef = collection(db, "cashflow", periodId, "categories");
-
-    //         // Sort `cashflowCategoriesData` only once outside the listener
-    //         const sortedCurrentYearData = sortCategoriesRecursively(cashflowCategoriesData);
-
-    //         const unsubscribe = onSnapshot(cashflowsCollectionsDataRef, async (querySnapshot) => {
-    //             try {
-    //                 const periodData = querySnapshot.docs.map((doc) => ({
-    //                     id: doc.id,
-    //                     ...doc.data(),
-    //                 }));
-    //                 const sortedPeriodData = sortCategoriesRecursively(periodData);
-
-    //                 let mergedData = [...sortedCurrentYearData];
-    //                 const similarityThreshold = 0.8;
-
-    //                 sortedPeriodData.forEach(periodCategory => {
-    //                     // Skip main categories "Cash Inflows" and "Cash Outflows"
-    //                     if (periodCategory.categoryName === "Cash Inflows" || periodCategory.categoryName === "Cash Outflows") {
-    //                         return;
-    //                     }
-
-    //                     const existingIndex = mergedData.findIndex(currentCategory =>
-    //                         stringSimilarity.compareTwoStrings(currentCategory.categoryName, periodCategory.categoryName) >= similarityThreshold &&
-    //                         currentCategory.level === periodCategory.level &&
-    //                         currentCategory.parentID === periodCategory.parentID
-    //                     );
-
-    //                     if (periodCategory.categoryName !== "") {
-    //                         const existingIndex = mergedData.findIndex(
-    //                             mergedEntry => stringSimilarity.compareTwoStrings(mergedEntry.categoryName, periodCategory.categoryName) >= similarityThreshold
-    //                         );
-
-    //                         if (existingIndex !== -1) {
-    //                             // Update matched entry with amountPeriod
-    //                             mergedData[existingIndex] = {
-    //                                 ...mergedData[existingIndex],
-    //                                 amountPeriod: periodCategory.amount
-    //                             };
-    //                         } else {
-    //                             // Step 1: Traverse the hierarchy in sortedPeriodData to build the parent structure in mergedData
-    //                             let currentParentId = periodCategory.parentID;
-    //                             let currentCategory = periodCategory;
-
-    //                             // Create an array to store the hierarchy path
-    //                             const hierarchyPath = [];
-
-    //                             // Traverse up to the top-level parent, collecting each level
-    //                             while (currentParentId) {
-    //                                 const parentCategory = sortedPeriodData.find(category => category.id === currentParentId);
-    //                                 if (!parentCategory) break;
-    //                                 hierarchyPath.unshift(parentCategory);
-    //                                 currentParentId = parentCategory.parentID;
-    //                             }
-
-    //                             // Step 2: Traverse or create the hierarchy path in mergedData
-    //                             let lastParentId = null;
-
-    //                             hierarchyPath.forEach(levelCategory => {
-    //                                 // Check if the category already exists in mergedData
-    //                                 let existingCategory = mergedData.find(cat => cat.categoryName === levelCategory.categoryName && cat.parentID === lastParentId);
-    //                                 if (!existingCategory) {
-    //                                     // Create new entry in mergedData if it doesn't exist
-    //                                     existingCategory = {
-    //                                         ...levelCategory,
-    //                                         id: `merged_${Date.now()}_${Math.random()}`, // Generate unique ID
-    //                                         parentID: lastParentId,
-    //                                         position: mergedData.filter(item => item.parentID === lastParentId).length + 1, // Position within the parent
-    //                                         amount: 0,
-    //                                     };
-    //                                     mergedData.push(existingCategory);
-    //                                 }
-
-    //                                 // Set this as the last parent for the next iteration
-    //                                 lastParentId = existingCategory.id;
-    //                             });
-
-    //                             // Step 3: Finally, add the periodCategory itself under its immediate parent in the hierarchy
-    //                             const newEntry = {
-    //                                 ...periodCategory,
-    //                                 parentID: lastParentId,
-    //                                 amountPeriod: periodCategory.amount,
-    //                                 position: mergedData.filter(item => item.parentID === lastParentId).length + 1,
-    //                                 amount: 0,
-    //                             };
-    //                             mergedData.push(newEntry);
-    //                         }
-    //                     }
-
-    //                 });
-
-    //                 // Sort categories recursively and reassign positions
-    //                 const sortedData = sortCategoriesRecursively(mergedData);
-    //                 sortedData.forEach((item, index) => {
-    //                     item.position = index;  // Reassign position based on the sorted order
-    //                 });
-
-    //                 // Only set mergedData if there are actual changes
-    //                 if (!isEqual(mergedData, sortedData)) {
-    //                     setCashflowCategoriesData(sortedData);
-    //                 }
-
-    //                 console.log("Sorted and Updated Merged Data:", sortedData);
-
-
-    //             } catch (error) {
-    //                 console.error("Error updating merged categories:", error);
-    //             }
-    //         });
-
-    //         return unsubscribe;
-    //     }
-
-
-    // }, [periodId]);
+                    // setcEquityCategoriesData(sortCategoriesRecursively(data));
+                    console.log("selected period categories", data);
+                } catch (error) {
+                    console.error("Error fetching and sorting categories:", error);
+                    setIsError(true);
+                }
+            })
+            return () => unsubscribe();
+        }
+    }, [periodId])
 
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
@@ -530,7 +348,7 @@ export default function CashflowsDetails() {
 
     // Function to get visible categories based on the expanded state
     const getVisibleCategories = () => {
-        return cashflowCategoriesData.filter((category) => {
+        return cEquityCategoriesData.filter((category) => {
             // Check if the category is a main category or if it is expanded
             if (category.parentID === null) return true;
 
@@ -540,7 +358,7 @@ export default function CashflowsDetails() {
                 if (!expandedCategories[currentCategory.parentID]) {
                     return false; // Parent is not expanded
                 }
-                currentCategory = cashflowCategoriesData.find(cat => cat.id === currentCategory.parentID);
+                currentCategory = cEquityCategoriesData.find(cat => cat.id === currentCategory.parentID);
             }
             return true; // This category and its parents are expanded
         });
@@ -551,10 +369,10 @@ export default function CashflowsDetails() {
 
     const addNewCategory = async () => {
         try {
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+            const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
-            const sortedAccounts = [...cashflowCategoriesData].filter(cat => cat.parentID === null);
+            const sortedAccounts = [...cEquityCategoriesData].filter(cat => cat.parentID === null);
             const newRowPosition = sortedAccounts.length > 0
                 ? sortedAccounts[sortedAccounts.length - 1].position + 10
                 : 1;
@@ -567,54 +385,54 @@ export default function CashflowsDetails() {
                 position: newRowPosition
             });
 
-            const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
+            // const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
 
-            // Add "Cash Inflows" and "Cash Outflows" as subcategories
-            const inflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Inflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 10
-            });
+            // // Add "Cash Inflows" and "Cash Outflows" as subcategories
+            // const inflowsRef = await addDoc(categoriesCollectionRef, {
+            //     categoryName: 'Cash Inflows',
+            //     parentID: mainCategoryId, // Set as child of the new main category
+            //     created_at: new Date(),
+            //     position: newRowPosition + 10
+            // });
 
-            const outflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Outflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 20
-            });
+            // const outflowsRef = await addDoc(categoriesCollectionRef, {
+            //     categoryName: 'Cash Outflows',
+            //     parentID: mainCategoryId, // Set as child of the new main category
+            //     created_at: new Date(),
+            //     position: newRowPosition + 20
+            // });
 
-            // Add blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 11
-            });
+            // // Add blank row under "Cash Inflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 11
+            // });
 
-            // Add another blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 12
-            });
+            // // Add another blank row under "Cash Inflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 12
+            // });
 
-            // Add blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 21
-            });
+            // // Add blank row under "Cash Outflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 21
+            // });
 
-            // Add another blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 22
-            });
+            // // Add another blank row under "Cash Outflows"
+            // await addDoc(categoriesCollectionRef, {
+            //     categoryName: '', // Blank row
+            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
+            //     created_at: new Date(),
+            //     position: newRowPosition + 22
+            // });
 
             setShowModal(false); // Close modal after adding the category
         } catch (error) {
@@ -629,13 +447,13 @@ export default function CashflowsDetails() {
                 console.error('No category selected to add subcategory.');
                 return;
             }
-            const siblings = cashflowCategoriesData.filter(cat => cat.parentID === selectedRowData.parentID);
+            const siblings = cEquityCategoriesData.filter(cat => cat.parentID === selectedRowData.parentID);
             const newRowPosition = siblings.length > 0
                 ? siblings[siblings.length - 1].position + 1
                 : 1;
 
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+            const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
             await addDoc(categoriesCollectionRef, {
                 categoryName: '',
@@ -659,13 +477,13 @@ export default function CashflowsDetails() {
                 console.error('No category selected to add subcategory.');
                 return;
             }
-            const siblings = cashflowCategoriesData.filter(cat => cat.parentID === selectedRowData.id);
+            const siblings = cEquityCategoriesData.filter(cat => cat.parentID === selectedRowData.id);
             const newRowPosition = siblings.length > 0
                 ? siblings[siblings.length - 1].position + 1
                 : 1;
 
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+            const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
             await addDoc(categoriesCollectionRef, {
                 categoryName: '',
                 parentID: selectedRowData.id, // Assign the selected category's ID as the parent
@@ -689,8 +507,8 @@ export default function CashflowsDetails() {
                 return;
             }
 
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+            const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
             // Step 1: Create the new parent category at the same position as the selected row
             const newParentDocRef = await addDoc(categoriesCollectionRef, {
@@ -707,7 +525,7 @@ export default function CashflowsDetails() {
             });
 
             // Step 3: Shift positions of other categories if necessary
-            const categoriesToUpdate = cashflowCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
+            const categoriesToUpdate = cEquityCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
             for (const cat of categoriesToUpdate) {
                 await updateDoc(doc(categoriesCollectionRef, cat.id), {
                     position: cat.position + 1 // Shift other categories to make space for the new parent
@@ -752,32 +570,27 @@ export default function CashflowsDetails() {
         return totalAmount;
     }
 
-
-    function getLeafCategoryAmountTotals(categoryId, data) {
+    function getLeafCategoryAmountTotal(categoryId, data) {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
 
-        // Initialize totals for amount and amountPeriod
+        // Initialize the total amount
         let totalAmount = 0;
-        let totalAmountPeriod = 0;
 
         subcategories.forEach(subCat => {
             // Check if the subcategory has any further subcategories
             const hasChildren = data.some(cat => cat.parentID === subCat.id);
 
             if (!hasChildren) {
-                // If no children, add both amounts to the totals
+                // If no children, add its amount to the total
                 totalAmount += subCat.amount || 0;
-                totalAmountPeriod += subCat.amountPeriod || 0;
             } else {
-                // If it has children, recursively calculate the totals for those children
-                const childTotals = getLeafCategoryAmountTotals(subCat.id, data);
-                totalAmount += childTotals.totalAmount;
-                totalAmountPeriod += childTotals.totalAmountPeriod;
+                // If it has children, recursively calculate the total for those children
+                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
             }
         });
 
-        return { totalAmount, totalAmountPeriod };
+        return totalAmount;
     }
 
     const [inputWidth, setInputWidth] = useState('auto');
@@ -790,7 +603,6 @@ export default function CashflowsDetails() {
         }
     }, [editValue.value]); // Re-run effect when editValue changes
 
-
     function SortableRow({ category, handleRightClick }) {
         const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: category.id });
         const style = {
@@ -798,9 +610,9 @@ export default function CashflowsDetails() {
             transform: CSS.Transform.toString(transform),
         };
 
-        const hasSubcategories = category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id);
-        const totalLeafAmounts = getLeafCategoryAmountTotals(category.id, cashflowCategoriesData);
+        const hasSubcategories = category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id);
 
+        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cEquityCategoriesData);
 
 
 
@@ -862,7 +674,7 @@ export default function CashflowsDetails() {
 
 
                     {/* Toggle Button at the end */}
-                    {(category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id)) && (
+                    {(category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
                             className="mr-2 text-blue-500 px-5"
@@ -875,7 +687,7 @@ export default function CashflowsDetails() {
 
                 <td className="px-2 py-2 w-56 h-6 ">
                     {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmounts.totalAmount) || '-'}</span>
+                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
                     ) : (
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
@@ -899,16 +711,7 @@ export default function CashflowsDetails() {
                         )
                     )}
                 </td>
-                <td className="px-2 py-3 text-center">
-                    {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmounts.totalAmountPeriod) || '-'}</span>
-                    ) : (
-                        <span className="block w-full h-8 px-2 py-1">
-                            {formatNumber(category.amountPeriod) || '-'}
-                        </span>
-                    )}
-
-                </td>
+                <td className="px-2 py-3 text-center">{/* Any actions */}</td>
             </tr>
         );
     }
@@ -919,33 +722,30 @@ export default function CashflowsDetails() {
         async (event) => {
             const { active, over, delta } = event;
 
-            const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
-            const activeItem = cashflowCategoriesData[activeIndex];
+            const activeIndex = cEquityCategoriesData.findIndex(item => item.id === active.id);
+            const activeItem = cEquityCategoriesData[activeIndex];
 
-            console.log("Cashflow Categories from handle Dragend", cashflowCategoriesData);
-
-
-            let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
-            let overItem = cashflowCategoriesData[overIndex];
+            let overIndex = cEquityCategoriesData.findIndex(item => item.id === over.id);
+            let overItem = cEquityCategoriesData[overIndex];
 
             if (!over || active.id === over.id) {
                 // Moving to the right
                 if (delta.x > 0 && activeIndex > 0) {
-                    const aboveItem = cashflowCategoriesData[activeIndex - 1];
+                    const aboveItem = cEquityCategoriesData[activeIndex - 1];
                     const newParentID = aboveItem.id;
                     const newLevel = activeItem.level + 1;
 
                     // Find the last subcategory in the parent's subcategory chain
                     let targetIndex = activeIndex;
-                    for (let i = activeIndex - 1; i < cashflowCategoriesData.length; i++) {
-                        if (cashflowCategoriesData[i].parentID === newParentID) {
+                    for (let i = activeIndex - 1; i < cEquityCategoriesData.length; i++) {
+                        if (cEquityCategoriesData[i].parentID === newParentID) {
                             targetIndex = i + 1;
-                        } else if (cashflowCategoriesData[i].level <= aboveItem.level) {
+                        } else if (cEquityCategoriesData[i].level <= aboveItem.level) {
                             break;
                         }
                     }
 
-                    const updatedCategories = cashflowCategoriesData.map((item) =>
+                    const updatedCategories = cEquityCategoriesData.map((item) =>
                         item.id === active.id
                             ? { ...item, parentID: newParentID, level: newLevel }
                             : item
@@ -953,9 +753,9 @@ export default function CashflowsDetails() {
 
                     const finalCategories = arrayMove(updatedCategories, activeIndex, targetIndex);
 
-                    setCashflowCategoriesData(finalCategories);
+                    setcEquityCategoriesData(finalCategories);
 
-                    const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', active.id);
+                    const categoryDocRef = doc(db, 'ChangesInEquity', cEquityId, 'categories', active.id);
                     await updateDoc(categoryDocRef, {
                         parentID: newParentID,
                         level: newLevel,
@@ -974,25 +774,25 @@ export default function CashflowsDetails() {
                     let newParentID = null;
                     let currentAncestor = activeItem;
                     for (let i = 0; i < gridMovementLeft; i++) {
-                        const parentIndex = cashflowCategoriesData.findIndex(
+                        const parentIndex = cEquityCategoriesData.findIndex(
                             item => item.id === currentAncestor.parentID
                         );
                         if (parentIndex === -1) break; // No more ancestors
-                        currentAncestor = cashflowCategoriesData[parentIndex];
+                        currentAncestor = cEquityCategoriesData[parentIndex];
                     }
                     newParentID = currentAncestor.parentID;
 
                     // Find the last subcategory under the new ancestor
                     let targetIndex = activeIndex;
-                    for (let i = activeIndex - 1; i < cashflowCategoriesData.length; i++) {
-                        if (cashflowCategoriesData[i].parentID === newParentID) {
+                    for (let i = activeIndex - 1; i < cEquityCategoriesData.length; i++) {
+                        if (cEquityCategoriesData[i].parentID === newParentID) {
                             targetIndex = i + 1;
-                        } else if (cashflowCategoriesData[i].level <= newLevel) {
+                        } else if (cEquityCategoriesData[i].level <= newLevel) {
                             break;
                         }
                     }
 
-                    const updatedCategories = cashflowCategoriesData.map((item) =>
+                    const updatedCategories = cEquityCategoriesData.map((item) =>
                         item.id === active.id
                             ? { ...item, parentID: newParentID, level: newLevel }
                             : item
@@ -1000,9 +800,9 @@ export default function CashflowsDetails() {
 
                     const finalCategories = arrayMove(updatedCategories, activeIndex, targetIndex);
 
-                    setCashflowCategoriesData(finalCategories);
+                    setcEquityCategoriesData(finalCategories);
 
-                    const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', active.id);
+                    const categoryDocRef = doc(db, 'ChangesInEquity', cEquityId, 'categories', active.id);
                     await updateDoc(categoryDocRef, {
                         parentID: newParentID,
                         level: newLevel,
@@ -1048,14 +848,14 @@ export default function CashflowsDetails() {
             let newParentID = null;
             if (newLevel > 0) {
                 for (let i = overIndex; i >= 0; i--) {
-                    if (cashflowCategoriesData[i].level === newLevel - 1) {
-                        newParentID = cashflowCategoriesData[i].id;
+                    if (cEquityCategoriesData[i].level === newLevel - 1) {
+                        newParentID = cEquityCategoriesData[i].id;
                         break;
                     }
                 }
             }
 
-            const updatedCategories = cashflowCategoriesData.map((item) =>
+            const updatedCategories = cEquityCategoriesData.map((item) =>
                 item.id === active.id
                     ? { ...item, position: newRowPosition, level: newLevel, parentID: newParentID }
                     : item
@@ -1069,11 +869,11 @@ export default function CashflowsDetails() {
                 position: index + 1, // Sequential positions
             }));
 
-            setCashflowCategoriesData(resetCategories);
+            setcEquityCategoriesData(resetCategories);
 
             const batch = writeBatch(db);
             resetCategories.forEach((category) => {
-                const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', category.id);
+                const categoryDocRef = doc(db, 'ChangesInEquity', cEquityId, 'categories', category.id);
                 batch.update(categoryDocRef, {
                     parentID: category.parentID ?? null,
                     level: category.level,
@@ -1090,7 +890,7 @@ export default function CashflowsDetails() {
             }
 
             // Expand or collapse category if the item is a category
-            const category = cashflowCategoriesData.find(cat => cat.id === activeItem.id);
+            const category = cEquityCategoriesData.find(cat => cat.id === activeItem.id);
             if (category) {
                 expandCategory(category.id);
                 // console.log(`Category ${category.id} toggled.`);
@@ -1100,13 +900,15 @@ export default function CashflowsDetails() {
 
 
         },
-        [cashflowCategoriesData, cashflowId]
+        [cEquityCategoriesData, cEquityId]
     );
 
 
 
     const [newMaxLevel, setNewMaxLevel] = useState();
+
     const gridSize = 45;
+
     function snapToGrid(args) {
         const { transform } = args;
 
@@ -1133,9 +935,9 @@ export default function CashflowsDetails() {
     const handleDragStart = useCallback(async (event) => {
         const { id: activeId } = event.active;  // Get the active item's ID
 
-        // Find the item in cashflowCategoriesData using the active ID
-        const activeIndex = cashflowCategoriesData.findIndex(item => item.id === activeId);
-        const activeItem = cashflowCategoriesData[activeIndex];
+        // Find the item in cEquityCategoriesData using the active ID
+        const activeIndex = cEquityCategoriesData.findIndex(item => item.id === activeId);
+        const activeItem = cEquityCategoriesData[activeIndex];
 
         // Check if the item exists and set level if found
         if (activeItem) {
@@ -1147,18 +949,18 @@ export default function CashflowsDetails() {
 
 
         //Set the maxlevel
-        const maxLevel = Math.max(...Object.values(cashflowCategoriesData).map(item => item.level));
+        const maxLevel = Math.max(...Object.values(cEquityCategoriesData).map(item => item.level));
         setNewMaxLevel(maxLevel);
 
         // Expand or collapse category if the item is a category
-        const category = cashflowCategoriesData.find(cat => cat.id === activeId);
+        const category = cEquityCategoriesData.find(cat => cat.id === activeId);
         if (category) {
             collapseCategory(category.id);
             // console.log(`Category ${category.id} toggled.`);
         } else {
             console.log("Category not found on drag start");
         }
-    }, [cashflowCategoriesData, toggleCategory]);
+    }, [cEquityCategoriesData, toggleCategory]);
 
 
     //For the input
@@ -1176,7 +978,7 @@ export default function CashflowsDetails() {
             const numericValue = field === "amount" ? parseFloat(newValue) : newValue;
 
             // Find the target category by ID
-            const targetCategory = cashflowCategoriesData.find(cat => cat.id === categoryId);
+            const targetCategory = cEquityCategoriesData.find(cat => cat.id === categoryId);
 
             if (targetCategory) {
 
@@ -1188,7 +990,7 @@ export default function CashflowsDetails() {
 
 
                 // Optimistically update local state immediately
-                setCashflowCategoriesData(prevData =>
+                setcEquityCategoriesData(prevData =>
                     prevData.map(category =>
                         category.id === categoryId ? { ...category, [field]: numericValue } : category
                     )
@@ -1214,7 +1016,7 @@ export default function CashflowsDetails() {
     const debouncedUpdate = debounce(async (categoryId, field, newValue) => {
         try {
             // Get the reference to the specific category document in Firestore
-            const categoryDocRef = doc(db, 'cashflow', cashflowId, 'categories', categoryId);
+            const categoryDocRef = doc(db, 'ChangesInEquity', cEquityId, 'categories', categoryId);
 
             // Update the specific field of the category in Firestore
             await updateDoc(categoryDocRef, { [field]: newValue });
@@ -1228,71 +1030,39 @@ export default function CashflowsDetails() {
 
     const handleDeleteRow = async () => {
         if (!selectedRowData) return;
-
+    
         try {
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
-
-            // Helper function to get all nested subcategories of a given parent category
+            const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
+            const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
+    
             const getAllSubcategories = async (parentId) => {
                 const subcategories = [];
                 const subcategoriesQuery = query(categoriesCollectionRef, where('parentID', '==', parentId));
                 const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-
+    
                 for (const subcategoryDoc of subcategoriesSnapshot.docs) {
                     subcategories.push(subcategoryDoc);
                     const nestedSubcategories = await getAllSubcategories(subcategoryDoc.id);
                     subcategories.push(...nestedSubcategories);
                 }
-
+    
                 return subcategories;
             };
-
+    
+            const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
+    
             const batch = writeBatch(db);
-
-            if (selectedRowData.categoryName === "Operating Activities" || "Investing Activities" || "Financing Activities") {
-                // Only delete subcategories, not the main category
-                const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
-
-                subcategoriesToDelete.forEach((subcategoryDoc) => {
-                    batch.delete(subcategoryDoc.ref);
-                });
-
-                // Add new "Cash Inflows" and "Cash Outflows" subcategories
-                const newSubcategories = [
-                    { categoryName: "Cash Inflows", parentID: selectedRowData.id, level: 1, position: 0 },
-                    { categoryName: "Cash Outflows", parentID: selectedRowData.id, level: 1, position: 1 }
-                ];
-
-                newSubcategories.forEach((subcategory) => {
-                    const newDocRef = doc(categoriesCollectionRef);
-                    batch.set(newDocRef, subcategory);
-
-                    // Add two blank rows under each new subcategory
-                    const blankRows = [
-                        { categoryName: "", parentID: newDocRef.id, level: 2, position: 0, amount: 0 },
-                        { categoryName: "", parentID: newDocRef.id, level: 2, position: 1, amount: 0 }
-                    ];
-
-                    blankRows.forEach((blankRow) => {
-                        const blankDocRef = doc(categoriesCollectionRef);
-                        batch.set(blankDocRef, blankRow);
-                    });
-                });
-            } else {
-                // Delete selected category and its subcategories if not "Operating Activities"
-                const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
-                batch.delete(categoryDocRef);
-
-                const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
-                subcategoriesToDelete.forEach((subcategoryDoc) => {
-                    batch.delete(subcategoryDoc.ref);
-                });
-            }
-
+    
+            const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
+            batch.delete(categoryDocRef);
+    
+            subcategoriesToDelete.forEach((subcategoryDoc) => {
+                batch.delete(subcategoryDoc.ref);
+            });
+    
             await batch.commit();
+    
             setShowRightClickModal(false);
-
         } catch (error) {
             console.log("Error deleting document:", error);
         }
@@ -1301,9 +1071,9 @@ export default function CashflowsDetails() {
     //For Period
     const handleAddPeriod = async () => {
         try {
-            const cashflowListRef = doc(db, "cashflow", cashflowId);
+            const cEquityListRef = doc(db, "ChangesInEquity", cEquityId);
 
-            await updateDoc(cashflowListRef, {
+            await updateDoc(cEquityListRef, {
                 selectedPeriod: selectedPeriodId
             });
 
@@ -1322,7 +1092,7 @@ export default function CashflowsDetails() {
 
             {isSuccess && (
                 <div className="absolute top-4 right-4">
-                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Cashflow Statement Created'} icon={'check'} />
+                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Changes In Equity Created'} icon={'check'} />
                 </div>
             )}
             {isError && (
@@ -1333,7 +1103,7 @@ export default function CashflowsDetails() {
 
             <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
+                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes In Equity</h1>
                 </div>
                 <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
                     <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
@@ -1354,31 +1124,53 @@ export default function CashflowsDetails() {
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                                    <th scope="col" className="w-[20px]"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                    {visibleCategories.map((category) => (
-                                        <SortableRow
-                                            key={category.id}
-                                            category={category}
-                                            handleRightClick={handleRightClick}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </tbody>
-                        </table>
-                    </div>
-                </DndContext>
+    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
+                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
+                    <th scope="col" className="w-[20px]"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {/* Sortable rows for other categories */}
+                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                    {visibleCategories.map((category) => (
+                        <SortableRow
+                            key={category.id}
+                            category={category}
+                            handleRightClick={handleRightClick}
+                        />
+                    ))}
+                </SortableContext>
+            </tbody>
+            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
+                {/* Fixed row for Surplus/Deficit */}
+                <tr className="border-b">
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                        Surplus/(Deficit) for the period
+                    </td>
+                    <td className="px-2 py-3 font-bold text-gray-700">
+                    {totalSurplusDeficit?.toLocaleString() || '-'}
+                    </td>
+                    <td></td>
+                    <td></td>
+
+                </tr>
+                        <tr>
+                            <td className="px-2 py-3">Balance</td>
+                            <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+        </table>
+    </div>
+</DndContext>
+
             </div>
 
             <Modal isVisible={showModal}>
@@ -1406,6 +1198,7 @@ export default function CashflowsDetails() {
                         <button onClick={(event) => {
                             event.stopPropagation();
                             addNewCategory();
+                            setNewCategory('');
                         }}
                             className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium ml-2">
                             + ADD CATEGORY
@@ -1435,7 +1228,7 @@ export default function CashflowsDetails() {
                             >
                                 <option value="">Select Period</option>
 
-                                {cashflowList.map((list) => (
+                                {cEquityList.map((list) => (
                                     <option key={list.id} value={list.id}>
                                         {list.year}
                                     </option>

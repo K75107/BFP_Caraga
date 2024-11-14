@@ -5,6 +5,11 @@ import { db } from "../../../../config/firebase-config";
 import { getDocs, collection, addDoc, deleteDoc, doc } from "firebase/firestore"; // Import deleteDoc and doc
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
+import { IoMdAdd } from "react-icons/io";
+import { IoSearch } from "react-icons/io5";
+import AddButton from "../../../../components/addButton";
+import SearchBar from "../../../../components/searchBar";
+
 
 export default function LedgerList() {
     const [showModal, setShowModal] = useState(false);
@@ -158,62 +163,73 @@ export default function LedgerList() {
 
 
 
-            <div className="flex justify-between w-full">
+            <div className="flex justify-between w-full align-middle">
+
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
-                <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>ADD LEDGER</button>
+                <div class="flex space-x-4">
+                    <SearchBar
+                        placeholder="Search..."
+                    />
+
+                    <AddButton
+                        onClick={() => setShowModal(true)}
+                        label="ADD LEDGER"
+                    />
+                </div>
             </div>
 
 
-            <hr className="border-t border-[#7694D4] my-4" />
+            <hr className="border-t border-[#7694D4] my-2" />
 
             {/*TABLE*/}
-            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead className="text-[13px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
-                    <tr>
-                        <th scope="col" className="px-2 py-3 w-72">DESCRIPTION</th>
-                        <th scope="col" className="px-2 py-3 w-72">Year</th>
-                        <th scope="col" className="px-2 py-3 w-72">
-                            <span className="sr-only">View</span>
-                        </th>
-                    </tr>
-                </thead>
-            </table>
-            <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                <table className='text-[14px]  w-full overflow-x-visible'>
-                    <tbody>
-                        {ledgerList.map((ledger) => (
-                            <tr
-                                key={ledger.id}
-                                className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
-                            >
-                                <td
-                                    className="table-cell px-2 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                >
-                                    {ledger.description || "No Description"}
-                                </td>
-                                <td className="table-cell px-2 py-3 w-72">
-                                    {ledger.year || "N/A"}
-                                </td>
-                                <td className="table-cell px-2 py-3 w-72 text-right">
-                                    <span
-                                        className="font-medium text-red-600 dark:text-blue-500 hover:underline"
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent row click event
-                                            //deleteLedger(ledger.id); 
-                                            setDeleteLedgerID(ledger.id)// Call delete function
-                                            setShowDeleteModal(true);
-                                        }}
-                                    >
-                                        Remove
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
+                        <tr>
+                            <th scope="col" className="px-6 py-3 w-96">DESCRIPTION</th>
+                            <th scope="col" className="px-4 py-3 w-72">Year</th>
+                            <th scope="col" className="pr-6 py-3 w-72 text-center">Actions
+                                <span className="sr-only">View</span>
+                            </th>
+                        </tr>
+                    </thead>
                 </table>
+                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                    <table className='text-[14px]  w-full overflow-x-visible'>
+                        <tbody>
+                            {ledgerList.map((ledger) => (
+                                <tr
+                                    key={ledger.id}
+                                    className=" w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                    onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
+                                >
+                                    <td
+                                        className="table-cell px-6 py-3 w-96 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                    >
+                                        {ledger.description || "No Description"}
+                                    </td>
+                                    <td className="table-cell px-6 py-3 w-72">
+                                        {ledger.year || "N/A"}
+                                    </td>
+                                    <td className="table-cell px-6 py-3 w-72 text-center">
+                                        <span
+                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent row click event
+                                                //deleteLedger(ledger.id); 
+                                                setDeleteLedgerID(ledger.id)// Call delete function
+                                                setShowDeleteModal(true);
+                                            }}
+                                        >
+                                            Remove
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
             {/*MODAL*/}
             <Modal isVisible={showModal}>
                 <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
@@ -221,7 +237,7 @@ export default function LedgerList() {
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add New Ledger
                         </h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" >
                             ×
                         </button>
                     </div>

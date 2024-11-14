@@ -1,9 +1,12 @@
 import React, { Fragment, useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal"; // Import the Modal component
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
+import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import { UseLedgerData } from './incomeStatementContext';
+import { IncomeStatementPeriodProvider } from './incomeStatementContext';
 
 
 export default function IncomeStatement() {
@@ -21,9 +24,34 @@ export default function IncomeStatement() {
     const [selectedincomeStatement, setSelectedIncomeStatement] = useState("");
     const [selectedincomeStatementList, setSelectedIncomeStatementList] = useState([]);
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const location = useLocation();
+    const [stateStartDate, setStateStartDate] = useState(null);
+    const [stateEndDate, setStateEndDate] = useState(null);
     const [currentModal, setCurrentModal] = useState(1); // Modal state
+    
 
 
+    const [isClicked, setIsClicked] = useState(false);
+    const {
+        accountTitlesPeriod, updateAccountTitlesPeriod,
+        accountsPeriod, updateAccountsPeriod,
+        selectedLedgerYear, updateSelectedLedgerYear,
+        showPeriodColumn, updateShowPeriodColumn
+    } = UseLedgerData();
+
+
+    // Access data specific to this 
+    const currentAccountTitlesPeriod = accountTitlesPeriod[incomeStatementID] || [];
+    const currentAccountsPeriod = accountsPeriod[incomeStatementID] || [];
+    const currentSelectedLedgerYear = selectedLedgerYear[incomeStatementID] || null;
+    const currentShowPeriodColumn = showPeriodColumn[incomeStatementID] || false;
+
+    const setAccountTitlesPeriod = (data) => updateAccountTitlesPeriod(incomeStatementID, data);
+    const setAccountsPeriod = (data) => updateAccountsPeriod(incomeStatementID, data);
+    const setSelectedLedgerYear = (year) => updateSelectedLedgerYear(incomeStatementID, year);
+    const setShowPeriodColumn = (value) => updateShowPeriodColumn(incomeStatementID, value);
 
 
     const Spinner = () => (
@@ -49,73 +77,8 @@ export default function IncomeStatement() {
             </div>
         </div>
     );
-
-    const getIncomeStatementDescription = async () => {
-        try {
-            const docRef = doc(db, "incomestatement", incomeStatementID);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
-
-                if (incomeStatementData.ledgerID) {
-                    const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
-                    const ledgerSnap = await getDoc(ledgerRef);
-
-                    if (ledgerSnap.exists()) {
-                        incomeStatementData.ledgerYear = ledgerSnap.data().year;
-                        console.log("Ledger Data:", ledgerSnap.data());
-                    }
-                }
-
-                const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
-                const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                const accountTitlesData = [];
-                const accountsData = [];
-
-                for (const titleDoc of accountTitlesSnap.docs) {
-                    const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                    const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                    const accountsSnap = await getDocs(accountsRef);
-
-                    let totalDebit = 0;
-                    let totalCredit = 0;
-
-                    const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                        const accountData = {
-                            id: accountDoc.id,
-                            accountTitleID: titleDoc.id,
-                            ...accountDoc.data(),
-                        };
-
-                        totalDebit += accountData.debit || 0;
-                        totalCredit += accountData.credit || 0;
-
-                        return accountData;
-                    });
-
-                    titleData.difference = totalDebit - totalCredit;
-                    accountTitlesData.push(titleData);
-                    accountsData.push(...titleAccounts);
-                }
-
-                console.log("Income Statement Data:", incomeStatementData);
-
-                setAccountTitles(accountTitlesData);
-                setAccounts(accountsData);
-                setIncomeStatement(incomeStatementData);
-            } else {
-                incomeStatementData.ledgerYear = "N/A";
-            }
-        } catch (err) {
-            console.error("Error fetching income statement data:", err);
-            setError("Error fetching income statement data.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    
+    //----------------------------------------------------------------------------------------------------------------------------------------
 
     const getLedgerList = async () => {
         try {
@@ -129,29 +92,201 @@ export default function IncomeStatement() {
             console.error("Error fetching ledger data:", err);
         }
     };
+    //---------------------------------------------------------------------------------------------------------------------------------------
 
-    const getIncomeStatementList = async () => {
+    const getIncomeStatementDescription = async () => {
         try {
-            const data = await getDocs(collection(db, "incomestatement"));
-            const filteredData = data.docs.map((doc) => ({
-                ...doc.data(),
-                id: doc.id,
-            }));
-            setSelectedIncomeStatementList(filteredData);
+            const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the balance sheet document
+            const docSnap = await getDoc(docRef); // Get the document snapshot
+
+            if (docSnap.exists()) {
+                const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
+
+                // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
+                const convertToLocalDate = (timestamp) => {
+                    const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JavaScript Date
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000); // Adjust to local timezone
+                    return localDate.toISOString().split("T")[0]; // Convert to "yyyy-mm-dd" format
+                };
+
+                const startDate = convertToLocalDate(incomeStatementData.start_date);
+                const endDate = convertToLocalDate(incomeStatementData.end_date);
+
+                // Set dates in the component's state
+                setStateStartDate(startDate);
+                setStateEndDate(endDate);
+
+
+                // Check if ledgerID exists in the balance sheet
+                if (incomeStatementData.ledgerID) {
+                    // Fetch the associated ledger document
+                    const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
+                    const ledgerSnap = await getDoc(ledgerRef);
+
+                    if (ledgerSnap.exists()) {
+                        incomeStatementData.ledgerYear = ledgerSnap.data().year; // Attach year from ledger
+
+                        // Fetch account titles from the ledger
+                        const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
+                        const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                        const accountTitlesData = [];
+                        const accountsData = [];
+
+                        for (const titleDoc of accountTitlesSnap.docs) {
+                            const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                            // Fetch accounts subcollection for each account title
+                            const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
+                            let accountsQuery = query(
+                                accountsRef,
+                                where("date", ">=", startDate),   // Filter by start_date
+                                where("date", "<=", endDate)      // Filter by end_date
+                            );
+                            const accountsSnap = await getDocs(accountsQuery);
+
+                            // Only proceed if there are accounts within the date range
+                            if (!accountsSnap.empty) {
+                                // Initialize sums for debit and credit
+                                let totalDebit = 0;
+                                let totalCredit = 0;
+
+                                const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                    const accountData = {
+                                        id: accountDoc.id,
+                                        accountTitleID: titleDoc.id, // Link to the account title ID
+                                        ...accountDoc.data(),
+                                    };
+
+                                    totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                    totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+
+                                    return accountData;
+                                });
+
+                                // After processing all account documents, you can attach the difference (debit - credit) to the account title
+                                titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
+                                titleData.differenceContra = totalCredit - totalDebit;
+
+                                // Continue to add this account title to the list
+                                accountTitlesData.push(titleData);  // Add account title to state
+
+                                // Add accounts to a separate state for accounts
+                                accountsData.push(...titleAccounts);
+                            }
+                        }
+
+                        setAccountTitles(accountTitlesData); // Set account titles
+                        setAccounts(accountsData); // Set accounts separately
+
+                    } else {
+                        incomeStatementData.ledgerYear = "N/A"; // Handle missing ledger case
+                    }
+                }
+
+                setIncomeStatement(incomeStatementData); // Set balance sheet data with ledger year
+            } else {
+                setError("No balance sheet found.");
+            }
         } catch (err) {
-            console.error("Error fetching ledger data:", err);
+            console.error("Error fetching balance sheet data:", err);
+            setError("Error fetching balance sheet data.");
+        } finally {
+            setLoading(false);
         }
     };
 
+     // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+     const getSelectedLedgerData = async () => {
+        try {
+            if (selectedLedger) {
+                // Fetch the associated ledger document using the selectedLedgerID
+                const ledgerRef = doc(db, "ledger", selectedLedger);
+                const ledgerSnap = await getDoc(ledgerRef);
 
-    useEffect(() => {
-        getIncomeStatementList();
+                if (ledgerSnap.exists()) {
+                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
+
+                    // Fetch account titles from the selected ledger
+                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
+                    const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                    const accountTitlesData = [];
+                    const accountsData = [];
+
+                    for (const titleDoc of accountTitlesSnap.docs) {
+                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                        // Fetch accounts subcollection for each account title
+                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                        const accountsQuery = query(
+                            accountsRef,
+                            where("date", ">=", stateStartDate),   // Filter by start_date
+                            where("date", "<=", stateEndDate)      // Filter by end_date
+                        );
+                        const accountsSnap = await getDocs(accountsQuery);
+
+                        // Only proceed if there are accounts within the date range
+                        if (!accountsSnap.empty) {
+                            // Initialize sums for debit and credit
+                            let totalDebit2 = 0;
+                            let totalCredit2 = 0;
+
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id, // Link to the account title ID
+                                    ...accountDoc.data(),
+                                };
+
+                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
+                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+                                return accountData;
+                            });
+
+                            // Attach the difference (debit - credit) to the account title
+                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
+
+                            // Add account title and accounts data to their respective arrays
+                            accountTitlesData.push(titleData);  // Add account title to the list
+                            accountsData.push(...titleAccounts);  // Add account data to the list
+                        }
+                    }
+
+                    // Update the state with the fetched data
+                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
+                    setAccountsPeriod(accountsData); // Set accounts separately
+
+                    // Optionally, if you want to show the year
+                    setSelectedLedgerYear(ledgerYear);
+                } else {
+                    console.error("Selected ledger not found.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching selected ledger data:", error);
+        }
+    };
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
+    useEffect(() => {   
         getLedgerList();
         getIncomeStatementDescription();
-
-        
-
+        getSelectedLedgerData();
     }, [incomeStatementID]);
+
+    useEffect(() => {
+        if (!loading && location.state?.successMessage) {
+            setSuccessMessage(location.state.successMessage);
+            setIsSuccess(true);
+
+            const timer = setTimeout(() => {
+                setIsSuccess(false);
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [loading, location.state]);
 
     if (loading) {
         return <Spinner />;
@@ -162,17 +297,27 @@ export default function IncomeStatement() {
     }
     // Calculate total Revenue
     const totalRevenues = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Revenue")
-        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+        .filter(accountTitle =>
+            accountTitle.accountType === "Revenue")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount; // Sum the amounts
+        }, 0);
 
     // Calculate total Expenses
     const totalExpenses = accountTitles
         .filter(accountTitle => accountTitle.accountType === "Expenses")
-        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount;
+        }, 0);
 
     const totalSubsidy = accountTitles
         .filter(accountTitle => accountTitle.accountType === "Subsidy")
-        .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount;
+        }, 0);
 
     let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
@@ -180,19 +325,46 @@ export default function IncomeStatement() {
         try {
             const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
             await updateDoc(incomeStatementRef, {
-                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalEquity value to Firestore
+                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
             });
-            console.log("Total net assets successfully updated in Firestore.");
+            console.log("Total net Revenues successfully updated in Firestore.");
         } catch (err) {
-            console.error("Error updating total equity:", err);
+            console.error("Error updating total Subsidy:", err);
         }
     };
     updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
 
 
 
+    //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
 
+    const totalRevenues2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Revenue")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
 
+    // Calculate total amount for Expenses
+    const totalExpenses2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Expenses")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
+
+    // Calculate base equity as Revenues - Expenses
+    let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
+    let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
+
+    const totalSubsidy2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Subsidy")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
+
+    //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
     const incomeStatementDetailsData = [
         {
             name: "Revenue",
@@ -201,11 +373,20 @@ export default function IncomeStatement() {
                     accountTitle.accountType === "Revenue"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.difference,
-                })),
-            amount: totalRevenues  // Add the calculated total amount for Revenue
+                .map(accountTitle => {
+                    // Match by accountTitle with accountTitlesPeriod
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.difference,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
+                    };
+                }),
+            amount: totalRevenues,
+            amount2: totalRevenues2 !== 0 ? totalRevenues2 : null  // Display amount2 if it exists and if not the set to null // Add the calculated total amount for Revenue
         },
         {
             name: "Expenses",
@@ -214,11 +395,20 @@ export default function IncomeStatement() {
                     accountTitle.accountType === "Expenses"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.difference,
-                })),
-            amount: totalExpenses
+                .map(accountTitle => {
+                    // Match by accountTitle with accountTitlesPeriod
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.difference,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
+                    };
+                }),
+            amount: totalExpenses,
+            amount2: totalExpenses2 !== 0 ? totalExpenses2 : null
         },
         {
             name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs",
@@ -227,11 +417,20 @@ export default function IncomeStatement() {
                     accountTitle.accountType === "Subsidy"
                 )
                 .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map((accountTitle) => ({
-                    name: accountTitle.accountTitle,
-                    amount: accountTitle.difference,
-                })),
-            amount: totalSubsidy
+                .map(accountTitle => {
+                    // Match by accountTitle with accountTitlesPeriod
+                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                    );
+
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.difference,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
+                    };
+                }),
+            amount: totalSubsidy,
+            amount2: totalSubsidy2 !== 0 ? totalSubsidy2 : null  // Display amount2 if it exists and if not the set to null
         },
     ];
 
@@ -252,7 +451,7 @@ export default function IncomeStatement() {
             ]
         },
 
-        { 
+        {
             // GROUP 3
             items: [
                 { label: "Net Financial Subsidy", value: totalSubsidy.toLocaleString() },
@@ -260,7 +459,7 @@ export default function IncomeStatement() {
             ]
         },
         {
-            
+
             items: [
                 {
                     label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
@@ -309,11 +508,12 @@ export default function IncomeStatement() {
             }
         };
 
-        const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
+        // Check if the row is a parent row for "Revenues, Expenses or Subsidy"
+        const isMainCategory = ["Revenue", "Expenses", "Subsidy"].includes(item.name);
 
         return (
             <>
-                <tr className="border-t">
+                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                     {/* Account name with indentation */}
                     <td
                         className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
@@ -331,6 +531,7 @@ export default function IncomeStatement() {
                         )}
                     </td>
 
+                    {/* Amount in the second column */}
                     <td
                         className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
                             }`}
@@ -338,6 +539,14 @@ export default function IncomeStatement() {
                         {item.amount ? formatAmount(item.amount) : ""}
                     </td>
 
+                    {/* Render amount2 if it exists */}
+                    {item.amount2 !== undefined && (
+                        <td
+                            className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount2)}`}
+                        >
+                            {item.amount2 !== null ? formatAmount(item.amount2) : ""}
+                        </td>
+                    )}
 
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
@@ -357,6 +566,17 @@ export default function IncomeStatement() {
 
     return (
         <Fragment>
+            {/* Success Alert */}
+            {isSuccess && (
+                <div className="absolute top-4 right-4">
+                    <SuccessUnsuccessfulAlert
+                        isSuccess={isSuccess}
+                        message={successMessage}
+                        icon="check"
+                    />
+                </div>
+            )}
+
             {/**Breadcrumbs */}
             <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -369,7 +589,7 @@ export default function IncomeStatement() {
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-Width="2" d="m1 9 4-4-4-4" />
                             </svg>
                             <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{incomeStatement.description}</span>
                         </div>
@@ -387,9 +607,13 @@ export default function IncomeStatement() {
                         EXPORT TO EXCEL
                     </button>
                     <button
-                        className="bg-white rounded-lg text-black font-poppins py-2 px-8 text-[12px] font-medium border border-gray-400"
+                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium border border-gray-400 ${isClicked
+                            ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
+                            : 'bg-white text-black hover:bg-color-lighter-gray'
+                            }`}
                         onClick={() => {
-                            setCurrentModal(3);
+                            setIsClicked(true);
+                            setCurrentModal(1);
                             setShowModal(true);
                         }}
                     >
@@ -397,21 +621,26 @@ export default function IncomeStatement() {
                     </button>
                 </div>
             </div>
-
+            
             <hr className="border-t border-[#7694D4] my-4" />
-
+            {/* TABLE */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
-                            <th scope="col" className="px-6 py-3 text-right">Period- {incomeStatement?.ledgerYear || "N/A"}</th>
+                            <th scope="col" className="px-6 py-3 text-right">{`Period - ${incomeStatement?.ledgerYear || "N/A"}`}</th>
+                            {currentShowPeriodColumn && (
+                                <th scope="col" className="px-6 py-3 text-right">
+                                    {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
+                                </th>
+                            )}
                             <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} />
+                            <Row key={index} item={item} depth={1} /> 
                         ))}
                     </tbody>
                 </table>
@@ -425,27 +654,28 @@ export default function IncomeStatement() {
             </div>
 
 
-            {showModal && currentModal === 3 && (
+ {/* Modal */}
+ {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
-                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Period</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select Ledger Period</h1>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setIsClicked(false); }}>×</button>
                         </div>
 
                         <hr className="border-t border-[#7694D4] my-3" />
 
                         <form className="max-w-sm mt-5">
                             <select
-                                id="incomestatementselect"
+                                id="ledgerselect"
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                value={selectedincomeStatement}
-                                onChange={(e) => setSelectedIncomeStatement(e.target.value)}
+                                value={selectedLedger}
+                                onChange={(e) => setSelectedLedger(e.target.value)}
                             >
                                 <option value="">Select Period</option>
-                                {selectedincomeStatementList.map((incomestatement) => (
-                                    <option key={incomeStatement.id} value={incomestatement.id}>
-                                        {incomestatement.description}
+                                {incomeStatementLedgerList.map((ledger) => (
+                                    <option key={ledger.id} value={ledger.id}>
+                                        {ledger.year}
                                     </option>
                                 ))}
                             </select>
@@ -453,11 +683,22 @@ export default function IncomeStatement() {
 
                         <div className="flex justify-end py-3 px-4">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedincomeStatement && "opacity-50 cursor-not-allowed"}`}
-                                onClick={() => selectedincomeStatement && setCurrentModal(2)}
-                                disabled={!selectedincomeStatement}
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                                onClick={() => {
+                                    if (selectedLedger) {
+                                        // Call the function to get ledger data for the selected period
+                                        getSelectedLedgerData(selectedLedger, stateStartDate, stateEndDate);
+
+                                        // Optionally move to the next modal step
+                                        setCurrentModal(2);
+
+                                        setShowPeriodColumn(true);  // Show the period column
+                                        setIsClicked(false);
+                                    }
+                                }}
+                                disabled={!selectedLedger} // Disable when no ledger is selected
                             >
-                                NEXT
+                                ADD
                             </button>
                         </div>
                     </div>
@@ -465,4 +706,5 @@ export default function IncomeStatement() {
             )}
         </Fragment>
     );
+
 }

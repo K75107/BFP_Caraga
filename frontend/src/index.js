@@ -8,6 +8,7 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
 import { BalanceSheetPeriodProvider } from './routes/Accounting/Admin/BalanceSheet/balanceSheetContext';
+import { IncomeStatementPeriodProvider } from './routes/Accounting/Admin/IncomeStatement/incomeStatementContext';
 import store from './store';
 import { Navigate } from 'react-router-dom';
 
@@ -27,7 +28,11 @@ import CashflowStatement from './routes/Accounting/Admin/CashFlow/cashflowStatem
 import CashFlowsReports from './routes/Accounting/Admin/CashFlow/cashflowsReports';
 import CashflowsDetails from './routes/Accounting/Admin/CashFlow/cashflowsDetails';
 
+import ChangesInEquityMain from './routes/Accounting/Admin/ChangesInEquity/changesInEquityMain';
 import ChangesInEquity from './routes/Accounting/Admin/ChangesInEquity/changesInEquity';
+import ChangesInEquityDetails from './routes/Accounting/Admin/ChangesInEquity/changesInEquityDetails';
+import ChangesInEquityReports from './routes/Accounting/Admin/ChangesInEquity/changesInEquityReports';
+
 import GeneralLedger from './routes/Accounting/Admin/GeneralLedger/generalLedger';
 import Accounts from './routes/Accounting/Admin/GeneralLedger/accounts';
 import LedgerDetails from './routes/Accounting/Admin/GeneralLedger/ledgerDetails';
@@ -138,8 +143,26 @@ const router = createBrowserRouter([
       },
 
       {
-        path: 'changesInEquity',
-        element: <ChangesInEquity />,
+        path: 'changesInEquityMain',
+        element: <ChangesInEquityMain />,
+        children: [
+          {
+            path: 'changesInEquity',
+            element: <ChangesInEquity />,
+          },
+          {
+            path: 'changesInEquityDetails/:cEquityId',
+            element: <ChangesInEquityDetails />,
+          },
+          {
+            path: 'changesInEquityReports',
+            element: <ChangesInEquityReports />,
+          },
+          {
+            index: true,
+            element: <Navigate to="changesInEquity" />,
+          },
+        ]
       },
       {
         path: 'generalLedger',
@@ -277,10 +300,13 @@ root.render(
 
   <Provider store={store}>
     <BalanceSheetPeriodProvider>
+    <IncomeStatementPeriodProvider>
       <RouterProvider router={router} />
+      </IncomeStatementPeriodProvider>
     </BalanceSheetPeriodProvider>
   </Provider>
 
 );
+
 
 reportWebVitals();

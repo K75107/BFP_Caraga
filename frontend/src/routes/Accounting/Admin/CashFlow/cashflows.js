@@ -1,9 +1,11 @@
 import React, { Fragment, useState, useEffect } from "react";
 import Modal from "../../../../components/Modal";
 import { db } from "../../../../config/firebase-config";
-import { collection, getDocs, addDoc, getDoc,deleteDoc,doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, getDoc, deleteDoc, doc } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
+import AddButton from "../../../../components/addButton";
+import SearchBar from "../../../../components/searchBar";
 
 export default function Cashflows() {
     const navigate = useNavigate();
@@ -64,6 +66,7 @@ export default function Cashflows() {
                 created_at: new Date(),
                 description: cashflowDescription,
                 year: cashflowYear,
+                selectedPeriod: '',
             });
 
             const docSnapshot = await getDoc(docRef);
@@ -121,52 +124,23 @@ export default function Cashflows() {
                 </div>
             )}
 
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
+            <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
+
+                    <div class="flex space-x-4">
+                        <SearchBar
+                            placeholder="Search..."
+
+                        />
+                        <AddButton
+                            onClick={() => setShowModal(true)}
+                            label="GENERATE CASHFLOW"
+                        />
+                    </div>
+
                 </div>
-                {/* Buttons */}
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
-                        <li className="me-2" role="presentation">
-                            <button
-                                className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                                id="profile-styled-tab"
-                                type="button"
-                                role="tab"
-                                aria-controls="profile"
-                                aria-selected="false"
-
-                            >
-                                Cashflows
-                            </button>
-                        </li>
-                        <li className="me-2" role="presentation">
-                            <button
-                                className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                                id="profile-styled-tab"
-                                type="button"
-                                role="tab"
-                                aria-controls="profile"
-                                aria-selected="false"
-                                onClick={()=>navigate('/main/cashflowStatement/generatedReports')}
-                            >
-                                Generated Reports
-                            </button>
-                        </li>
-                        <li className="ml-auto">
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-                            >
-                                + ADD CASHFLOW STATEMENT
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-
-                <hr className="border-t border-[#7694D4] my-4" />
-
+                <hr className="border-t border-[#7694D4] my-2" />
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -181,7 +155,7 @@ export default function Cashflows() {
                                 <tr
                                     className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                                     key={cashflow.id}
-                                    onClick={()=> navigate(`/main/cashflowStatement/cashflows/${cashflow.id}`)}
+                                    onClick={() => navigate(`/main/cashflowStatement/cashflows/${cashflow.id}`)}
                                 >
                                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {cashflow.description || ''}
