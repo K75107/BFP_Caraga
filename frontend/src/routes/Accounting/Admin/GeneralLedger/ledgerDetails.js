@@ -757,7 +757,7 @@ export default function LedgerDetails() {
 
 
       {/*TABLE*/}
-      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+      <div className="relative overflow-x-auto shadow-md sm:rounded-lg bg-blue-50">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400 sticky">
             <tr>
@@ -813,7 +813,7 @@ export default function LedgerDetails() {
 
                   return (
                     <Fragment key={accountTitle.id}>
-                      <tr className=" text-[12px] bg-white border-b w-full font-bold"
+                      <tr className=" text-[12px] bg-white border-b w-full font-bold bg-blue-50"
                         onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
                       >
                         <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
