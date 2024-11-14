@@ -715,26 +715,37 @@ export default function LedgerDetails() {
               dismissOnClick={false}
               inline={true}
               arrowIcon={false} // Disabled default arrow icon
-              className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+              className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
             >
-              <div className="p-3">
-                <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                  Category
-                </h6>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <Checkbox id="apple" label="Apple (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="fitbit" label="Fitbit (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="dell" label="Dell (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="asus" label="Asus (97)" defaultChecked={true} />
-                  </li>
-                </ul>
+              <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                Filter by Date
+              </h6>
+              <hr className="border-t bordergray-50 my-1" />
+
+              <div className="px-3 py-1 flex flex-row justify-between">
+                <div className='px-3 py-1'>
+                  <h6 className="mb-2 text-xs text-gray-700 dark:text-white text-left font-medium">
+                    Start Date
+                  </h6>
+                  <DatePicker
+                    // selected={selectedDate}
+                    // onChange={(date) => setSelectedDate(date)}
+                    placeholderText="mm/dd/yyyy"
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"  // Apply custom styling class
+                  />
+                </div>
+                <div className='px-3 py-1'>
+                  <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
+                    End Date
+                  </h6>
+                  <DatePicker
+                    // selected={selectedDate}
+                    // onChange={(date) => setSelectedDate(date)}
+                    placeholderText="mm/dd/yyyy"
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"  // Apply custom styling class
+                  />
+                </div>
+
               </div>
             </Dropdown>
 
@@ -802,7 +813,7 @@ export default function LedgerDetails() {
 
                   return (
                     <Fragment key={accountTitle.id}>
-                      <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 font-bold"
+                      <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700  font-bold"
                         onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
                       >
                         <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
@@ -848,7 +859,7 @@ export default function LedgerDetails() {
                                   placeholderText="Select date"
                                   onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
                                   autoFocus
-                                  style ={{fontSize: '12px'}}
+                                  style={{ fontSize: '12px' }}
                                 />
                               ) : (
                                 <span
