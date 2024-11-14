@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import SearchBar from '../../../../components/searchBar';
 import FilterButton from '../../../../components/filterButton';
+import AddButton from '../../../../components/addButton';
+import { CiFilter } from "react-icons/ci";
 
 export default function LedgerDetails() {
 
@@ -680,278 +682,268 @@ export default function LedgerDetails() {
         </ol>
       </nav>
       {/**Breadcrumbs */}
-      
-      <div className="flex flex-col items-center justify-between p-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
 
-        <SearchBar
-          placeholder="Search Account Title"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          listSource={filteredAccountTitles}
-        />
+      <div className="flex justify-between w-full">
+        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{ledgerDescription}</h1>
+        <div class="flex space-x-4">
+          <SearchBar
+            placeholder="Search Account Title"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            listSource={filteredAccountTitles}
+          />
 
-      <FilterButton/>
+
+          <AddButton
+            label={"ADD ACCOUNT"}
+            onClick={() => setShowModal(true)}
+          />
+
+          {/* Buttons and Dropdowns */}
+          <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
 
-        {/* Buttons and Dropdowns */}
-        <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
-          {/* Add Product Button */}
-          <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium" onClick={() => setShowModal(true)}>+ ADD ACCOUNT</button>
-
-          {/* Actions Dropdown */}
-          <Dropdown
-            label={
-              <div className="flex items-center">
-                <span className="mr-2">Actions</span>
-                <BsChevronDown className="w-4 h-4" /> {/* Chevron Down Icon */}
+            {/* Filter Dropdown */}
+            <Dropdown
+              label={
+                <div className="flex items-center py-2 px-4 text-xs h-10 ring-1 ring-blue-600 text-blue-600 rounded-full hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 transition">
+                  <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
+                  <span className="mr-2">Filter</span>
+                  <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                </div>
+              }
+              dismissOnClick={false}
+              inline={true}
+              arrowIcon={false} // Disabled default arrow icon
+              className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+            >
+              <div className="p-3">
+                <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                  Category
+                </h6>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <Checkbox id="apple" label="Apple (56)" defaultChecked={false} />
+                  </li>
+                  <li className="flex items-center">
+                    <Checkbox id="fitbit" label="Fitbit (56)" defaultChecked={false} />
+                  </li>
+                  <li className="flex items-center">
+                    <Checkbox id="dell" label="Dell (56)" defaultChecked={false} />
+                  </li>
+                  <li className="flex items-center">
+                    <Checkbox id="asus" label="Asus (97)" defaultChecked={true} />
+                  </li>
+                </ul>
               </div>
-            }
-            dismissOnClick={false}
-            inline={true}
-            arrowIcon={false} // Disabled default arrow icon
-            className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            <Dropdown.Item>Mass Edit</Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Item>Delete all</Dropdown.Item>
-          </Dropdown>
+            </Dropdown>
 
-          {/* Filter Dropdown */}
-          <Dropdown
-            label={
-              <div className="flex items-center">
-                <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
-                <span className="mr-2">Filter</span>
-                <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
-              </div>
-            }
-            dismissOnClick={false}
-            inline={true}
-            arrowIcon={false} // Disabled default arrow icon
-            className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            <div className="p-3">
-              <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                Category
-              </h6>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center">
-                  <Checkbox id="apple" label="Apple (56)" defaultChecked={false} />
-                </li>
-                <li className="flex items-center">
-                  <Checkbox id="fitbit" label="Fitbit (56)" defaultChecked={false} />
-                </li>
-                <li className="flex items-center">
-                  <Checkbox id="dell" label="Dell (56)" defaultChecked={false} />
-                </li>
-                <li className="flex items-center">
-                  <Checkbox id="asus" label="Asus (97)" defaultChecked={true} />
-                </li>
-              </ul>
-            </div>
-          </Dropdown>
-
+          </div>
         </div>
       </div>
 
-      <hr className="border-t border-[#7694D4] mt-1 mb-6" />
+      <hr className="border-t border-[#7694D4] my-2" />
+
 
       {/*TABLE*/}
-      <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
-          <tr>
+      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
+            <tr>
 
-            <th scope="col" className="px-2 py-3 w-72">ACCOUNT TITLE</th>
-            <th scope="col" className="px-2 py-3 w-48">ACCOUNT CODE</th>
-            <th scope="col" className="px-2 py-3 w-32">DATE</th>
-            <th scope="col" className="px-2 py-3 w-80">PARTICULARS</th>
-            <th scope="col" className="px-2 py-3 w-48">DEBIT</th>
-            <th scope="col" className="px-2 py-3 w-48">CREDIT</th>
-            <th scope="col" className="px-2 py-3 w-48 text-center">BALANCE</th>
-            <th scope="col" className=" w-[20px] "></th>
+              <th scope="col" className="px-6 py-3 w-72 ">ACCOUNT TITLE</th>
+              <th scope="col" className="px-6 py-3 w-48">ACCOUNT CODE</th>
+              <th scope="col" className="px-6 py-3 w-32">DATE</th>
+              <th scope="col" className="px-6 py-3 w-80">PARTICULARS</th>
+              <th scope="col" className="px-6 py-3 w-48">DEBIT</th>
+              <th scope="col" className="px-6 py-3 w-48">CREDIT</th>
+              <th scope="col" className="px-6 py-3 w-48 text-center">BALANCE</th>
+              <th scope="col" className=" w-[20px] "></th>
 
-          </tr>
-        </thead>
-      </table>
-      <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-        <table className="w-full">
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="7" className="text-center py-6">
-                  <div className="flex justify-center items-center h-96">
-                    <div role="status">
-                      <svg
-                        aria-hidden="true"
-                        className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-                        viewBox="0 0 100 101"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                          fill="currentColor"
-                        />
-                        <path
-                          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                          fill="currentFill"
-                        />
-                      </svg>
-                      <span className="sr-only">Loading...</span>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredAccountTitles.map((accountTitle) => {
-                let runningBalance = 0;
-
-                const finalRunningBalance = accountsData[accountTitle.id]?.reduce((balance, account) => {
-                  return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
-                }, 0);
-
-                return (
-                  <Fragment key={accountTitle.id}>
-                    <tr className="bg-gray-100 font-bold text-[12px] w-full"
-                      onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
-                    >
-                      <td className="table-cell px-2 py-3 w-72">{accountTitle.accountTitle}</td>
-                      <td className="table-cell px-2 py-3 w-48">{accountTitle.accountCode}</td>
-                      <td className="table-cell px-2 py-3 w-32"></td>
-                      <td className="table-cell px-2 py-3 w-80"></td>
-                      <td className="table-cell px-2 py-3 w-48"></td>
-                      <td className="table-cell px-2 py-3 w-48"></td>
-                      <td className="table-cell px-2 py-3 w-[20px] text-center">
-                        {formatBalance(finalRunningBalance)}
-                      </td>
-                    </tr>
-
-                    {accountsData[accountTitle.id]?.map((account) => {
-                      runningBalance = calculateBalance(
-                        accountTitle.accountType,
-                        account.debit,
-                        account.credit,
-                        runningBalance
-                      );
-
-                      return (
-                        <tr
-                          key={account.id}
-                          onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
-                          onMouseEnter={() => {
-                            setHoveredRowId(account.id);
-                            handleHoverData(account, accountTitle);
-                          }}
-                          onMouseLeave={() => setHoveredRowId(null)}
-                          className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                        >
-                          <td className="px-6 py-5 w-72"></td>
-                          <td className="px-6 py-5 w-48"></td>
-
-                          <td className="px-2 py-2 w-32 h-6 text-[12px]">
-                            {editingCell === account.id && editValue.field === 'date' ? (
-                              <DatePicker
-                                selected={editValue.value ? new Date(editValue.value) : null}
-                                onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
-                                dateFormat="yyyy-MM-dd"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2"
-                                placeholderText="Select date"
-                                onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1"
-                              >
-                                {account.date || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-2 w-80 h-6">
-                            {editingCell === account.id && editValue.field === 'particulars' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                              >
-                                {account.particulars || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-2 w-48 h-6">
-                            {editingCell === account.id && editValue.field === 'debit' ? (
-                              <input
-                                type="number"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                              >
-                                {formatNumber(account.debit) || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-2 w-48 h-6">
-                            {editingCell === account.id && editValue.field === 'credit' ? (
-                              <input
-                                type="number"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 py-1"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-8 px-2 py-1"
-                              >
-                                {formatNumber(account.credit) || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-4 text-center w-48">
-                            {formatBalance(runningBalance) || '-'}
-                          </td>
-
-                          <td className="px-2 py-5 w-0 relative z-10">
-                            {hoveredRowId === account.id && (
-                              <button
-                                className="absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                onClick={handleAddRowBelow}
-                              >
-                                <IoMdAddCircleOutline />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </Fragment>
-                );
-              })
-            )}
-          </tbody>
+            </tr>
+          </thead>
         </table>
+        <div className="w-full overflow-y-scroll h-[calc(96vh-200px)]">
+          <table className="w-full">
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-6">
+                    <div className="flex justify-center items-center h-96">
+                      <div role="status">
+                        <svg
+                          aria-hidden="true"
+                          className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                          viewBox="0 0 100 101"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                            fill="currentFill"
+                          />
+                        </svg>
+                        <span className="sr-only">Loading...</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredAccountTitles.map((accountTitle) => {
+                  let runningBalance = 0;
+
+                  const finalRunningBalance = accountsData[accountTitle.id]?.reduce((balance, account) => {
+                    return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
+                  }, 0);
+
+                  return (
+                    <Fragment key={accountTitle.id}>
+                      <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 font-bold"
+                        onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
+                      >
+                        <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
+                        <td className="table-cell px-6 py-3 w-48">{accountTitle.accountCode}</td>
+                        <td className="table-cell px-6 py-3 w-32"></td>
+                        <td className="table-cell px-6 py-3 w-80"></td>
+                        <td className="table-cell px-6 py-3 w-48"></td>
+                        <td className="table-cell px-6 py-3 w-48"></td>
+                        <td className="table-cell px-6 py-3 w-[20px] text-center">
+                          {formatBalance(finalRunningBalance)}
+                        </td>
+                      </tr>
+
+                      {accountsData[accountTitle.id]?.map((account) => {
+                        runningBalance = calculateBalance(
+                          accountTitle.accountType,
+                          account.debit,
+                          account.credit,
+                          runningBalance
+                        );
+
+                        return (
+                          <tr
+                            key={account.id}
+                            onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
+                            onMouseEnter={() => {
+                              setHoveredRowId(account.id);
+                              handleHoverData(account, accountTitle);
+                            }}
+                            onMouseLeave={() => setHoveredRowId(null)}
+                            className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                          >
+                            <td className="px-6 py-2 w-72"></td>
+                            <td className="px-6 py-2 w-48"></td>
+
+                            <td className="px-2 py-2 w-32 h-6 text-[12px]">
+                              {editingCell === account.id && editValue.field === 'date' ? (
+                                <DatePicker
+                                  selected={editValue.value ? new Date(editValue.value) : null}
+                                  onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
+                                  dateFormat="yyyy-MM-dd"
+                                  className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
+                                  placeholderText="Select date"
+                                  onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
+                                  autoFocus
+                                  style ={{fontSize: '12px'}}
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
+                                  className="block border border-gray-300 hover:bg-gray-100 h-full w-full px-2 py-2"
+                                >
+                                  {account.date || '-'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 py-2 w-80 h-6">
+                              {editingCell === account.id && editValue.field === 'particulars' ? (
+                                <input
+                                  type="text"
+                                  className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
+                                  value={editValue.value}
+                                  onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                  onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
+                                  className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                >
+                                  {account.particulars || '-'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 py-2 w-48 h-6">
+                              {editingCell === account.id && editValue.field === 'debit' ? (
+                                <input
+                                  type="number"
+                                  className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2 py-2"
+                                  value={editValue.value}
+                                  onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
+                                  onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
+                                  className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                >
+                                  {formatNumber(account.debit) || '-'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 py-2 w-48 h-6">
+                              {editingCell === account.id && editValue.field === 'credit' ? (
+                                <input
+                                  type="number"
+                                  className=" text-[12px] border border-gray-400 focus:outline-none w-full px-2 h-8"
+                                  value={editValue.value}
+                                  onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
+                                  onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
+                                  className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                >
+                                  {formatNumber(account.credit) || '-'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-2 py-4 text-center w-48">
+                              {formatBalance(runningBalance) || '-'}
+                            </td>
+
+                            <td className="px-2 py-6 w-0 relative z-10">
+                              {hoveredRowId === account.id && (
+                                <button
+                                  className=" absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                  onClick={handleAddRowBelow}
+                                >
+                                  <IoMdAddCircleOutline />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
 
