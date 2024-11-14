@@ -13,6 +13,7 @@ import { debounce } from 'lodash'; // Import debounce
 import { useNavigate } from 'react-router-dom';
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import SearchBar from '../../../../components/searchBar';
+import FilterButton from '../../../../components/filterButton';
 
 export default function LedgerDetails() {
 
@@ -689,6 +690,7 @@ export default function LedgerDetails() {
           listSource={filteredAccountTitles}
         />
 
+      <FilterButton/>
 
 
         {/* Buttons and Dropdowns */}
