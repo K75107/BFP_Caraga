@@ -291,10 +291,10 @@ export default function FirestationReports() {
 
             <div className="flex flex-row">
                 <div className="grow bg-white">
-                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                    <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                         <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
                             <table className="w-full text-left text-black-700 ">
-                                <thead className="text-[12px] uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400">
+                                <thead className="text-[12px] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>
                                         <th scope="col" className="px-2 py-3 w-[120px]">Province</th>
                                         <th scope="col" className="px-2 py-3 w-[120px]">Firestation</th>
