@@ -15,7 +15,6 @@ import {
 } from "firebase/firestore";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import AddButton from "../../../../components/addButton";
-import SearchBar from "../../../../components/searchBar";
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -167,10 +166,6 @@ export default function IncomeStatementList() {
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Income Statement</h1>
                 <div class="flex space-x-4">
-                    <SearchBar
-                        placeholder="Search..."
-
-                    />
                     <AddButton
                         onClick={() => {
                             setCurrentModal(1);

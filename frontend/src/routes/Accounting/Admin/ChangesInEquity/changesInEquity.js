@@ -5,7 +5,6 @@ import { collection, getDocs, addDoc, getDoc,deleteDoc,doc, onSnapshot } from "f
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import { setYear } from "date-fns";
-import SearchBar from "../../../../components/searchBar";
 import AddButton from "../../../../components/addButton";
 
 export default function ChangesInEquity() {
@@ -150,10 +149,6 @@ export default function ChangesInEquity() {
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes in Equity</h1>
                     <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search..."
-
-                        />
                         <AddButton
                             onClick={() => setShowModal(true)}
                             label="GENERATE CHANGES IN EQUITY"

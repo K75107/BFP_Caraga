@@ -8,7 +8,6 @@ import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import AddButton from "../../../../components/addButton";
-import SearchBar from "../../../../components/searchBar";
 
 
 export default function LedgerList() {
@@ -167,9 +166,6 @@ export default function LedgerList() {
 
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
                 <div class="flex space-x-4">
-                    <SearchBar
-                        placeholder="Search..."
-                    />
 
                     <AddButton
                         onClick={() => setShowModal(true)}
