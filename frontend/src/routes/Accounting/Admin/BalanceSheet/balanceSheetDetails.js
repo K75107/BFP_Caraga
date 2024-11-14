@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from "react";
+import React, { Fragment, useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
@@ -8,6 +8,8 @@ import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuc
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import { UseLedgerData } from './balanceSheetContext';
 import { BalanceSheetPeriodProvider } from './balanceSheetContext';
+import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
+import { IoIosSearch } from "react-icons/io";
 
 
 export default function BalanceSheet() {
@@ -22,7 +24,7 @@ export default function BalanceSheet() {
     const [currentModal, setCurrentModal] = useState(1); // Modal state
     const [showModal, setShowModal] = useState(false);
 
-    const [selectedLedger, setSelectedLedger] = useState([]);
+    const [selectedLedger, setSelectedLedger] = useState("");
     const [balanceSheetLedgerList, setBalanceSheetLedgerList] = useState([]);
 
     const location = useLocation();
@@ -31,12 +33,17 @@ export default function BalanceSheet() {
 
     const [stateStartDate, setStateStartDate] = useState(null);
     const [stateEndDate, setStateEndDate] = useState(null);
+
+    const [showRightClickModal, setShowRightClickModal] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
     // const [showPeriodColumn, setShowPeriodColumn] = useState(false);
 
-    const [isClicked, setIsClicked] = useState(false);
+
     const {
         accountTitlesPeriod, updateAccountTitlesPeriod,
         accountsPeriod, updateAccountsPeriod,
@@ -58,6 +65,115 @@ export default function BalanceSheet() {
 
     // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
     // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
+
+    const [isClicked, setIsClicked] = useState(false);
+    const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
+    const [secondSubcategoryModal, setSecondSubcategoryModal] = useState(false);
+    const [thirdSubcategoryModal, setThirdSubcategoryModal] = useState(false);
+    const [selectParentCategory, setSelectParentCategory] = useState(["Assets", "Liabilities", "Equity"]);
+    const [subcategory, setSubcategory] = useState([]);
+    const [currentSelection, setCurrentSelection] = useState("");
+
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const handleSearchChange = (e) => setSearchTerm(e.target.value);
+
+    const [checkedAccounts, setCheckedAccounts] = useState(new Set());
+    const handleCheckboxChange = (accountTitle) => {
+        setCheckedAccounts((prev) => {
+            const updatedCheckedAccounts = new Set(prev);
+            if (!updatedCheckedAccounts.has(accountTitle)) {
+                updatedCheckedAccounts.delete(accountTitle);
+                updatedCheckedAccounts.add(accountTitle);
+            } else {
+                updatedCheckedAccounts.add(accountTitle);
+                updatedCheckedAccounts.delete(accountTitle);
+            }
+            return updatedCheckedAccounts;
+        });
+    };
+
+    const [selectedAccounts, setSelectedAccounts] = useState([]);
+    const handleConfirm = () => {
+        const selected = Array.from(checkedAccounts); // Convert Set to array
+        setSelectedAccounts(prevSelected => [...prevSelected, ...selected]); // Append new selections
+        console.log("Selected Accounts for Categorization:", selected);
+
+        setCheckedAccounts(new Set());
+    };
+
+    // Function to dynamically filter accounts based on updated data
+    const getFilteredAccounts = () => {
+        return accountTitles
+            .filter(account => ["Assets", "Liabilities", "Equity", "Contra Assets"].includes(account.accountType))
+            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude already selected accounts
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle));
+    };
+
+
+    const [subcategories, setSubcategories] = useState([]);
+    const addSubcategory = (newName, newParentCategory, newSelectedAccounts = []) => {
+        // Ensure newSelectedAccounts is always an array
+        const accountTitlesArray = Array.isArray(newSelectedAccounts)
+            ? newSelectedAccounts
+            : Array.from(newSelectedAccounts || []); // Fallback to empty array if null or undefined
+
+        setSubcategories(prevSubcategories => [
+            ...prevSubcategories,
+            {
+                subcategoryName: newName,
+                parentCategory: newParentCategory,
+                accountTitles: accountTitlesArray
+            }
+        ]);
+    };
+
+
+
+    // console.log("Data of selectParentCategory: ", selectParentCategory);
+    // console.log("Data of currentSelection: ", currentSelection);
+    // console.log("Data of Selected Accounts", selectedAccounts);
+    // console.log("Data of Checked Accounts Array", checkedAccounts);
+    // console.log("Data of filteredAccounts", getFilteredAccounts);
+    // console.log("Data of subcategories", subcategories);
+
+
+    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+
+    const handleRightClick = useCallback((event, item) => {
+        event.preventDefault();
+        setModalPosition({ x: event.clientX, y: event.clientY });
+        setSelectedSubcategory(item.name);
+        setShowRightClickModal(true);
+    }, []);
+    
+
+    const handleDeleteRow = (subcategoryName) => {
+        // Get the names of deleted subcategories and removed accounts
+        const { removedSubcategoryNames, removedAccountTitles } = deleteSubcategoryAndDescendants(subcategoryName, subcategories);
+
+        // Update `selectedAccounts` to reflect removed accounts
+        const updatedSelectedAccounts = selectedAccounts.filter(
+            account => !removedAccountTitles.includes(account)
+        );
+        setSelectedAccounts(updatedSelectedAccounts);
+
+        // Update `selectParentCategory` to remove all deleted subcategories
+        const updatedParentCategories = selectParentCategory.filter(
+            category => !removedSubcategoryNames.includes(category)
+        );
+        setSelectParentCategory(updatedParentCategories);
+    };
+
+
+    const closeModalOnOutsideClick = () => {
+        setShowRightClickModal(false);
+        setSelectedSubcategory(null);
+    };
+
 
     // Spinner Component
     const Spinner = () => (
@@ -85,55 +201,129 @@ export default function BalanceSheet() {
     );
 
     // ---------Fetching ledger list from the Firestore-----------------
-    const getLedgerList = async () => {
-        try {
-            const data = await getDocs(collection(db, "ledger"));
-            const filteredData = data.docs.map((doc) => ({
-                ...doc.data(),
-                id: doc.id,
-            }));
-            setBalanceSheetLedgerList(filteredData);
-        } catch (err) {
-            console.error("Error fetching ledger data:", err);
-        }
-    };
+    useEffect(() => {
+        const getLedgerList = async () => {
+            try {
+                const data = await getDocs(collection(db, "ledger"));
+                const filteredData = data.docs.map((doc) => ({
+                    ...doc.data(),
+                    id: doc.id,
+                }));
+                setBalanceSheetLedgerList(filteredData);
+            } catch (err) {
+                console.error("Error fetching ledger data:", err);
+            }
+        };
+
+        getLedgerList();
+    }, []); // No dependencies for getLedgerList, so it only runs once on mount
     // -----------------------------------------------------------------
 
     // Fetch the balance sheet description and its associated ledger year
-    const getBalanceSheetDescription = async () => {
-        try {
-            const docRef = doc(db, "balancesheet", balanceSheetID); // Reference to the balance sheet document
-            const docSnap = await getDoc(docRef); // Get the document snapshot
+    useEffect(() => {
+        const getBalanceSheetDescription = async () => {
+            try {
+                const docRef = doc(db, "balancesheet", balanceSheetID); // Reference to the balance sheet document
+                const docSnap = await getDoc(docRef); // Get the document snapshot
 
-            if (docSnap.exists()) {
-                const balanceSheetData = { id: docSnap.id, ...docSnap.data() };
+                if (docSnap.exists()) {
+                    const balanceSheetData = { id: docSnap.id, ...docSnap.data() };
 
-                // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
-                const convertToLocalDate = (timestamp) => {
-                    const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JavaScript Date
-                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000); // Adjust to local timezone
-                    return localDate.toISOString().split("T")[0]; // Convert to "yyyy-mm-dd" format
-                };
+                    const convertToLocalDate = (timestamp) => {
+                        const date = new Date(timestamp.seconds * 1000);
+                        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                        return localDate.toISOString().split("T")[0];
+                    };
 
-                const startDate = convertToLocalDate(balanceSheetData.start_date);
-                const endDate = convertToLocalDate(balanceSheetData.end_date);
+                    const startDate = convertToLocalDate(balanceSheetData.start_date);
+                    const endDate = convertToLocalDate(balanceSheetData.end_date);
 
-                // Set dates in the component's state
-                setStateStartDate(startDate);
-                setStateEndDate(endDate);
+                    setStateStartDate(startDate);
+                    setStateEndDate(endDate);
 
+                    if (balanceSheetData.ledgerID) {
+                        const ledgerRef = doc(db, "ledger", balanceSheetData.ledgerID);
+                        const ledgerSnap = await getDoc(ledgerRef);
 
-                // Check if ledgerID exists in the balance sheet
-                if (balanceSheetData.ledgerID) {
-                    // Fetch the associated ledger document
-                    const ledgerRef = doc(db, "ledger", balanceSheetData.ledgerID);
+                        if (ledgerSnap.exists()) {
+                            balanceSheetData.ledgerYear = ledgerSnap.data().year;
+
+                            const accountTitlesRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles");
+                            const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                            const accountTitlesData = [];
+                            const accountsData = [];
+
+                            for (const titleDoc of accountTitlesSnap.docs) {
+                                const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                                const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
+                                let accountsQuery = query(
+                                    accountsRef,
+                                    where("date", ">=", startDate),
+                                    where("date", "<=", endDate)
+                                );
+                                const accountsSnap = await getDocs(accountsQuery);
+
+                                if (!accountsSnap.empty) {
+                                    let totalDebit = 0;
+                                    let totalCredit = 0;
+
+                                    const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                        const accountData = {
+                                            id: accountDoc.id,
+                                            accountTitleID: titleDoc.id,
+                                            ...accountDoc.data(),
+                                        };
+
+                                        totalDebit += parseFloat(accountData.debit) || 0;
+                                        totalCredit += parseFloat(accountData.credit) || 0;
+
+                                        return accountData;
+                                    });
+
+                                    titleData.difference = totalDebit - totalCredit;
+                                    titleData.differenceContra = totalCredit - totalDebit;
+
+                                    accountTitlesData.push(titleData);
+                                    accountsData.push(...titleAccounts);
+                                }
+                            }
+
+                            setAccountTitles(accountTitlesData);
+                            setAccounts(accountsData);
+                        } else {
+                            balanceSheetData.ledgerYear = "N/A";
+                        }
+                    }
+
+                    setBalanceSheet(balanceSheetData);
+                } else {
+                    setError("No balance sheet found.");
+                }
+            } catch (err) {
+                console.error("Error fetching balance sheet data:", err);
+                setError("Error fetching balance sheet data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        getBalanceSheetDescription();
+    }, [balanceSheetID]);
+
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+    useEffect(() => {
+        const getSelectedLedgerData = async () => {
+            try {
+                if (selectedLedger) {
+                    const ledgerRef = doc(db, "ledger", selectedLedger);
                     const ledgerSnap = await getDoc(ledgerRef);
 
                     if (ledgerSnap.exists()) {
-                        balanceSheetData.ledgerYear = ledgerSnap.data().year; // Attach year from ledger
+                        const ledgerYear = ledgerSnap.data().year;
 
-                        // Fetch account titles from the ledger
-                        const accountTitlesRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles");
+                        const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
                         const accountTitlesSnap = await getDocs(accountTitlesRef);
 
                         const accountTitlesData = [];
@@ -142,146 +332,82 @@ export default function BalanceSheet() {
                         for (const titleDoc of accountTitlesSnap.docs) {
                             const titleData = { id: titleDoc.id, ...titleDoc.data() };
 
-                            // Fetch accounts subcollection for each account title
-                            const accountsRef = collection(db, "ledger", balanceSheetData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            let accountsQuery = query(
+                            const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                            const accountsQuery = query(
                                 accountsRef,
-                                where("date", ">=", startDate),   // Filter by start_date
-                                where("date", "<=", endDate)      // Filter by end_date
+                                where("date", ">=", stateStartDate),
+                                where("date", "<=", stateEndDate)
                             );
                             const accountsSnap = await getDocs(accountsQuery);
 
-                            // Only proceed if there are accounts within the date range
                             if (!accountsSnap.empty) {
-                                // Initialize sums for debit and credit
-                                let totalDebit = 0;
-                                let totalCredit = 0;
+                                let totalDebit2 = 0;
+                                let totalCredit2 = 0;
 
                                 const titleAccounts = accountsSnap.docs.map(accountDoc => {
                                     const accountData = {
                                         id: accountDoc.id,
-                                        accountTitleID: titleDoc.id, // Link to the account title ID
+                                        accountTitleID: titleDoc.id,
                                         ...accountDoc.data(),
                                     };
 
-                                    totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                    totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+                                    totalDebit2 += parseFloat(accountData.debit) || 0;
+                                    totalCredit2 += parseFloat(accountData.credit) || 0;
 
                                     return accountData;
                                 });
 
-                                // After processing all account documents, you can attach the difference (debit - credit) to the account title
-                                titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
-                                titleData.differenceContra = totalCredit - totalDebit;
+                                titleData.difference2 = totalDebit2 - totalCredit2;
+                                titleData.differenceContra2 = totalCredit2 - totalDebit2;
 
-                                // Continue to add this account title to the list
-                                accountTitlesData.push(titleData);  // Add account title to state
-
-                                // Add accounts to a separate state for accounts
+                                accountTitlesData.push(titleData);
                                 accountsData.push(...titleAccounts);
                             }
                         }
 
-                        setAccountTitles(accountTitlesData); // Set account titles
-                        setAccounts(accountsData); // Set accounts separately
-
+                        setAccountTitlesPeriod(accountTitlesData);
+                        setAccountsPeriod(accountsData);
+                        setSelectedLedgerYear(ledgerYear);
                     } else {
-                        balanceSheetData.ledgerYear = "N/A"; // Handle missing ledger case
+                        console.error("Selected ledger not found.");
                     }
                 }
-
-                setBalanceSheet(balanceSheetData); // Set balance sheet data with ledger year
-            } else {
-                setError("No balance sheet found.");
+            } catch (error) {
+                console.error("Error fetching selected ledger data:", error);
             }
-        } catch (err) {
-            console.error("Error fetching balance sheet data:", err);
-            setError("Error fetching balance sheet data.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
-    const getSelectedLedgerData = async () => {
-        try {
-            if (selectedLedger) {
-                // Fetch the associated ledger document using the selectedLedgerID
-                const ledgerRef = doc(db, "ledger", selectedLedger);
-                const ledgerSnap = await getDoc(ledgerRef);
-
-                if (ledgerSnap.exists()) {
-                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
-
-                    // Fetch account titles from the selected ledger
-                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
-                    const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                    const accountTitlesData = [];
-                    const accountsData = [];
-
-                    for (const titleDoc of accountTitlesSnap.docs) {
-                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                        // Fetch accounts subcollection for each account title
-                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
-                        const accountsQuery = query(
-                            accountsRef,
-                            where("date", ">=", stateStartDate),   // Filter by start_date
-                            where("date", "<=", stateEndDate)      // Filter by end_date
-                        );
-                        const accountsSnap = await getDocs(accountsQuery);
-
-                        // Only proceed if there are accounts within the date range
-                        if (!accountsSnap.empty) {
-                            // Initialize sums for debit and credit
-                            let totalDebit2 = 0;
-                            let totalCredit2 = 0;
-
-                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                const accountData = {
-                                    id: accountDoc.id,
-                                    accountTitleID: titleDoc.id, // Link to the account title ID
-                                    ...accountDoc.data(),
-                                };
-
-                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
-
-                                return accountData;
-                            });
-
-                            // Attach the difference (debit - credit) to the account title
-                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
-                            titleData.differenceContra2 = totalCredit2 - totalDebit2;
-
-                            // Add account title and accounts data to their respective arrays
-                            accountTitlesData.push(titleData);  // Add account title to the list
-                            accountsData.push(...titleAccounts);  // Add account data to the list
-                        }
-                    }
-
-                    // Update the state with the fetched data
-                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
-                    setAccountsPeriod(accountsData); // Set accounts separately
-
-                    // Optionally, if you want to show the year
-                    setSelectedLedgerYear(ledgerYear);
-                } else {
-                    console.error("Selected ledger not found.");
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching selected ledger data:", error);
-        }
-    };
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
-
-    useEffect(() => {
-        getBalanceSheetDescription();
-        getLedgerList();
         getSelectedLedgerData();
-    }, [balanceSheetID, selectedLedger]);
+    }, [selectedLedger, stateStartDate, stateEndDate]); // Triggered by selectedLedger, stateStartDate, and stateEndDate
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
+    // useEffect(() => {
+    //     if (!showRightClickModal) {
+    //         // Fetch data when balanceSheetID or selectedLedger changes
+    //         getBalanceSheetDescription();
+    //         getLedgerList();
+    //         getSelectedLedgerData();
+    //     }
+
+    //     // Display success message if loading is complete and there's a success message in location.state
+    //     if (!loading && location.state?.successMessage) {
+    //         setSuccessMessage(location.state.successMessage);
+    //         setIsSuccess(true);
+
+    //         const timer = setTimeout(() => {
+    //             setIsSuccess(false);
+    //         }, 2000);
+
+    //         // Clear timeout when the effect cleans up
+    //         return () => clearTimeout(timer);
+    //     }
+    // }, [balanceSheetID, selectedLedger, loading, location.state, showRightClickModal]);
+
+    // useEffect(() => {
+    //     getBalanceSheetDescription();
+    //     getLedgerList();
+    //     getSelectedLedgerData();
+    // }, [balanceSheetID, selectedLedger]);
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -389,29 +515,191 @@ export default function BalanceSheet() {
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
 
-    // Data structure for balance sheet 
-    const balanceSheetDetailsData = [
-        {
-            name: "Assets",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Assets" || accountTitle.accountType === "Contra Assets"
-                )
-                .sort((a, b) => {
-                    // Sort assets alphabetically, and move Contra Assets to the bottom
-                    if (a.accountType === "Assets" && b.accountType === "Contra Assets") {
-                        return -1;  // Keep "Assets" before "Contra Assets"
-                    } else if (a.accountType === "Contra Assets" && b.accountType === "Assets") {
-                        return 1;   // Move "Contra Assets" after "Assets"
-                    } else {
-                        return a.accountTitle.localeCompare(b.accountTitle);  // Sort alphabetically within the same type
-                    }
-                })
-                .map(accountTitle => {
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
+    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
+    const assetsAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
 
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Assets"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Assets");
+
+        return accountTitles
+            .filter(accountTitle =>
+                (accountTitle.accountType === "Assets" || accountTitle.accountType === "Contra Assets") &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => {
+                if (a.accountType === "Assets" && b.accountType === "Contra Assets") {
+                    return -1;
+                } else if (a.accountType === "Contra Assets" && b.accountType === "Assets") {
+                    return 1;
+                } else {
+                    return a.accountTitle.localeCompare(b.accountTitle);
+                }
+            })
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.accountType === "Contra Assets"
+                        ? accountTitle.differenceContra
+                        : accountTitle.difference,
+                    amount2: matchingPeriodAccount ? (
+                        accountTitle.accountType === "Contra Assets"
+                            ? matchingPeriodAccount.differenceContra2
+                            : matchingPeriodAccount.difference2
+                    ) : null
+                };
+            });
+    };
+    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
+
+    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
+    const liabilitiesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
+
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Liabilities"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Liabilities");
+
+        return accountTitles
+            .filter(accountTitle =>
+                accountTitle.accountType === "Liabilities" &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.differenceContra,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
+                };
+            });
+    };
+    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
+
+    // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
+    const equityAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
+
+            // Recursively accumulate account titles for each subcategory
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    // Add current subcategory's account titles
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    // Recursively add child subcategories' account titles
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Equity"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Equity");
+
+        return accountTitles
+            .filter(accountTitle =>
+                accountTitle.accountType === "Equity" &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.differenceContra,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
+                };
+            });
+    };
+    // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
+
+    // Recursive function to get nested subcategories
+    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
+        return subcategories
+            .filter(sub => sub.parentCategory === parentName)
+            .map(sub => ({
+                name: sub.subcategoryName,
+                children: [
+                    // Get account titles specific to this subcategory
+                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
+
+                    // Recursively add nested subcategories
+                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
+                ]
+            }));
+    };
+
+    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+    // Updated `subcategoriesAccountTitles` to use `parentCategory`
+    const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        const subcategoryAccountNames = subcategories
+            .flatMap(sub => sub.accountTitles || [])
+            .map(account => account);
+
+        return accountTitles
+            .filter(accountTitle =>
+                (accountTitle.accountType === "Assets" ||
+                    accountTitle.accountType === "Contra Assets" ||
+                    accountTitle.accountType === "Liabilities" ||
+                    accountTitle.accountType === "Equity") &&
+                subcategoryAccountNames.includes(accountTitle.accountTitle)
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                // Return structure based on accountType
+                if (accountTitle.accountType === "Liabilities" || accountTitle.accountType === "Equity") {
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.differenceContra,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
+                    };
+                } else if (accountTitle.accountType === "Assets" || accountTitle.accountType === "Contra Assets") {
                     return {
                         name: accountTitle.accountTitle,
                         amount: accountTitle.accountType === "Contra Assets"
@@ -423,55 +711,75 @@ export default function BalanceSheet() {
                                 : matchingPeriodAccount.difference2
                         ) : null
                     };
-                }),
+                }
+            });
+    };
+
+    const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
+        let removedSubcategoryNames = [subcategoryName]; // Start with the main subcategory
+        let removedAccountTitles = [];
+
+        const deleteRecursive = (parentCategory) => {
+            const index = subcategories.findIndex(sub => sub.subcategoryName === parentCategory);
+
+            if (index > -1) {
+                const subcategory = subcategories[index];
+                if (subcategory.accountTitles) {
+                    removedAccountTitles.push(...subcategory.accountTitles);
+                }
+
+                // Collect the name of the subcategory being deleted
+                removedSubcategoryNames.push(subcategory.subcategoryName);
+
+                // Remove the subcategory
+                subcategories.splice(index, 1);
+
+                // Recursively delete nested subcategories
+                subcategories
+                    .filter(sub => sub.parentCategory === parentCategory)
+                    .forEach(sub => deleteRecursive(sub.subcategoryName));
+            }
+        };
+
+        deleteRecursive(subcategoryName);
+
+        // Return both removed subcategory names and account titles
+        return { removedSubcategoryNames, removedAccountTitles };
+    };
+    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+
+    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
+    const balanceSheetDetailsData = [
+        {
+            name: "Assets",
+            children: [
+                ...getNestedSubcategories(subcategories, "Assets", accountTitles, currentAccountTitlesPeriod),
+                ...assetsAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
+
+            ],
             amount: totalAssets,
             amount2: totalAssets2 !== 0 ? totalAssets2 : null
         },
         {
             name: "Liabilities",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Liabilities"
-                )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
-                .map(accountTitle => {
-                    // Match by accountTitle with accountTitlesPeriod
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
-
-                    return {
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.differenceContra,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null // Display amount2 if it exists and if not the set to null
-                    };
-                }),
+            children: [
+                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
+                ...getNestedSubcategories(subcategories, "Liabilities", accountTitles, currentAccountTitlesPeriod)
+            ],
             amount: totalLiabilities,
-            amount2: totalLiabilities2 !== 0 ? totalLiabilities2 : null  // Display amount2 if it exists and if not the set to null
+            amount2: totalLiabilities2 !== 0 ? totalLiabilities2 : null
         },
         {
             name: "Equity",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Equity"
-                )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
-                .map(accountTitle => {
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
-
-                    return {
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.differenceContra,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
-                    };
-                }),
-            amount: totalEquity, // Display the updated equity (Assets - Liabilities + any Equity accounts)
+            children: [
+                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
+                ...getNestedSubcategories(subcategories, "Equity", accountTitles, currentAccountTitlesPeriod)
+            ],
+            amount: totalEquity,
             amount2: totalEquity2 !== 0 ? totalEquity2 : null
-        },
+        }
     ];
-
+    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
 
     // Group data for the cards
     const groupData = [
@@ -515,7 +823,7 @@ export default function BalanceSheet() {
     );
 
     // Recursive component to render rows
-    const Row = ({ item, depth = 0 }) => {
+    const Row = ({ item, depth = 0, handleRightClick }) => {
         const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
         // Helper function to format amounts with parentheses for negative or contra amounts
@@ -542,11 +850,17 @@ export default function BalanceSheet() {
 
         return (
             <>
-                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onContextMenu={(event) => handleRightClick(event, item)}
+                >
                     {/* Account name with indentation */}
                     <td
                         className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={() => {
+                            console.log("isOpen Status Before: ", !isOpen);
+                            setIsOpen(!isOpen);
+                            console.log("isOpen Status After: ", !isOpen);
+                        }}
                         style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
                     >
                         {item.children ? (
@@ -585,7 +899,7 @@ export default function BalanceSheet() {
                 {isOpen && item.children && (
                     <>
                         {item.children.map((childItem, index) => (
-                            <Row key={index} item={childItem} depth={depth + 1} /> // Increment depth for children
+                            <Row key={index} item={childItem} depth={depth + 1} handleRightClick={handleRightClick} /> // Increment depth for children
                         ))}
                     </>
                 )}
@@ -606,20 +920,20 @@ export default function BalanceSheet() {
                 </div>
             )}
             {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                    <li class="inline-flex items-center">
-                        <button onClick={() => navigate("/main/balanceSheet/balanceSheetList")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li className="inline-flex classNameitems-center">
+                        <button onClick={() => navigate("/main/balanceSheet/balanceSheetList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
                             <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
                             Balance Sheet
                         </button>
                     </li>
                     <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+                        <div className="flex items-center">
+                            <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
                             </svg>
-                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{balanceSheet.description}</span>
+                            <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{balanceSheet.description}</span>
                         </div>
                     </li>
                 </ol>
@@ -631,10 +945,15 @@ export default function BalanceSheet() {
                     {balanceSheet.description}
                 </h1>
                 <div className="flex space-x-4">
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
+                        onClick={() => setFirstSubcategoryModal(true)}
+                    >
+                        ADD SUBCATEGORY
+                    </button>
                     <button
-                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium border border-gray-400 ${isClicked
-                            ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
-                            : 'bg-white text-black hover:bg-color-lighter-gray'
+                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium ${isClicked
+                            ? 'bg-[#2196F3] text-white' //'border border-gray-400 bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
+                            : 'bg-[#2196F3] text-white' //'border border-gray-400 bg-white text-black hover:bg-color-lighter-gray'
                             }`}
                         onClick={() => {
                             setIsClicked(true);
@@ -669,7 +988,7 @@ export default function BalanceSheet() {
                     </thead>
                     <tbody>
                         {balanceSheetDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> // Start with depth 1 for main categories
+                            <Row key={index} item={item} depth={1} handleRightClick={handleRightClick} /> // Start with depth 1 for main categories
                         ))}
                     </tbody>
                 </table>
@@ -682,7 +1001,7 @@ export default function BalanceSheet() {
                 ))}
             </div>
 
-            {/* Modal */}
+            {/* Modal 1 */}
             {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
@@ -714,13 +1033,9 @@ export default function BalanceSheet() {
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
                                     if (selectedLedger) {
-                                        // Call the function to get ledger data for the selected period
-                                        getSelectedLedgerData(selectedLedger, stateStartDate, stateEndDate);
-
-                                        // Optionally move to the next modal step
-                                        setCurrentModal(2);
-
+                                        // Only update state and let useEffect handle the data fetching
                                         setShowPeriodColumn(true);  // Show the period column
+                                        setCurrentModal(2);         // Move to the next modal step
                                         setIsClicked(false);
                                     }
                                 }}
@@ -728,6 +1043,301 @@ export default function BalanceSheet() {
                             >
                                 ADD
                             </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            {/* Right-click context modal */}
+            {showRightClickModal && (
+                <div
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                >
+                    <div
+                        style={{ top: modalPosition.y, left: modalPosition.x }}
+                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => {
+                                handleDeleteRow(selectedSubcategory); // Call delete function with selected subcategory
+                                setShowRightClickModal(false); // Close the modal
+                            }}
+                        >
+                            Delete Row
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 1st Modal For Add Subcategory */}
+            {firstSubcategoryModal && (
+                <Modal isVisible={firstSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4 overflow-y-auto ">
+                        <div className="flex justify-between">
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Create Subcategory</h1>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]"
+                                onClick={() => {
+                                    setSubcategory('');        // Reset subcategory input
+                                    setCurrentSelection('');    // Reset select dropdown
+                                    setFirstSubcategoryModal(false); // Close modal
+                                }}>
+                                ×
+                            </button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        <div className="flex p-2.5">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    id="name"
+                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
+                                    placeholder=" "
+                                    value={subcategory}
+                                    onChange={(e) => setSubcategory(e.target.value)}
+                                />
+                                <label
+                                    htmlFor="name"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2"
+                                >
+                                    Subcategory Name
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex p-2.5 overflow-y-auto ">
+                            <div className="relative w-80">
+                                <select
+                                    id="categoryselect"
+                                    className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    value={currentSelection}
+                                    onChange={(e) => setCurrentSelection(e.target.value)}
+                                >
+                                    <option value=""></option>
+                                    {selectParentCategory.map((parentCategory, index) => (
+                                        <option key={index} value={parentCategory}>
+                                            {parentCategory}
+                                        </option>
+                                    ))}
+                                </select>
+                                <label
+                                    htmlFor="categoryselect"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2"
+                                >
+                                    Select Parent Category
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end py-3 px-4 flex-row">
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 
+                                        ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={subcategory.length === 0 || currentSelection === ''}
+                                onClick={() => {
+                                    setFirstSubcategoryModal(false)
+                                    setSecondSubcategoryModal(true)
+                                }}
+                            >
+                                NEXT
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* 2nd Modal For Add Subcategory */}
+            {secondSubcategoryModal && (
+                <Modal isVisible={secondSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h1 className="font-poppins font-bold text-xl text-gray-700">Add Accounts to {subcategory}</h1>
+                            <button
+                                type="button"
+                                className="text-2xl font-semibold text-gray-500 focus:outline-none"
+                                onClick={() => {
+                                    setSecondSubcategoryModal(false);
+                                    setSubcategory('');
+                                    setCurrentSelection('');
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        {/* Content */}
+                        <div className="p-6 text-center">
+                            <QuestionMarkCircleIcon className="mx-auto mb-4 text-gray-400 w-16 h-16" />
+                            <h3 className="mb-6 text-lg font-medium text-gray-600">
+                                Would you like to add accounts to this subcategory?
+                            </h3>
+
+                            {/* Buttons */}
+                            <div className="flex justify-center space-x-10">
+                                <button
+                                    type="button"
+                                    className="bg-[#2196F3] hover:bg-[#1976D2] transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
+                                    onClick={() => {
+                                        setThirdSubcategoryModal(true)
+                                        setSecondSubcategoryModal(false)
+                                    }}
+                                >
+                                    YES
+                                </button>
+                                <button
+                                    type="button"
+                                    className="bg-gray-100 rounded-lg text-sm text-gray-700 font-poppins font-medium py-2.5 px-6 border border-gray-300 hover:border-red-500 hover:text-white hover:bg-red-500 transition-all focus:outline-none focus:ring-2 focus:ring-red-200 shadow-md"
+                                    onClick={() => {
+                                        setSecondSubcategoryModal(false)
+                                        setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]); // Append new selections
+                                        console.log("No button clicked with:", selectParentCategory);
+                                        setSubcategory('');
+                                        setCurrentSelection('');
+                                        addSubcategory(subcategory, currentSelection, []);
+                                    }}
+                                >
+                                    NO
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* 3rd Modal For Add Subcategory */}
+            {thirdSubcategoryModal && (
+                <Modal isVisible={thirdSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl flex flex-col justify-between">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h1 className="font-poppins font-bold text-xl text-gray-700">Select Accounts to Add</h1>
+                            <button
+                                className="text-2xl font-semibold text-gray-500 focus:outline-none"
+                                onClick={() => {
+                                    setIsDropdownOpen(false);
+                                    setCheckedAccounts(new Set());
+                                    setThirdSubcategoryModal(false);
+                                    setSubcategory('');
+                                    setCurrentSelection('');
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <hr className="border-t border-[#7694D4] -my-1" />
+
+                        {/* Content */}
+                        <div className="p-8 pt-16 text-center flex justify-center">
+                            <div className="relative">
+                                <button
+                                    id="dropdownSearchButton"
+                                    onClick={toggleDropdown}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                    type="button"
+                                >
+                                    Available Accounts
+                                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                </button>
+
+                                {/* Dropdown menu */}
+                                <div
+                                    id="dropdownSearch"
+                                    className={`z-10 ${isDropdownOpen ? '' : 'hidden'} absolute top-full -left-8 mt-2 bg-white rounded-lg shadow w-60 dark:bg-gray-700`}
+                                >
+                                    <div className="p-3">
+                                        <label htmlFor="input-group-search" className="sr-only">Search</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                                                <IoIosSearch className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                id="input-group-search"
+                                                value={searchTerm}
+                                                onChange={handleSearchChange}
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                                placeholder="Search Account"
+                                            />
+                                        </div>
+                                    </div>
+                                    <ul
+                                        className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
+                                        aria-labelledby="dropdownSearchButton"
+                                    >
+                                        {getFilteredAccounts().length === 0 ? (
+                                            <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
+                                                No Available Accounts
+                                            </li>
+                                        ) : (
+                                            getFilteredAccounts().map((account) => (
+                                                <li key={account.id}>
+                                                    <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+                                                        <input
+                                                            id={`checkbox-item-${account.accountTitle}`}
+                                                            type="checkbox"
+                                                            value={account.accountTitle}
+                                                            checked={checkedAccounts.has(account.accountTitle)}
+                                                            onChange={() => handleCheckboxChange(account.accountTitle)}
+                                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+                                                        />
+                                                        <label
+                                                            htmlFor={`checkbox-item-${account.id}`}
+                                                            className="w-full ms-2 text-sm font-medium text-gray-900 rounded dark:text-gray-300"
+                                                        >
+                                                            {account.accountTitle}
+                                                        </label>
+                                                    </div>
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer with Confirm Button */}
+                        <div className="flex justify-end mt-4 p-4">
+                            {getFilteredAccounts().length === 0 ? (
+                                <button
+                                    type="button"
+                                    className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
+                                    onClick={() => {
+                                        setIsDropdownOpen(false);
+                                        setThirdSubcategoryModal(false);
+                                        // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
+                                        setSubcategory('');
+                                        setCurrentSelection('');;
+
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className={`text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4 ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={checkedAccounts.size === 0}
+                                    onClick={() => {
+                                        setIsDropdownOpen(false);
+                                        setThirdSubcategoryModal(false);
+                                        setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
+                                        addSubcategory(subcategory, currentSelection, checkedAccounts);
+                                        handleConfirm(); // Clear checked accounts after adding
+                                        setSubcategory('');
+                                        setCurrentSelection('');
+                                    }}
+                                >
+                                    Confirm
+                                </button>
+                            )}
                         </div>
                     </div>
                 </Modal>

@@ -151,11 +151,11 @@ export default function BalanceSheet() {
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
              {/**Breadcrumbs */}
-             <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+             <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
-                        <div class="flex items-center">
-                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                        <div className="flex items-center">
+                            <div className="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
                                 <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
                                 Balance Sheet
                             </div>
@@ -366,13 +366,13 @@ export default function BalanceSheet() {
                                 onClick={() => setShowDeleteModal(false)}
                             >
                                 <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
                                 </svg>
                                 <span className="sr-only">Close modal</span>
                             </button>
                             <div className="p-4 md:p-5 text-center">
                                 <svg className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
                                 <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this Balance Sheet?</h3>
                                 <button
