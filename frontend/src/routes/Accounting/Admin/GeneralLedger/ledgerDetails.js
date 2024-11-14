@@ -757,7 +757,7 @@ export default function LedgerDetails() {
 
 
       {/*TABLE*/}
-      <div className="relative overflow-x-auto shadow-md sm:rounded-lg bg-blue-50">
+      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400 sticky">
             <tr>
@@ -770,6 +770,7 @@ export default function LedgerDetails() {
               <th scope="col" className="px-6 py-3 w-48">CREDIT</th>
               <th scope="col" className="px-6 py-3 w-48 text-center">BALANCE</th>
               <th scope="col" className=" w-[20px] "></th>
+              <td className="table-cell py-3 w-10"></td>
 
             </tr>
           </thead>
@@ -825,6 +826,7 @@ export default function LedgerDetails() {
                         <td className="table-cell px-6 py-3 w-[20px] text-center">
                           {formatBalance(finalRunningBalance)}
                         </td>
+                        <td className="table-cell py-3 "></td>
                       </tr>
 
                       {accountsData[accountTitle.id]?.map((account) => {
