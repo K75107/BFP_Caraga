@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot,doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../../config/firebase-config";
 import { Timestamp } from "firebase/firestore";
@@ -10,7 +10,9 @@ import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { PiStack, PiStackFill } from "react-icons/pi";
-
+import ExportButton from "../../../../components/exportButton";
+import SearchBar from "../../../../components/searchBar";
+import { CiFilter } from "react-icons/ci";
 
 export default function DepositsPerStation() {
     const { userId } = useParams();
@@ -26,20 +28,20 @@ export default function DepositsPerStation() {
 
     useEffect(() => {
         const currentUserRef = doc(db, 'submittedReportsDeposits', userId);
-    
+
         const fetchUserData = async () => {
-          const docSnap = await getDoc(currentUserRef);
-    
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            setFirestationUsername(userData.username || '');
-          } else {
-            console.log('No such document!');
-          }
+            const docSnap = await getDoc(currentUserRef);
+
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                setFirestationUsername(userData.username || '');
+            } else {
+                console.log('No such document!');
+            }
         };
-    
+
         fetchUserData();
-      }, [userId]);
+    }, [userId]);
 
     //From firestations Code -------------------------------------------------------------------------------------------------------------------------
 
@@ -265,7 +267,7 @@ export default function DepositsPerStation() {
             <div className="flex flex-col space-y-6 w-full mb-2">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-semibold text-gray-800">
-                    {firestationUsername}
+                        {firestationUsername}
                     </h1>
                 </div>
             </div>
@@ -317,43 +319,17 @@ export default function DepositsPerStation() {
                     </li>
                 </ul>
             </div>
-            <hr className="border-t border-[#7694D4] my-4" />
+
 
             {/* Table Header */}
 
-            <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
+            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
                 {/* Search Form */}
-                <div className="w-full md:w-1/2">
-                    <form className="flex items-center">
-                        <label htmlFor="search" className="sr-only">Search</label>
-                        <div className="relative w-full">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg
-                                    aria-hidden="true"
-                                    className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <input
-                                type="text"
-                                id="search"
-                                className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)} // Update search query
-                                autoComplete="off"
-                            />
-                        </div>
-                    </form>
-                </div>
+                <SearchBar
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+                />
 
                 {/* Buttons and Dropdowns */}
                 <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
@@ -362,9 +338,9 @@ export default function DepositsPerStation() {
                     {/* Filter Dropdown */}
                     <Dropdown
                         label={
-                            <div className="flex items-center">
-                                <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
-                                <span className="mr-2">Filter</span>
+                            <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                                <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
+                                <span className="mr-2 font-medium">Filter</span>
                                 <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                             </div>
                         }
@@ -416,27 +392,21 @@ export default function DepositsPerStation() {
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] mt-1 mb-6" />
-
-
-
-
-
             {/* TABLE */}
-            <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg h-[500px]">
 
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky">
+                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
                         <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-3 w-40">Date Submitted</th>
-                            <th scope="col" className="px-1 py-3 w-40">Collecting Agent</th>
-                            <th scope="col" className="px-1 py-3 w-36">Date Collected</th>
-                            <th scope="col" className="px-1 py-3 w-36">Date Deposited</th>
-                            <th scope="col" className="px-1 py-3 w-36">OR Number</th>
-                            <th scope="col" className="px-1 py-3 w-36">LC Number</th>
-                            <th scope="col" className="px-1 py-3 w-36">Particulars</th>
-                            <th scope="col" className="px-1 py-3 w-36">Depositor</th>
-                            <th scope="col" className="px-1 py-3 w-36">Amount</th>
+                            <th scope="col" className="px-2 py-4 w-40">Date Submitted</th>
+                            <th scope="col" className="px-1 py-4 w-40">Collecting Agent</th>
+                            <th scope="col" className="px-1 py-4 w-36">Date Collected</th>
+                            <th scope="col" className="px-1 py-4 w-36">Date Deposited</th>
+                            <th scope="col" className="px-1 py-4 w-36">OR Number</th>
+                            <th scope="col" className="px-1 py-4 w-36">LC Number</th>
+                            <th scope="col" className="px-1 py-4 w-36">Particulars</th>
+                            <th scope="col" className="px-1 py-4 w-36">Depositor</th>
+                            <th scope="col" className="px-1 py-4 w-36">Amount</th>
                             <th scope="col" className="w-4"></th>
                         </tr>
                     </thead>

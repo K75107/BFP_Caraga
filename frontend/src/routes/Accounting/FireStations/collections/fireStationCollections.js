@@ -7,7 +7,7 @@ export default function FireStationCollections() {
 
   return (
     <Fragment>
-      <div className="bg-white h-[calc(92vh)] py-5 px-6 w-full rounded-lg">
+      <div className="bg-white h-[calc(92vh)] py-8 px-8 w-full rounded-lg">
           <Outlet />
         </div>
      

@@ -5,6 +5,7 @@ import { collection, getDocs, addDoc, getDoc, deleteDoc, doc } from "firebase/fi
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../../components/addButton";
+import ExportButton from "../../../../components/exportButton";
 
 export default function Cashflows() {
     const navigate = useNavigate();
@@ -132,17 +133,20 @@ export default function Cashflows() {
                             onClick={() => setShowModal(true)}
                             label="GENERATE CASHFLOW"
                         />
+                        <ExportButton
+                            label="EXPORT"
+                        />
                     </div>
 
                 </div>
-                <hr className="border-t border-[#7694D4] my-2" />
+                <hr className="border-t border-[#7694D4] my-2 mb-4" />
                 <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400">
+                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                             <tr>
-                                <th scope="col" className="px-6 py-3">DESCRIPTION</th>
-                                <th scope="col" className="px-6 py-3">YEAR</th>
-                                <th scope="col" className="px-6 py-3">ACTIONS</th>
+                                <th scope="col" className="px-6 py-4">DESCRIPTION</th>
+                                <th scope="col" className="px-6 py-4">YEAR</th>
+                                <th scope="col" className="px-6 py-4">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>

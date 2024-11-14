@@ -14,6 +14,7 @@ import {
   Legend,
 } from "chart.js";
 import { PiStack, PiStackFill } from "react-icons/pi";
+import ExportButton from "../../../../components/exportButton";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -275,12 +276,7 @@ export default function ReportsOverview() {
           </li>
           {/* Generate Report Button Inline */}
           <li className="ml-auto">
-            <button
-              onClick={() => console.log("Generate Report Clicked")} // Replace with your actual click handler
-              className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
-            >
-              + GENERATE REPORT
-            </button>
+            <ExportButton/>
           </li>
         </ul>
       </div>

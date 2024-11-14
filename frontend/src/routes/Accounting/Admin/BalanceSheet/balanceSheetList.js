@@ -7,7 +7,7 @@ import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
-
+import ExportButton from "../../../../components/exportButton";
 import AddButton from "../../../../components/addButton";
 
 export default function BalanceSheet() {
@@ -145,15 +145,15 @@ export default function BalanceSheet() {
 
     return (
         <Fragment>
-            
+
             {isError && (
                 <div className="absolute top-4 right-4">
                     <SuccessUnsuccessfulAlert isError={isError} message={'Balance Sheet Deleted'} icon={'wrong'} />
                 </div>
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
-             {/**Breadcrumbs */}
-             <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+            {/**Breadcrumbs */}
+            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div className="flex items-center">
@@ -169,25 +169,28 @@ export default function BalanceSheet() {
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
                 <div class="flex space-x-4">
-                        <AddButton
-                            onClick={() => setShowModal(true)}
-                            label="GENERATE BALANCE SHEET"
-                        />
-                    </div>
+                    <AddButton
+                        onClick={() => setShowModal(true)}
+                        label="GENERATE BALANCE SHEET"
+                    />
+                    <ExportButton
+                        label="EXPORT"
+                    />
+                </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-2" />
+            <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
             {/* TABLE */}
             <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400 sticky">
+                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                         <tr>
-                            <th scope="col" className="px-6 py-3">DESCRIPTION</th>
-                            <th scope="col" className="px-6 py-3">Start Date</th>
-                            <th scope="col" className="px-6 py-3">End Date</th>
-                            <th scope="col" className="px-6 py-3">TOTAL NET ASSETS/EQUITY</th>
-                            <th scope="col" className="px-6 py-3 text-left">ACTIONS</th>
+                            <th scope="col" className="px-6 py-4">DESCRIPTION</th>
+                            <th scope="col" className="px-6 py-4">Start Date</th>
+                            <th scope="col" className="px-6 py-4">End Date</th>
+                            <th scope="col" className="px-6 py-4">TOTAL NET ASSETS/EQUITY</th>
+                            <th scope="col" className="px-6 py-4 text-left">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>

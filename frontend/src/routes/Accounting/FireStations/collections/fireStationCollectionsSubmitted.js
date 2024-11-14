@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,Fragment } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../../../../config/firebase-config";
@@ -7,6 +7,8 @@ import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React com
 import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { MdKeyboardArrowRight, MdKeyboardArrowDown } from "react-icons/md";
+import SearchBar from "../../../../components/searchBar";
+import { CiFilter } from "react-icons/ci";
 
 export default function FireStationCollectionsSubmitted() {
 
@@ -256,7 +258,7 @@ export default function FireStationCollectionsSubmitted() {
 
 
     return (
-        <div>
+        <Fragment>
             {/* Page Title */}
             <div className="flex flex-col space-y-6 w-full mb-2">
                 <div className="flex justify-between items-center">
@@ -302,59 +304,21 @@ export default function FireStationCollectionsSubmitted() {
             </div>
 
 
-            {/* Table Header */}
-
-            <div className="flex flex-col items-center justify-between mb-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
-                {/* Search Form */}
-                <div className="w-full md:w-1/2">
-                    <form className="flex items-center">
-                        <label htmlFor="search" className="sr-only">Search</label>
-                        <div className="relative w-full">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg
-                                    aria-hidden="true"
-                                    className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <input
-                                type="text"
-                                id="search"
-                                className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)} // Update search query
-                                autoComplete="off"
-                            />
-                        </div>
-                    </form>
-                </div>
-
+            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
+                <SearchBar
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)} />
 
                 {/* Buttons and Dropdowns */}
                 <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
-
-
-
-
-
-
-                    {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
                     {/* Filter Dropdown */}
                     <Dropdown
                         label={
-                            <div className="flex items-center">
-                                <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
-                                <span className="mr-2">Filter</span>
+                            <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                                <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
+                                <span className="mr-2 font-medium">Filter</span>
                                 <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                             </div>
                         }
@@ -453,8 +417,6 @@ export default function FireStationCollectionsSubmitted() {
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] mt-1 mb-6" />
-
 
 
 
@@ -462,7 +424,7 @@ export default function FireStationCollectionsSubmitted() {
             {/* TABLE */}
             <div className="relative overflow-y-scroll shadow-md sm:rounded-lg h-[500px]">
                 <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky top-0  " style={{ zIndex: 1 }}>
+                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
                         <tr className="text-[12px] h-10">
                             {columns.map((col) => (
                                 <th key={col.id} scope="col" className={`px-2 py-2 w-[${col.width}]`}>
@@ -568,6 +530,6 @@ export default function FireStationCollectionsSubmitted() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </Fragment>
     );
 }

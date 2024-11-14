@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import AddButton from "../../../../components/addButton";
+import ExportButton from "../../../../components/exportButton";
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -173,21 +174,24 @@ export default function IncomeStatementList() {
                         }}
                         label="GENERATE INCOME STATEMENT"
                     />
+                    <ExportButton
+                        label="EXPORT"
+                    />
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-2" />
+            <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
             {/* TABLE */}
             <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400 sticky">
+                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                         <tr>
-                            <th scope="col" className="px-6 py-3">DESCRIPTION</th>
-                            <th scope="col" className="px-6 py-3">Start Date</th>
-                            <th scope="col" className="px-6 py-3">End Date</th>
-                            <th scope="col" className="px-6 py-3">TOTAL SURPLUS/DEFICIT</th>
-                            <th scope="col" className="px-6 py-3 text-left">ACTIONS</th>
+                            <th scope="col" className="px-6 py-4">DESCRIPTION</th>
+                            <th scope="col" className="px-6 py-4">Start Date</th>
+                            <th scope="col" className="px-6 py-4">End Date</th>
+                            <th scope="col" className="px-6 py-4">TOTAL SURPLUS/DEFICIT</th>
+                            <th scope="col" className="px-6 py-4 text-left">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -1,6 +1,6 @@
-import React, { useState, Fragment, useEffect} from "react";
-import { getAuth, onAuthStateChanged} from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc,getDoc,doc,updateDoc,serverTimestamp,setDoc,deleteDoc,writeBatch } from 'firebase/firestore';
+import React, { useState, Fragment, useEffect } from "react";
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from "../../../../config/firebase-config";
 import Modal from "../../../../components/Modal"
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
@@ -10,7 +10,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from "react-router-dom";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { debounce } from 'lodash'; // Import debounce from lodash for debouncing updates
-
+import SubmitButton from "../../../../components/submitButton";
 
 export default function FireStationDepositsUnsubmitted() {
 
@@ -23,17 +23,17 @@ export default function FireStationDepositsUnsubmitted() {
   const [hoveredRowId, setHoveredRowId] = useState(null);
   const [selectedRowData, setSelectedRowData] = useState(null);
 
-  const [editingCell,setEditingCell] = useState(null);
+  const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
 
 
   //Modal
   const [showModal, setShowModal] = useState(false);
   const [officersData, setOfficersData] = useState([]);
-  const [selectedOfficer,setSelectedOfficer] = useState('');
+  const [selectedOfficer, setSelectedOfficer] = useState('');
 
   //Right click Modal
-  const [showRightClickModal, setShowRightClickModal] = useState(false); 
+  const [showRightClickModal, setShowRightClickModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
   //Loggin User
@@ -44,7 +44,7 @@ export default function FireStationDepositsUnsubmitted() {
   const [isLoading, setIsLoading] = useState(false);  // New loading state
 
   //subNavigations
-  const [isPending,setIsPending] =useState(true);
+  const [isPending, setIsPending] = useState(true);
 
 
   //default classifications
@@ -68,162 +68,162 @@ export default function FireStationDepositsUnsubmitted() {
       const userFound = deposits.find((deposit) => deposit.email === userEmail);
 
       if (userFound) {
-          // Set the logged-in user to global state
-          setLogginUser(userFound);
+        // Set the logged-in user to global state
+        setLogginUser(userFound);
 
-          /*--------------------------------------------------deposits------------------------------------------------------------- */
-          const depositsSubdepositRef = collection(db, 'firestationReportsDeposits', userFound.id, 'deposits');
-          const snapshot = await getDocs(depositsSubdepositRef);
+        /*--------------------------------------------------deposits------------------------------------------------------------- */
+        const depositsSubdepositRef = collection(db, 'firestationReportsDeposits', userFound.id, 'deposits');
+        const snapshot = await getDocs(depositsSubdepositRef);
 
-          // If there are no documents, create a default document
-          if (snapshot.empty) {
-              console.log('No documents in deposits subdeposit. Creating default document...');
+        // If there are no documents, create a default document
+        if (snapshot.empty) {
+          console.log('No documents in deposits subdeposit. Creating default document...');
 
-              const defaultDoc = {
-                  createdAt:serverTimestamp(),
-                  fireStationName: userFound.username,
-                  collectingAgent: null,
-                  accountCode:null,
-                  dateCollectedStart: null,
-                  dateCollectedEnd: null,
-                  orNumber: null,
-                  lcNumber: null,
-                  particulars:null,
-                  natureOfdeposit:null,
-                  depositAmount: null,
-                  status:null,
-                  depositStatus:false,
-                  nameofDepositor:null,
-                  depositID:null,
-                  position: 1 // Default position for the first row
-              };
+          const defaultDoc = {
+            createdAt: serverTimestamp(),
+            fireStationName: userFound.username,
+            collectingAgent: null,
+            accountCode: null,
+            dateCollectedStart: null,
+            dateCollectedEnd: null,
+            orNumber: null,
+            lcNumber: null,
+            particulars: null,
+            natureOfdeposit: null,
+            depositAmount: null,
+            status: null,
+            depositStatus: false,
+            nameofDepositor: null,
+            depositID: null,
+            position: 1 // Default position for the first row
+          };
 
-              // Add default document with auto-generated ID
-              const newDocRef = await addDoc(depositsSubdepositRef, defaultDoc);
-              console.log('Default document created in deposits subdeposit:', newDocRef.id);
+          // Add default document with auto-generated ID
+          const newDocRef = await addDoc(depositsSubdepositRef, defaultDoc);
+          console.log('Default document created in deposits subdeposit:', newDocRef.id);
 
-              // Immediately update the state with the new document
-              const newDocument = { id: newDocRef.id, ...defaultDoc };
-              setDepositsData([newDocument]); // Update with the new default row
+          // Immediately update the state with the new document
+          const newDocument = { id: newDocRef.id, ...defaultDoc };
+          setDepositsData([newDocument]); // Update with the new default row
 
-              // Optionally fetch existing documents to merge them
-              const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
+          // Optionally fetch existing documents to merge them
+          const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-              setDepositsData(prevData => [newDocument, ...sortedSubdepositDocs]); // Merge new document with any existing ones
-          } else {
-              // Fetch and sort subdeposit documents by position
-              const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
+          setDepositsData(prevData => [newDocument, ...sortedSubdepositDocs]); // Merge new document with any existing ones
+        } else {
+          // Fetch and sort subdeposit documents by position
+          const subdepositDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const sortedSubdepositDocs = subdepositDocs.sort((a, b) => a.position - b.position); // Sort by position
 
-              setDepositsData(sortedSubdepositDocs); // Update state with sorted documents
-          }
+          setDepositsData(sortedSubdepositDocs); // Update state with sorted documents
+        }
 
-          /*------------------------------------------------------------------------------------------------------------------ */
+        /*------------------------------------------------------------------------------------------------------------------ */
 
-          // Fetch Collecting Officer data
-          const officersSubdepositRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
-          const officerSnapshot = await getDocs(officersSubdepositRef);
+        // Fetch Collecting Officer data
+        const officersSubdepositRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
+        const officerSnapshot = await getDocs(officersSubdepositRef);
 
-          const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setOfficersData(officerDocs);
+        const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setOfficersData(officerDocs);
 
       } else {
-          console.log('User not found in unsubmitted deposits');
+        console.log('User not found in unsubmitted deposits');
       }
-  };
+    };
 
-  // Set up a listener for the unsubmitted deposits
-  const unsubmitdepositRef = collection(db, 'firestationReportsDeposits');
-  const unsubscribeUnsubmitdeposits = onSnapshot(unsubmitdepositRef, (snapshot) => {
+    // Set up a listener for the unsubmitted deposits
+    const unsubmitdepositRef = collection(db, 'firestationReportsDeposits');
+    const unsubscribeUnsubmitdeposits = onSnapshot(unsubmitdepositRef, (snapshot) => {
       const listdeposits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFirestationdeposit(listdeposits); // Update state with fetched data
 
       const auth = getAuth();
       onAuthStateChanged(auth, (user) => {
-          if (user) {
-              // Check if the logged-in user is part of the deposits
-              checkUserIndeposits(user.email, listdeposits);
-          } else {
-              console.log('No user is currently logged in');
-          }
+        if (user) {
+          // Check if the logged-in user is part of the deposits
+          checkUserIndeposits(user.email, listdeposits);
+        } else {
+          console.log('No user is currently logged in');
+        }
       });
-  });
-
-  return () => {
-      unsubscribeUnsubmitdeposits(); // Unsubscribe from Firestore snapshot listener
-  };
-}, []);
-
-
-
-
-  
-
-
-const handleCellChange = async (collectionId, field, newValue) => {
-  try {
-    // Optimistic update: Update local state immediately
-    setDepositsData(prevCollections =>
-      prevCollections.map(collection =>
-        collection.id === collectionId ? { ...collection, [field]: newValue } : collection
-      )
-    );
-
-    // Debounced Firebase update to avoid too frequent writes
-    debouncedUpdate(collectionId, field, newValue);
-    
-    // Clear editing state
-    setEditingCell(null);
-    setEditValue('');
-    
-  } catch (error) {
-    console.error('Error updating collection field:', error);
-  }
-};
-
-// Debounced function to handle Firebase update
-const debouncedUpdate = debounce(async (depositId, field, newValue) => {
-  try {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      // console.error('No logged-in user found.');
-      return;
-    }
-
-    const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsDeposits'));
-
-    const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
-
-    if (!userDoc) {
-      // console.error('No unsubmitted collection found for the logged-in user.');
-      return;
-    }
-
-    const collectionsSubCollectionRef = collection(db, 'firestationReportsDeposits', userDoc.id, 'deposits');
-    const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, depositId));
-
-    if (!docSnapshot.exists()) {
-      // console.error(`No collection document found with ID ${depositId}.`);
-      return;
-    }
-
-    const existingData = docSnapshot.data();
-
-    if (existingData[field] === newValue) {
-      // console.log('No changes detected, skipping update.');
-      return;
-    }
-
-    await updateDoc(doc(collectionsSubCollectionRef, depositId), {
-      [field]: newValue
     });
-  } catch (error) {
-    console.error('Error updating collection field:', error);
-  }
-}, 1000); // Delay of 1 second for debouncing
+
+    return () => {
+      unsubscribeUnsubmitdeposits(); // Unsubscribe from Firestore snapshot listener
+    };
+  }, []);
+
+
+
+
+
+
+
+  const handleCellChange = async (collectionId, field, newValue) => {
+    try {
+      // Optimistic update: Update local state immediately
+      setDepositsData(prevCollections =>
+        prevCollections.map(collection =>
+          collection.id === collectionId ? { ...collection, [field]: newValue } : collection
+        )
+      );
+
+      // Debounced Firebase update to avoid too frequent writes
+      debouncedUpdate(collectionId, field, newValue);
+
+      // Clear editing state
+      setEditingCell(null);
+      setEditValue('');
+
+    } catch (error) {
+      console.error('Error updating collection field:', error);
+    }
+  };
+
+  // Debounced function to handle Firebase update
+  const debouncedUpdate = debounce(async (depositId, field, newValue) => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        // console.error('No logged-in user found.');
+        return;
+      }
+
+      const firestationReportsSnapshot = await getDocs(collection(db, 'firestationReportsDeposits'));
+
+      const userDoc = firestationReportsSnapshot.docs.find(doc => doc.data().email === user.email);
+
+      if (!userDoc) {
+        // console.error('No unsubmitted collection found for the logged-in user.');
+        return;
+      }
+
+      const collectionsSubCollectionRef = collection(db, 'firestationReportsDeposits', userDoc.id, 'deposits');
+      const docSnapshot = await getDoc(doc(collectionsSubCollectionRef, depositId));
+
+      if (!docSnapshot.exists()) {
+        // console.error(`No collection document found with ID ${depositId}.`);
+        return;
+      }
+
+      const existingData = docSnapshot.data();
+
+      if (existingData[field] === newValue) {
+        // console.log('No changes detected, skipping update.');
+        return;
+      }
+
+      await updateDoc(doc(collectionsSubCollectionRef, depositId), {
+        [field]: newValue
+      });
+    } catch (error) {
+      console.error('Error updating collection field:', error);
+    }
+  }, 1000); // Delay of 1 second for debouncing
 
 
 
@@ -243,7 +243,7 @@ const debouncedUpdate = debounce(async (depositId, field, newValue) => {
     try {
       // Reference the deposits data
       const depositRef = collection(db, 'firestationReportsDeposits', logginUser.id, 'deposits');
-      
+
       // Fetch and sort existing rows
       const depositsDataSnapshot = await getDocs(depositRef);
       const sortedRows = depositsDataSnapshot.docs
@@ -266,21 +266,21 @@ const debouncedUpdate = debounce(async (depositId, field, newValue) => {
 
       // Create new data with its position
       const newRowData = {
-        createdAt:serverTimestamp(),
+        createdAt: serverTimestamp(),
         fireStationName: logginUser.username,
         collectingAgent: null,
-        accountCode:null,
+        accountCode: null,
         dateCollectedStart: null,
-        dateCollectedEnd:null,
+        dateCollectedEnd: null,
         orNumber: null,
         lcNumber: null,
-        particulars:null,
-        natureOfdeposit:null,
+        particulars: null,
+        natureOfdeposit: null,
         depositAmount: null,
-        nameofDepositor:null,
-        status:null,
-        depositStatus:false,
-        depositID:null,
+        nameofDepositor: null,
+        status: null,
+        depositStatus: false,
+        depositID: null,
         position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
       };
 
@@ -297,720 +297,731 @@ const debouncedUpdate = debounce(async (depositId, field, newValue) => {
       };
 
       // Update the local state by adding the new row and re-sorting
-      setDepositsData(prevData => 
+      setDepositsData(prevData =>
         [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
       );
 
     } catch (error) {
-        console.error('Error adding row below:', error.message || error);
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-const handleAddRowAbove = async () => {
-  if (!selectedRowData || !depositsData || isLoading) return;
-
-  setIsLoading(true);
-
-  try {
-    // Reference the deposits data
-    const depositRef = collection(db, 'firestationReportsDeposits', logginUser.id, 'deposits');
-    
-    // Fetch and sort existing rows
-    const depositsDataSnapshot = await getDocs(depositRef);
-    const sortedRows = depositsDataSnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => a.position - b.position);
-
-    // Find the position of the selected row
-    const selectedRowPosition = selectedRowData.position;
-
-    // Find the next row after the selected one
-    const prevRow = sortedRows.find(firedeposits => firedeposits.position < selectedRowPosition);
-
-    // Calculate the new position (midpoint or +1)
-    const newRowPosition = prevRow
-      ? (selectedRowPosition + prevRow.position) / 2
-      : selectedRowPosition - 1;
-
-    // console.log(newRowPosition);
-
-
-    // Create new data with its position
-    const newRowData = {
-      createdAt:serverTimestamp(),
-      fireStationName: logginUser.username,
-      collectingAgent: null,
-      accountCode:null,
-      dateCollectedStart: null,
-      dateCollectedEnd:null,
-      orNumber: null,
-      lcNumber: null,
-      particulars:null,
-      natureOfdeposit:null,
-      depositAmount: null,
-      nameofDepositor:null,
-      status:null,
-      depositStatus:false,
-      depositID:null,
-      position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
-    };
-
-
-
-    // Add the new row to Firestore
-    const newRowDataRef = await addDoc(depositRef, newRowData);
-
-    // Fetch the new row's ID and add it to the new row data
-    const newRowWithId = {
-      ...newRowData,
-      id: newRowDataRef.id,
-    };
-
-    // Update the local state by adding the new row and re-sorting
-    setDepositsData(prevData => 
-      [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
-    );
-
-  } catch (error) {
       console.error('Error adding row below:', error.message || error);
-  } finally {
+    } finally {
       setIsLoading(false);
-  }
-};
+    }
+  };
+
+  const handleAddRowAbove = async () => {
+    if (!selectedRowData || !depositsData || isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      // Reference the deposits data
+      const depositRef = collection(db, 'firestationReportsDeposits', logginUser.id, 'deposits');
+
+      // Fetch and sort existing rows
+      const depositsDataSnapshot = await getDocs(depositRef);
+      const sortedRows = depositsDataSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => a.position - b.position);
+
+      // Find the position of the selected row
+      const selectedRowPosition = selectedRowData.position;
+
+      // Find the next row after the selected one
+      const prevRow = sortedRows.find(firedeposits => firedeposits.position < selectedRowPosition);
+
+      // Calculate the new position (midpoint or +1)
+      const newRowPosition = prevRow
+        ? (selectedRowPosition + prevRow.position) / 2
+        : selectedRowPosition - 1;
+
+      // console.log(newRowPosition);
 
 
-const handleSubmitDataToRegion = async () => {
-  try {
-    // Reference to the submittedReportsdeposits (without logginUser.id initially)
-    const submittedReportsdepositRef = collection(db, 'submittedReportsDeposits');
+      // Create new data with its position
+      const newRowData = {
+        createdAt: serverTimestamp(),
+        fireStationName: logginUser.username,
+        collectingAgent: null,
+        accountCode: null,
+        dateCollectedStart: null,
+        dateCollectedEnd: null,
+        orNumber: null,
+        lcNumber: null,
+        particulars: null,
+        natureOfdeposit: null,
+        depositAmount: null,
+        nameofDepositor: null,
+        status: null,
+        depositStatus: false,
+        depositID: null,
+        position: parseFloat(newRowPosition.toFixed(10)), // Ensure it's a float
+      };
 
-    // First, create a document for the logginUser.id with email and username
-    const userDocRef = doc(submittedReportsdepositRef, logginUser.id);
-    await setDoc(userDocRef, {
-      email: logginUser.email,
-      username: logginUser.username,
-      date_created: serverTimestamp(), // Optional: track when this document was created
-    });
 
-    console.log('User document created successfully with email and username.');
 
-    // Now, reference the specific subdeposit under the newly created logginUser.id document
-    const depositsSubdepositRef = collection(
-      db,
-      'firestationReportsDeposits',
-      logginUser.id,
-      'deposits'
-    );
+      // Add the new row to Firestore
+      const newRowDataRef = await addDoc(depositRef, newRowData);
 
-    // Fetch the value of deposits
-    const depositsSnapshot = await getDocs(depositsSubdepositRef);
+      // Fetch the new row's ID and add it to the new row data
+      const newRowWithId = {
+        ...newRowData,
+        id: newRowDataRef.id,
+      };
 
-    if (depositsSnapshot.empty) {
-      console.log('No documents inside the deposits');
-    } else {
-      // Create an array of promises for each document to be added and deleted
-      const submissionPromises = depositsSnapshot.docs.map(async (docSnapshot) => {
-        const data = docSnapshot.data();
+      // Update the local state by adding the new row and re-sorting
+      setDepositsData(prevData =>
+        [...prevData, newRowWithId].sort((a, b) => a.position - b.position)
+      );
 
-        // Check if the row is not empty (you can add more fields to this check if needed)
-        if (
-          data.collectingAgent &&
-          data.dateCollectedStart &&
-          data.dateCollectedEnd &&
-          data.dateDeposited &&
-          data.depositAmount &&
-          data.particulars &&
-          data.nameofDepositor &&
-          (data.orNumber || data.lcNumber)
-        ){
-          // Prepare the new data with a submission timestamp
-          const newData = {
-            ...data,
-            date_submitted: serverTimestamp(),
-          };
+    } catch (error) {
+      console.error('Error adding row below:', error.message || error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-          // Reference the subdeposit under the logginUser.id document in submittedReportsdeposits
-          const userSubmittedReportsRef = collection(
-            db,
-            'submittedReportsDeposits',
-            logginUser.id,
-            'deposits'
-          );
 
-          // Add the new data to the submitted reports subdeposit
-          await addDoc(userSubmittedReportsRef, newData);
+  const handleSubmitDataToRegion = async () => {
+    try {
+      // Reference to the submittedReportsdeposits (without logginUser.id initially)
+      const submittedReportsdepositRef = collection(db, 'submittedReportsDeposits');
 
-          // Delete the document from the original deposits after it's submitted
-          await deleteDoc(docSnapshot.ref);
-        }
+      // First, create a document for the logginUser.id with email and username
+      const userDocRef = doc(submittedReportsdepositRef, logginUser.id);
+      await setDoc(userDocRef, {
+        email: logginUser.email,
+        username: logginUser.username,
+        date_created: serverTimestamp(), // Optional: track when this document was created
       });
 
-      // Wait for all documents to be processed
-      await Promise.all(submissionPromises);
+      console.log('User document created successfully with email and username.');
 
-      // Show Changes to UI---------------------------------------------------------------------------------------------------
-      const depositsDataRef = collection(db, 'firestationReportsDeposits', logginUser.id, 'deposits');
+      // Now, reference the specific subdeposit under the newly created logginUser.id document
+      const depositsSubdepositRef = collection(
+        db,
+        'firestationReportsDeposits',
+        logginUser.id,
+        'deposits'
+      );
 
-      // Fetch the updated accounts after deletion
-      const updatedSnapshot = await getDocs(depositsDataRef);
-      const updateddeposits = updatedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      // Fetch the value of deposits
+      const depositsSnapshot = await getDocs(depositsSubdepositRef);
 
-      // Keep existing positions unless some rows need adjustments
-      const sorteddeposits = updateddeposits.sort((a, b) => a.position - b.position);
+      if (depositsSnapshot.empty) {
+        console.log('No documents inside the deposits');
+      } else {
+        // Create an array of promises for each document to be added and deleted
+        const submissionPromises = depositsSnapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
 
-      setDepositsData(sorteddeposits);
+          // Check if the row is not empty (you can add more fields to this check if needed)
+          if (
+            data.collectingAgent &&
+            data.dateCollectedStart &&
+            data.dateCollectedEnd &&
+            data.dateDeposited &&
+            data.depositAmount &&
+            data.particulars &&
+            data.nameofDepositor &&
+            (data.orNumber || data.lcNumber)
+          ) {
+            // Prepare the new data with a submission timestamp
+            const newData = {
+              ...data,
+              date_submitted: serverTimestamp(),
+            };
 
-      // Show Changes to UI---------------------------------------------------------------------------------------------------
-    }
+            // Reference the subdeposit under the logginUser.id document in submittedReportsdeposits
+            const userSubmittedReportsRef = collection(
+              db,
+              'submittedReportsDeposits',
+              logginUser.id,
+              'deposits'
+            );
 
-    // Now, create a new blank row after deleting all the data
-    const newBlankRow = {
-      createdAt: serverTimestamp(),
-      fireStationName: logginUser.username,
-      collectingAgent: null,
-      accountCode:null,
-      dateCollectedStart: null,
-      dateCollectedEnd:null,
-      orNumber: null,
-      lcNumber: null,
-      particulars: null,
-      depositAmount: 0,
-      nameofDepositor:null,
-      status: null,
-      depositStatus: false,
-      depositID: null,
-      position: 1, // Default position for the first row
-    };
+            // Add the new data to the submitted reports subdeposit
+            await addDoc(userSubmittedReportsRef, newData);
 
-    // Add the new blank row to the original deposits subdeposit
-    await addDoc(depositsSubdepositRef, newBlankRow);
+            // Delete the document from the original deposits after it's submitted
+            await deleteDoc(docSnapshot.ref);
+          }
+        });
 
-    console.log('New blank row created successfully');
+        // Wait for all documents to be processed
+        await Promise.all(submissionPromises);
 
-    // Hide the modal after completion
-    setShowModal(false);
-  
-  
-   // Update the undeposited Collections ------------------------------------------------------------------------------
-    try {
-      // Reference to the 'submittedReportsDeposits' collection
-      const submittedDepositsRef = collection(db, 'submittedReportsDeposits', logginUser.id, 'deposits');
+        // Show Changes to UI---------------------------------------------------------------------------------------------------
+        const depositsDataRef = collection(db, 'firestationReportsDeposits', logginUser.id, 'deposits');
 
-      // Retrieve all documents in the 'submittedReportsDeposits' collection
-      const depositsSnapshot = await getDocs(submittedDepositsRef);
+        // Fetch the updated accounts after deletion
+        const updatedSnapshot = await getDocs(depositsDataRef);
+        const updateddeposits = updatedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      // Fetch all documents from the 'submittedReportsCollections' collection
-      const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
-      const collectionsSnapshot = await getDocs(submittedCollectionRef);
+        // Keep existing positions unless some rows need adjustments
+        const sorteddeposits = updateddeposits.sort((a, b) => a.position - b.position);
 
-      // Loop through each deposit document in 'submittedReportsDeposits'
-      depositsSnapshot.forEach(async (depositDoc) => {
+        setDepositsData(sorteddeposits);
+
+        // Show Changes to UI---------------------------------------------------------------------------------------------------
+      }
+
+      // Now, create a new blank row after deleting all the data
+      const newBlankRow = {
+        createdAt: serverTimestamp(),
+        fireStationName: logginUser.username,
+        collectingAgent: null,
+        accountCode: null,
+        dateCollectedStart: null,
+        dateCollectedEnd: null,
+        orNumber: null,
+        lcNumber: null,
+        particulars: null,
+        depositAmount: 0,
+        nameofDepositor: null,
+        status: null,
+        depositStatus: false,
+        depositID: null,
+        position: 1, // Default position for the first row
+      };
+
+      // Add the new blank row to the original deposits subdeposit
+      await addDoc(depositsSubdepositRef, newBlankRow);
+
+      console.log('New blank row created successfully');
+
+      // Hide the modal after completion
+      setShowModal(false);
+
+
+      // Update the undeposited Collections ------------------------------------------------------------------------------
+      try {
+        // Reference to the 'submittedReportsDeposits' collection
+        const submittedDepositsRef = collection(db, 'submittedReportsDeposits', logginUser.id, 'deposits');
+
+        // Retrieve all documents in the 'submittedReportsDeposits' collection
+        const depositsSnapshot = await getDocs(submittedDepositsRef);
+
+        // Fetch all documents from the 'submittedReportsCollections' collection
+        const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
+        const collectionsSnapshot = await getDocs(submittedCollectionRef);
+
+        // Loop through each deposit document in 'submittedReportsDeposits'
+        depositsSnapshot.forEach(async (depositDoc) => {
           const depositData = depositDoc.data();
           const dateCollectedStart = depositData.dateCollectedStart; // Firestore Timestamp
           const dateCollectedEnd = depositData.dateCollectedEnd; // Firestore Timestamp
 
           if (!dateCollectedStart || !dateCollectedEnd) {
-              console.warn(`Missing date range in deposit document: ${depositDoc.id}`);
-              return; // Skip if date range is missing
+            console.warn(`Missing date range in deposit document: ${depositDoc.id}`);
+            return; // Skip if date range is missing
           }
 
           // Loop through each collection document in 'submittedReportsCollections'
           collectionsSnapshot.forEach(async (collectionDoc) => {
-              const collectionData = collectionDoc.data();
-              const dateCollected = collectionData.dateCollected; // Firestore Timestamp
+            const collectionData = collectionDoc.data();
+            const dateCollected = collectionData.dateCollected; // Firestore Timestamp
 
-              // Check if dateCollected is within the specified date range
-              if (dateCollected && dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
-                  const collectionDocRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', collectionDoc.id);
+            // Check if dateCollected is within the specified date range
+            if (dateCollected && dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
+              const collectionDocRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', collectionDoc.id);
 
-                  // Update the depositStatus
-                  await updateDoc(collectionDocRef, {
-                      depositStatus: true,
-                  });
-              }
+              // Update the depositStatus
+              await updateDoc(collectionDocRef, {
+                depositStatus: true,
+              });
+            }
           });
-      });
+        });
+      } catch (error) {
+        console.error("Error updating depositStatus: ", error);
+      }
+
+
+
+
     } catch (error) {
-      console.error("Error updating depositStatus: ", error);
+      console.log(error);
+    }
+  };
+
+  //Right Click Functions
+  const handleRightClick = (event, deposits) => {
+    event.preventDefault();
+
+
+    setSelectedRowData(deposits);
+
+
+    // Set the modal position based on the mouse position
+    setModalPosition({ x: event.clientX, y: event.clientY });
+    setShowRightClickModal(true); // Open the modal
+
+
+
+  };
+
+
+  const handleHoverData = (deposits) => {
+
+    // console.log(deposit);
+    setSelectedRowData(deposits);
+
+  }
+
+
+  const closeModalOnOutsideClick = (e) => {
+    if (e.target.id === "user-modal-overlay") {
+      setShowRightClickModal(false);
+    }
+  };
+
+
+  //DELETE MAIN ACCOUNT
+  const handleDeleteRow = async () => {
+
+    if (!selectedRowData) return;
+
+    try {
+
+      //Reference directly
+      const depositsDataRef = collection(db, "firestationReportsDeposits", logginUser.id, 'deposits');
+      const selectedRowRef = doc(db, "firestationReportsDeposits", logginUser.id, 'deposits', selectedRowData.id);
+
+      await deleteDoc(selectedRowRef);
+
+      //fetched the updated accounts after deletion
+      const updatedSnapshot = await getDocs(depositsDataRef);
+      const updateddeposits = updatedSnapshot.docs.map((doc => ({ id: doc.id, ...doc.data() })));
+
+      //keep existing positions unless some rows need ajustments
+      const sorteddeposits = updateddeposits.sort((a, b) => a.position - b.position);
+
+      // Optional: If the position gap between rows becomes too large, reassign positions.
+      const shouldReassign = sorteddeposits.some((depositsData, index) => {
+        const nextdepositData = sorteddeposits[index + 1];
+        return nextdepositData && (nextdepositData.position - depositsData.position) > 1;
+      });
+
+      if (shouldReassign) {
+        const newdeposits = sorteddeposits.map((depositsData, index) => ({
+          ...depositsData,
+          position: parseFloat((index + 1).toFixed(10)), // Reassign positions only if necessary
+        }));
+
+        // Update Firestore with new positions
+        const batch = writeBatch(db);
+        newdeposits.forEach(depositsData => {
+          const depositsRef = doc(depositsDataRef, depositsData.id);
+          batch.update(depositsRef, { position: depositsData.position });
+        });
+        await batch.commit();
+
+      } else {
+
+        setDepositsData(sorteddeposits);
+      }
+
+      setShowRightClickModal(false); // Close the modal
+    } catch (error) {
+      console.error(error);
     }
 
-    
-  
-  
-  } catch (error) {
-    console.log(error);
-  }
-};
 
-    //Right Click Functions
-    const handleRightClick = (event,deposits) => {
-      event.preventDefault(); 
+  };
 
 
-       setSelectedRowData(deposits);
 
-      
-      // Set the modal position based on the mouse position
-      setModalPosition({ x: event.clientX, y: event.clientY });
-      setShowRightClickModal(true); // Open the modal
-
-
-      
-    };
-
-
-    const handleHoverData = (deposits) =>{
-
-        // console.log(deposit);
-       setSelectedRowData(deposits);
-  
-  }    
-  
-
-    const closeModalOnOutsideClick = (e) => {
-      if (e.target.id === "user-modal-overlay") {
-          setShowRightClickModal(false);
-      }
-    };
-
-
-      //DELETE MAIN ACCOUNT
-      const handleDeleteRow = async () => {
-
-        if (!selectedRowData) return;
-
-        try{
-
-            //Reference directly
-            const depositsDataRef = collection(db, "firestationReportsDeposits",logginUser.id,'deposits');
-            const selectedRowRef = doc(db, "firestationReportsDeposits",logginUser.id,'deposits',selectedRowData.id);
-
-            await deleteDoc(selectedRowRef);
-            
-            //fetched the updated accounts after deletion
-            const updatedSnapshot = await getDocs(depositsDataRef);
-            const updateddeposits = updatedSnapshot.docs.map((doc =>({id:doc.id, ...doc.data()})));
-
-            //keep existing positions unless some rows need ajustments
-            const sorteddeposits = updateddeposits.sort((a,b) => a.position - b.position);
-
-             // Optional: If the position gap between rows becomes too large, reassign positions.
-             const shouldReassign = sorteddeposits.some((depositsData, index) => {
-              const nextdepositData = sorteddeposits[index + 1];
-              return nextdepositData && (nextdepositData.position - depositsData.position) > 1;
-            });
-            
-            if (shouldReassign) {
-              const newdeposits = sorteddeposits.map((depositsData, index) => ({
-                  ...depositsData,
-                  position: parseFloat((index + 1).toFixed(10)), // Reassign positions only if necessary
-              }));
-  
-              // Update Firestore with new positions
-              const batch = writeBatch(db);
-              newdeposits.forEach(depositsData => {
-                  const depositsRef = doc(depositsDataRef, depositsData.id);
-                  batch.update(depositsRef, { position: depositsData.position });
-              });
-              await batch.commit();
-            
-          } else {
-
-            setDepositsData(sorteddeposits);
-        }
-
-        setShowRightClickModal(false); // Close the modal
-        }catch(error){
-            console.error(error);
-        }
-
-
-    };
-
-    
-  
 
   return (
     <Fragment>
-             
-             <div className="flex flex-col space-y-6 w-full mb-2">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-semibold text-gray-800">
-                Fire Station Reports - Deposits
-              </h1>
-            </div>
-          </div>
-        {/* Unsubmitted and Submitted */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                <ul
-                className="flex flex-wrap -mb-px text-sm font-medium text-center"
-                id="default-styled-tab"
-                role="tablist"
-                >
-                <li className="me-2" role="presentation">
-                    <button
-                    onClick={() => navigate("/main/firestation/deposits/unsubmitted")}
-                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                    id="profile-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    >
-                    Unsubmitted
-                    </button>
-                </li>
-                <li className="me-2" role="presentation">
-                    <button
-                    onClick={() => navigate("/main/firestation/deposits/submitted")}
-                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
-                    id="dashboard-styled-tab"
-                    type="button"
-                    role="tab"
-                    aria-controls="dashboard"
-                    aria-selected="false"
-                    >
-                    Submitted
-                    </button>
-                </li>
-                </ul>
-            </div>
 
+      <div className="flex flex-col space-y-6 w-full mb-2">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Fire Station Reports - Deposits
+          </h1>
+        </div>
+      </div>
 
-        {/*TABLE*/}
-        <div className="relative overflow-x-visible shadow-md sm:rounded-lg h-full">
-        <button type="button" onClick={handleSubmit} className="absolute top-[-70px] right-10 text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit</button>
-        <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
-            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-              <thead className="text-[12px] text-gray-700 uppercase bg-gray-100  dark:bg-gray-700 dark:text-gray-400">
-                          <tr className="text-[12px]">
-                              <th scope="col" className="px-2 py-3 w-[160px]">Collecting Agent</th>
-                              <th scope="col" className="px-2 py-3 w-[288px] text-center">Date Collected</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">Date Deposited</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">OR Number</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">LC Number</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">Particulars</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">Amount</th>
-                              <th scope="col" className="px-2 py-3 w-[144px]">Name of Depositor</th>
-                              <th scope="col" className=" w-[20px] "></th>
-                          </tr>
-              </thead>
-           
-
-            
-            
-           
-                  <tbody>
-                  {depositsData.map((deposits) => (
-                      <Fragment key={deposits.id}>
-                        <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                        onMouseEnter={(e) => { 
-                          setHoveredRowId(deposits.id); 
-                          handleHoverData(deposits); 
-                        }}
-                      onContextMenu={(e) => handleRightClick(e, deposits)}  // Right-click functionality
-                        >
-
-                          <td className="table-cell px-2 w-[160px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'collectingAgent' ? (
-                              <select
-
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'collectingAgent', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'collectingAgent', editValue.value)}
-                                autoFocus
-                              >
-                              <option value="" disabled>Select an officer</option>
-                                {/* Dynamically render officers */}
-                                {officersData.map((officer) => (
-                                  <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
-                                    {officer.firstname} {officer.lastname}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'collectingAgent', value: deposits.collectingAgent || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.collectingAgent || '-'}
-                              </span>
-                            )}
-
-                          </td>
-                          
-                          <td className="table-cell px-2 py-2 w-[288px] text-[12px]">
-                            <div className="flex items-center space-x-2">
-                              {/* Start Date (dateCollectedStart) */}
-                              {editingCell === deposits.id && editValue.field === 'dateCollectedStart' ? (
-                                <input
-                                  type="date"
-                                  className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                  value={editValue.startDate || ''}
-                                  onChange={(e) =>
-                                    setEditValue({ field: 'dateCollectedStart', startDate: e.target.value, endDate: deposits.dateCollectedEnd })
-                                  }
-                                  onBlur={() => handleCellChange(deposits.id, 'dateCollectedStart', editValue.startDate)}
-                                  autoFocus
-                                />
-                              ) : (
-                                <span
-                                  onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedStart', startDate: deposits.dateCollectedStart })}
-                                  className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
-                                >
-                                  {deposits.dateCollectedStart ? deposits.dateCollectedStart : 'From'}
-                                </span>
-                              )}
-
-                              {/* End Date (dateCollectedEnd) */}
-                              {editingCell === deposits.id && editValue.field === 'dateCollectedEnd' ? (
-                                <input
-                                  type="date"
-                                  className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                  value={editValue.endDate || ''}
-                                  onChange={(e) =>
-                                    setEditValue({ field: 'dateCollectedEnd', startDate: deposits.dateCollectedStart, endDate: e.target.value })
-                                  }
-                                  onBlur={() => handleCellChange(deposits.id, 'dateCollectedEnd', editValue.endDate)}
-                                />
-                              ) : (
-                                <span
-                                  onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedEnd', endDate: deposits.dateCollectedEnd })}
-                                  className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
-                                >
-                                  {deposits.dateCollectedEnd ? deposits.dateCollectedEnd : 'To'}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-
-                          
-
-                          
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'dateDeposited' ? (
-                              <input
-                                type="date"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] "
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'dateDeposited', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'dateDeposited', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'dateDeposited', value: deposits.dateDeposited || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] "
-                              >
-                                {deposits.dateDeposited || '-'}
-                              </span>
-                            )}
-                          </td>
-                          
-                          
-
-
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'orNumber' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'orNumber', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'orNumber', value: deposits.orNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.orNumber || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'lcNumber' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'lcNumber', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'lcNumber', value: deposits.lcNumber || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.lcNumber || '-'}
-                              </span>
-                            )}
-                          </td>
-
-
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'particulars' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'particulars', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'particulars', value: deposits.particulars || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.particulars || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                  
-
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'depositAmount' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'depositAmount', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'depositAmount', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'depositAmount', value: deposits.depositAmount || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.depositAmount || '-'}
-                              </span>
-                            )}
-                          </td>
-                          <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
-                            {editingCell === deposits.id && editValue.field === 'nameofDepositor' ? (
-                              <input
-                                type="text"
-                                className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'nameofDepositor', value: e.target.value })}
-                                onBlur={() => handleCellChange(deposits.id, 'nameofDepositor', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'nameofDepositor', value: deposits.nameofDepositor || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
-                              >
-                                {deposits.nameofDepositor || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Add Row Button */}
-                                                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
-                                                        {hoveredRowId === deposits.id && (
-                                                            <button
-                                                                className="absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                                                onClick={handleAddRowBelow}
-                                                            >
-                                                                <IoMdAddCircleOutline />
-                                                            </button>
-                                                        )}
-                                                    </td>
-                        </tr>
-                      </Fragment>
-                    ))}
-
-                  </tbody>
-                </table>
-              </div>
+      {/* Unsubmitted and Submitted */}
+      <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+        <ul
+          className="flex flex-wrap -mb-px text-sm font-medium text-center"
+          id="default-styled-tab"
+          role="tablist"
+        >
+          <li className="me-2" role="presentation">
+            <button
+              onClick={() => navigate("/main/firestation/deposits/unsubmitted")}
+              className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+              id="profile-styled-tab"
+              type="button"
+              role="tab"
+              aria-controls="profile"
+              aria-selected="false"
+            >
+              Unsubmitted
+            </button>
+          </li>
+          <li className="me-2" role="presentation">
+            <button
+              onClick={() => navigate("/main/firestation/deposits/submitted")}
+              className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
+              id="dashboard-styled-tab"
+              type="button"
+              role="tab"
+              aria-controls="dashboard"
+              aria-selected="false"
+            >
+              Submitted
+            </button>
+          </li>
+        </ul>
+      </div>
+      
+      <div className="absolute top-[125px] right-12">
+        <SubmitButton
+          onClick={handleSubmit}
+          label={"SUBMIT"}
+        />
       </div>
 
 
 
-                    {/*Submit Modal*/}
-                    <Modal isVisible={showModal}>
-                <div className="bg-white w-1/3 h-72 rounded py-2 px-4">
-                    <div className="flex justify-between">
-                        <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-                            Confirm Submission
-                        </h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-                            ×
+
+
+      {/*TABLE*/}
+      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+
+        <div className=' w-full overflow-y-scroll h-[calc(96vh-240px)] '>
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
+            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
+              <tr className="text-[12px]">
+                <th scope="col" className="px-2 py-4 w-[160px]">Collecting Agent</th>
+                <th scope="col" className="px-2 py-4 w-[288px] text-center">Date Collected</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">Date Deposited</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">OR Number</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">LC Number</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">Particulars</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">Amount</th>
+                <th scope="col" className="px-2 py-4 w-[144px]">Depositor</th>
+                <th scope="col" className=" w-[20px] "></th>
+              </tr>
+            </thead>
+
+
+
+
+
+            <tbody>
+              {depositsData.map((deposits) => (
+                <Fragment key={deposits.id}>
+                  <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                    onMouseEnter={(e) => {
+                      setHoveredRowId(deposits.id);
+                      handleHoverData(deposits);
+                    }}
+                    onContextMenu={(e) => handleRightClick(e, deposits)}  // Right-click functionality
+                  >
+
+                    <td className="table-cell px-2 w-[160px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'collectingAgent' ? (
+                        <select
+
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'collectingAgent', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'collectingAgent', editValue.value)}
+                          autoFocus
+                        >
+                          <option value="" disabled>Select an officer</option>
+                          {/* Dynamically render officers */}
+                          {officersData.map((officer) => (
+                            <option key={officer.id} value={`${officer.firstname} ${officer.lastname}`}>
+                              {officer.firstname} {officer.lastname}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'collectingAgent', value: deposits.collectingAgent || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.collectingAgent || '-'}
+                        </span>
+                      )}
+
+                    </td>
+
+                    <td className="table-cell px-2 py-2 w-[288px] text-[12px]">
+                      <div className="flex items-center space-x-2">
+                        {/* Start Date (dateCollectedStart) */}
+                        {editingCell === deposits.id && editValue.field === 'dateCollectedStart' ? (
+                          <input
+                            type="date"
+                            className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                            value={editValue.startDate || ''}
+                            onChange={(e) =>
+                              setEditValue({ field: 'dateCollectedStart', startDate: e.target.value, endDate: deposits.dateCollectedEnd })
+                            }
+                            onBlur={() => handleCellChange(deposits.id, 'dateCollectedStart', editValue.startDate)}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedStart', startDate: deposits.dateCollectedStart })}
+                            className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+                          >
+                            {deposits.dateCollectedStart ? deposits.dateCollectedStart : 'From'}
+                          </span>
+                        )}
+
+                        {/* End Date (dateCollectedEnd) */}
+                        {editingCell === deposits.id && editValue.field === 'dateCollectedEnd' ? (
+                          <input
+                            type="date"
+                            className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                            value={editValue.endDate || ''}
+                            onChange={(e) =>
+                              setEditValue({ field: 'dateCollectedEnd', startDate: deposits.dateCollectedStart, endDate: e.target.value })
+                            }
+                            onBlur={() => handleCellChange(deposits.id, 'dateCollectedEnd', editValue.endDate)}
+                          />
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell(deposits.id) || setEditValue({ field: 'dateCollectedEnd', endDate: deposits.dateCollectedEnd })}
+                            className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] cursor-pointer"
+                          >
+                            {deposits.dateCollectedEnd ? deposits.dateCollectedEnd : 'To'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+
+
+
+
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'dateDeposited' ? (
+                        <input
+                          type="date"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px] "
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'dateDeposited', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'dateDeposited', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'dateDeposited', value: deposits.dateDeposited || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px] "
+                        >
+                          {deposits.dateDeposited || '-'}
+                        </span>
+                      )}
+                    </td>
+
+
+
+
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'orNumber' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'orNumber', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'orNumber', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'orNumber', value: deposits.orNumber || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.orNumber || '-'}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'lcNumber' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'lcNumber', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'lcNumber', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'lcNumber', value: deposits.lcNumber || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.lcNumber || '-'}
+                        </span>
+                      )}
+                    </td>
+
+
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'particulars' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'particulars', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'particulars', value: deposits.particulars || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.particulars || '-'}
+                        </span>
+                      )}
+                    </td>
+
+
+
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'depositAmount' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'depositAmount', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'depositAmount', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'depositAmount', value: deposits.depositAmount || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.depositAmount || '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="table-cell px-2 py-2 w-[144px] text-[12px]">
+                      {editingCell === deposits.id && editValue.field === 'nameofDepositor' ? (
+                        <input
+                          type="text"
+                          className="border border-gray-400 focus:outline-none w-full h-8 px-2 text-[12px]"
+                          value={editValue.value}
+                          onChange={(e) => setEditValue({ field: 'nameofDepositor', value: e.target.value })}
+                          onBlur={() => handleCellChange(deposits.id, 'nameofDepositor', editValue.value)}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditingCell(deposits.id); setEditValue({ field: 'nameofDepositor', value: deposits.nameofDepositor || '' }) }}
+                          className="block border border-gray-300 hover:bg-gray-100 h-8 w-full px-2 py-1 text-[12px]"
+                        >
+                          {deposits.nameofDepositor || '-'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Add Row Button */}
+                    <td className="px-2 py-5 w-0 relative z-10"> {/* Add relative position for button */}
+                      {hoveredRowId === deposits.id && (
+                        <button
+                          className="absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                          onClick={handleAddRowBelow}
+                        >
+                          <IoMdAddCircleOutline />
                         </button>
-                    </div>
+                      )}
+                    </td>
+                  </tr>
+                </Fragment>
+              ))}
 
-                    <hr className="border-t border-[#7694D4] my-3" />
-
-                    {/*LABEL*/}
-                    <div className="flex flex-row justify-start">
-                        
-
-                        <div className="py-2 ">
-                          <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
-                          
-                        </div>
-                       
-                    </div>
-                 
-
-                    <div className="flex justify-end py-3 px-4">
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" 
-                                onClick={handleSubmitDataToRegion}
-                        >Submit</button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Right-click context modal */}
-            {showRightClickModal && (
-                <div
-                    id="user-modal-overlay"
-                    className="fixed inset-0 flex justify-center items-center"
-                    onClick={closeModalOnOutsideClick}
-                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
-                >
-                    <div
-                    style={{ top: modalPosition.y, left: modalPosition.x }}
-                    className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
-                    >
-                    <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={handleAddRowAbove}
-                    >
-                        Add Row Above
-                    </button>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
 
-                    <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={handleAddRowBelow}
-                    >
-                        Add Row Below
-                    </button>
-                    <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={handleDeleteRow}
-                    >
-                        Delete Row
-                    </button>
-                    </div>
-                </div>
-                )}
+
+      {/*Submit Modal*/}
+      <Modal isVisible={showModal}>
+        <div className="bg-white w-1/3 h-72 rounded py-2 px-4">
+          <div className="flex justify-between">
+            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
+              Confirm Submission
+            </h1>
+            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+              ×
+            </button>
+          </div>
+
+          <hr className="border-t border-[#7694D4] my-3" />
+
+          {/*LABEL*/}
+          <div className="flex flex-row justify-start">
+
+
+            <div className="py-2 ">
+              <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
+
+            </div>
+
+          </div>
+
+
+          <div className="flex justify-end py-3 px-4">
+            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
+              onClick={handleSubmitDataToRegion}
+            >Submit</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Right-click context modal */}
+      {showRightClickModal && (
+        <div
+          id="user-modal-overlay"
+          className="fixed inset-0 flex justify-center items-center"
+          onClick={closeModalOnOutsideClick}
+          onContextMenu={(event) => closeModalOnOutsideClick(event)}
+        >
+          <div
+            style={{ top: modalPosition.y, left: modalPosition.x }}
+            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+          >
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleAddRowAbove}
+            >
+              Add Row Above
+            </button>
+
+
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleAddRowBelow}
+            >
+              Add Row Below
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleDeleteRow}
+            >
+              Delete Row
+            </button>
+          </div>
+        </div>
+      )}
 
 
 
     </Fragment>
-    
+
   );
 }
