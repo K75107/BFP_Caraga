@@ -6,16 +6,19 @@ import Modal from "../../../components/Modal";
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../components/addButton";
 import SearchBar from "../../../components/searchBar";
+import SubmitButton from "../../../components/submitButton";
 
 // Firebase
 import { auth } from "../../../config/firebase-config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { ref, set,onValue} from 'firebase/database';
+
+
 
 
 
 import { db, storage } from "../../../config/firebase-config";
 import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, getDocs } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../components/Alerts/SuccessUnsuccessfulALert";
 
@@ -69,16 +72,25 @@ export default function Users() {
           ...doc.data(),
         }));
         setUserList(usersData);
+
+        // Retrieve active users from Realtime Database
+        const usersRef = ref(db, "activeUsers");
+        onValue(usersRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Convert the active user data from Realtime DB into a format similar to Firestore
+            const activeUsers = Object.values(data);
+            setUserList((prevList) => [...prevList, ...activeUsers]);
+          }
+        });
       } catch (err) {
         console.error(err);
       }
     };
 
     getUserList();
-
-
-
   }, []);
+
 
   const handleAddUser = async () => {
     try {
@@ -150,6 +162,13 @@ export default function Users() {
         // console.log("User added to firestationReportsOfficers!");
       }
 
+      // Add user to Firebase Realtime Database with initial isActive and lastActive fields
+      const userRef = ref(db, 'activeUsers/' + userId);
+      await set(userRef, {
+        isActive: false, // Marking the user as active
+        lastActive: new Date().toISOString(), // Set the last active time
+      });
+
     } catch (err) {
       // console.error("Error adding user: ", err);
 
@@ -193,7 +212,7 @@ export default function Users() {
           <div class="flex space-x-4">
             <SearchBar
               placeholder="Search..."
-              
+
             />
             <AddButton
               onClick={() => setShowModal(true)}
@@ -402,13 +421,12 @@ export default function Users() {
 
           </div>
 
-          <div className="flex justify-end py-3 px-4">
-            <button
-              className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
+          <div className="flex justify-end py-2 mt-2 ">
+            <SubmitButton
               onClick={handleAddUser}
-            >
-              Add
-            </button>
+              label={"Add User"}
+
+            />
           </div>
         </div>
       </Modal>
