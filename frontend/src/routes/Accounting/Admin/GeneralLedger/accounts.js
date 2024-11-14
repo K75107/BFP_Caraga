@@ -124,7 +124,6 @@ export default function Accounts() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         listSource={filteredAccountsData}
-                        field="accountTitle"
                         />
                         <AddButton
                             onClick={() => setShowModal(true)}

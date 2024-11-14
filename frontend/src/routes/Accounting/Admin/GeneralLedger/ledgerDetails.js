@@ -679,13 +679,7 @@ export default function LedgerDetails() {
         </ol>
       </nav>
       {/**Breadcrumbs */}
-
-
-      <div className="flex justify-between w-full">
-        <h1 className="text-[21px] font-bold text-[#1E1E1E] font-poppins">{ledgerDescription}</h1>
-
-      </div>
-
+      
       <div className="flex flex-col items-center justify-between p-4 space-y-3 md:flex-row md:space-y-0 md:space-x-4">
 
         <SearchBar
@@ -693,8 +687,6 @@ export default function LedgerDetails() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           listSource={filteredAccountTitles}
-          field="accountTitle"
-
         />
 
 

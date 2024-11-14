@@ -35,6 +35,9 @@ export default function Users() {
   const navigate = useNavigate();
   const [usersList, setUserList] = useState([]);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredUsersList, setFilteredUsersList] = useState([]); // New state for filtered data
+
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -59,6 +62,13 @@ export default function Users() {
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
   const [selectedCityMunicipality, setSelectedCityMunicipality] = useState('');
+
+  useEffect(() => {
+    const filteredUsers = usersList.filter((users) =>
+        users.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredUsersList(filteredUsers);
+}, [searchQuery, usersList]);
 
 
   //Get User Data from firebase
@@ -210,10 +220,12 @@ export default function Users() {
         <div className="flex justify-between w-full">
           <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Manage Users</h1>
           <div class="flex space-x-4">
-            <SearchBar
-              placeholder="Search..."
-
-            />
+          <SearchBar
+              placeholder="Search User"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              listSource={filteredUsersList}
+              />
             <AddButton
               onClick={() => setShowModal(true)}
               label="ADD LEDGER"
@@ -237,7 +249,7 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {usersList.map((user, index) => (
+              {filteredUsersList.map((user, index) => (
                 <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">
                   <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
                     <div

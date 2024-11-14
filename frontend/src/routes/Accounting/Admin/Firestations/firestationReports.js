@@ -16,6 +16,31 @@ export default function FirestationReports() {
     const [usersData, setUsersData] = useState([]);
     const [toggledRows, setToggledRows] = useState({}); // State to manage toggled provinces
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredUsersData, setFilteredUsersData] = useState([]); // New state for filtered data
+
+    const [filteredGroupedData, setFilteredGroupedData] = useState([]);
+
+    useEffect(() => {
+        const filteredUsers = usersData.filter((users) =>
+            users.username.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredUsersData(filteredUsers);
+    
+        // Group the data by province based on filteredUsers
+        const groupedData = filteredUsers.reduce((acc, collection) => {
+            const { province } = collection;
+            if (!acc[province]) {
+                acc[province] = [];
+            }
+            acc[province].push(collection);
+            return acc;
+        }, {});
+        
+        setFilteredGroupedData(groupedData);
+    }, [searchQuery, usersData]);
+    
+
     useEffect(() => {
         const fetchUsersData = async () => {
             const firestationsRef = collection(db, 'firestationReportsCollections');
@@ -37,16 +62,6 @@ export default function FirestationReports() {
             [province]: !prev[province]
         }));
     };
-
-    // Grouping data by province
-    const groupedData = usersData.reduce((acc, collection) => {
-        const { province } = collection;
-        if (!acc[province]) {
-            acc[province] = [];
-        }
-        acc[province].push(collection);
-        return acc;
-    }, {});
 
     // Updated year list
     const [years, setYears] = useState([]);
@@ -86,10 +101,12 @@ export default function FirestationReports() {
                         Fire Station Reports
                     </h1>
                     <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search..."
-
-                        />
+                    <SearchBar
+                    placeholder="Search Firestation"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    listSource={filteredUsersData}
+                    />
 
                         {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
                         {/* Buttons and Dropdowns */}
@@ -288,7 +305,7 @@ export default function FirestationReports() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Object.entries(groupedData).map(([province, collections]) => (
+                                    {Object.entries(filteredGroupedData).map(([province, collections]) => (
                                         <Fragment key={province}>
                                             <tr
                                                 className=" text-[14px] bg-gray-100 h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
