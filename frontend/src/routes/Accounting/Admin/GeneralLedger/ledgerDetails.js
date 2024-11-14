@@ -705,9 +705,9 @@ export default function LedgerDetails() {
             {/* Filter Dropdown */}
             <Dropdown
               label={
-                <div className="flex items-center py-2 px-4 text-xs h-10 ring-1 ring-blue-600 text-blue-600 rounded-full hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 transition">
+                <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
                   <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                  <span className="mr-2">Filter</span>
+                  <span className="mr-2 font-medium">Filter</span>
                   <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                 </div>
               }
