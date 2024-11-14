@@ -13,7 +13,6 @@ import { debounce } from 'lodash'; // Import debounce
 import { useNavigate } from 'react-router-dom';
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import SearchBar from '../../../../components/searchBar';
-import FilterButton from '../../../../components/filterButton';
 import AddButton from '../../../../components/addButton';
 import { CiFilter } from "react-icons/ci";
 
@@ -753,24 +752,24 @@ export default function LedgerDetails() {
         </div>
       </div>
 
-      <hr className="border-t border-[#7694D4] my-2" />
+      <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
 
       {/*TABLE*/}
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-          <thead className="text-xs text-gray-700 uppercase bg-blue-200 dark:bg-gray-700 dark:text-gray-400 sticky">
+          <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
             <tr>
 
-              <th scope="col" className="px-6 py-3 w-72 ">ACCOUNT TITLE</th>
-              <th scope="col" className="px-6 py-3 w-48">ACCOUNT CODE</th>
-              <th scope="col" className="px-6 py-3 w-32">DATE</th>
-              <th scope="col" className="px-6 py-3 w-80">PARTICULARS</th>
-              <th scope="col" className="px-6 py-3 w-48">DEBIT</th>
-              <th scope="col" className="px-6 py-3 w-48">CREDIT</th>
-              <th scope="col" className="px-6 py-3 w-48 text-center">BALANCE</th>
+              <th scope="col" className="px-6 py-4 w-72 ">ACCOUNT TITLE</th>
+              <th scope="col" className="px-6 py-4 w-48">ACCOUNT CODE</th>
+              <th scope="col" className="px-6 py-4 w-32">DATE</th>
+              <th scope="col" className="px-6 py-4 w-80">PARTICULARS</th>
+              <th scope="col" className="px-6 py-4 w-48">DEBIT</th>
+              <th scope="col" className="px-6 py-4 w-48">CREDIT</th>
+              <th scope="col" className="px-6 py-4 w-48 text-center">BALANCE</th>
               <th scope="col" className=" w-[20px] "></th>
-              <td className="table-cell py-3 w-10"></td>
+              <td className="table-cell py-4 w-10"></td>
 
             </tr>
           </thead>
