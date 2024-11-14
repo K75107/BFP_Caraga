@@ -11,9 +11,7 @@ import SubmitButton from "../../../components/submitButton";
 // Firebase
 import { auth } from "../../../config/firebase-config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, set,onValue} from 'firebase/database';
-
-
+import { ref, set, onValue } from 'firebase/database';
 
 
 
@@ -63,24 +61,34 @@ export default function Users() {
 
   //Get User Data from firebase
 
+  const [isActive, setIsActive] = useState(null);
+
   useEffect(() => {
-    const getUserList = async () => {
+    const fetchUsers = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "users"));
         const usersData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setUserList(usersData);
 
-        // Retrieve active users from Realtime Database
+        // Get active users from Realtime Database
         const usersRef = ref(db, "activeUsers");
         onValue(usersRef, (snapshot) => {
           const data = snapshot.val();
           if (data) {
-            // Convert the active user data from Realtime DB into a format similar to Firestore
-            const activeUsers = Object.values(data);
-            setUserList((prevList) => [...prevList, ...activeUsers]);
+            const activeUsers = Object.entries(data).map(([userId, userData]) => ({
+              id: userId,
+              isActive: userData.isActive,
+            }));
+
+            // Merge active status with the usersList
+            const updatedUsersList = usersData.map(user => {
+              const activeUser = activeUsers.find(activeUser => activeUser.id === user.id);
+              return activeUser ? { ...user, isActive: activeUser.isActive } : user;
+            });
+
+            setUserList(updatedUsersList);
           }
         });
       } catch (err) {
@@ -88,7 +96,7 @@ export default function Users() {
       }
     };
 
-    getUserList();
+    fetchUsers();
   }, []);
 
 
@@ -264,10 +272,11 @@ export default function Users() {
                   </td>
                   <td className="px-6 py-2">
                     <span
-                      className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
+                      className={`inline-block w-3 h-3 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"
                         }`}
-                    ></span>
+                    />
                   </td>
+
                   <td className="px-6 py-2 text-right">
                     <button className="text-blue-600 hover:underline">View</button>
                   </td>

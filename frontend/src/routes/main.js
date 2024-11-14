@@ -1,7 +1,6 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/sidebar';
-import { TbSettings2 } from "react-icons/tb";
 import { TransparentModal } from '../components/Modal';
 import { AiOutlineSetting } from "react-icons/ai";
 import { MdArrowForwardIos, MdOutlineHelpOutline, MdLogout } from "react-icons/md";
@@ -10,12 +9,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './Authentication/authActions';
 
 import { auth, db } from "../config/firebase-config";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { signOut } from "firebase/auth";
-import { doc, getDocs } from "firebase/firestore";
-
-import { getDatabase, ref, set, onDisconnect, serverTimestamp } from "firebase/database"; // Import Realtime Database functions
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { collection, onSnapshot } from "firebase/firestore";
+import { getDatabase, ref, set, onDisconnect, serverTimestamp } from "firebase/database";
 
 const Main = () => {
   const user = useSelector((state) => state.auth.user);
@@ -24,93 +20,61 @@ const Main = () => {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [logUserData, setLogUserData] = useState({});
+  const database = getDatabase();
 
-  // Logout function using Firebase Authentication
   const handleLogout = async () => {
     try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+      const user = auth.currentUser;
+      if (user) {
+        const userStatusRef = ref(database, `status/${user.uid}`);
+        await set(userStatusRef, {
+          isActive: false,
+          lastActive: serverTimestamp(),
+        });
 
-        if (user) {
-            // Update presence status in Realtime Database to false when the user logs out
-            const dbRef = getDatabase();
-            const userStatusRef = ref(dbRef, `status/${user.uid}`);
-            set(userStatusRef, {
-                isActive: false,
-                lastActive: serverTimestamp(),
-            }).then(() => console.log("User's presence set to inactive in Realtime Database"));
-
-            // Sign out the user
-            await signOut(auth);
-            dispatch(logout());
-            navigate('/');
-
-        }
+        await signOut(auth);
+        dispatch(logout());
+        navigate('/');
+      }
     } catch (error) {
-        console.error("Error signing out: ", error);
+      console.error("Error signing out: ", error);
     }
   };
 
+  useEffect(() => {
+    const usersRef = collection(db, 'users');
+    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+      const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const currentUser = usersList.find(doc => doc.email === auth.currentUser?.email);
+      if (currentUser) setLogUserData(currentUser);
+    });
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userStatusRef = ref(database, `status/${user.uid}`);
+        set(userStatusRef, {
+          isActive: true,
+          lastActive: serverTimestamp(),
+        });
+        onDisconnect(userStatusRef).set({
+          isActive: false,
+          lastActive: serverTimestamp(),
+        });
+      } else {
+        console.log('No user is currently logged in');
+      }
+    });
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeAuth();
+    };
+  }, [database]);
   const closeModalOnOutsideClick = (e) => {
     if (e.target.id === "user-modal-overlay") {
       setShowUserModal(false);
     }
   };
-
-  useEffect(() => {
-    // Setup listener for the users collection in Firestore
-    const usersRef = collection(db, 'users');
-    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
-        const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const auth = getAuth();
-        // Listen for auth state changes
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Find the current user in Firestore by matching their email
-                const currentUser = usersList.find((doc) => doc.email === user.email);
-
-                if (currentUser) {
-                    // Set the current user data in state
-                    setLogUserData(currentUser);
-
-                    // Set presence info to true in Realtime Database
-                    const dbRef = getDatabase();
-                    const userStatusRef = ref(dbRef, `status/${user.uid}`);
-                    set(userStatusRef, {
-                        isActive: true,
-                        lastActive: serverTimestamp(),
-                    }).then(() => console.log("User's presence set to active in Realtime Database"));
-
-                    // Setup onDisconnect to mark the user as inactive when they disconnect
-                    onDisconnect(userStatusRef).set({
-                        isActive: false,
-                        lastActive: serverTimestamp(),
-                    });
-                } else {
-                    console.log('User not found in users');
-                }
-            } else {
-                console.log('No user is currently logged in');
-
-                // Set all users as inactive in Realtime Database when no one is logged in
-                usersList.forEach(userDoc => {
-                    const dbRef = getDatabase();
-                    const userStatusRef = ref(dbRef, `status/${userDoc.id}`);
-                    set(userStatusRef, { isActive: false, lastActive: serverTimestamp() })
-                        .then(() => console.log(`Presence set to false for user ${userDoc.email} in Realtime Database`))
-                        .catch((error) => console.error('Error updating presence in Realtime Database:', error));
-                });
-            }
-        });
-    });
-
-    // Return the unsubscribe function to clean up the listener on unmount
-    return () => {
-      unsubscribeUsers();
-    };
-  }, []);  // Only runs once on mount
-
   return (
     <Fragment>
     <div className="bg-color-lighter-gray flex h-screen">
