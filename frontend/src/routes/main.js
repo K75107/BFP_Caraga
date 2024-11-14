@@ -11,7 +11,7 @@ import { logout } from './Authentication/authActions';
 
 import { auth, db } from "../config/firebase-config";
 import { getAuth,onAuthStateChanged } from "firebase/auth";
-import { collection,onSnapshot } from "firebase/firestore";
+import { collection,onSnapshot,updateDoc,query,where } from "firebase/firestore";
 
 import { signOut } from "firebase/auth";
 import { doc, getDocs } from "firebase/firestore";
@@ -25,16 +25,38 @@ const Main = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [logUserData,setLogUserData] = useState({});
 
-  // Logout function using Firebase Authentication
-  const handleLogout = async () => {
-    try {
+ // Logout function using Firebase Authentication
+const handleLogout = async () => {
+  try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+          // Find the user's document in Firestore by their email or ID
+          const usersRef = collection(db, 'users');
+          const userQuery = query(usersRef, where('email', '==', user.email));
+          const userSnapshot = await getDocs(userQuery);
+
+          if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0]; // Assuming email is unique, take the first match
+              const userDocRef = doc(db, 'users', userDoc.id);
+
+              // Update isActive to false before signing out
+              await updateDoc(userDocRef, { isActive: false });
+              console.log("User's isActive status set to false");
+          }
+      }
+
+      // Sign out the user
       await signOut(auth);
       dispatch(logout());
       navigate('/');
-    } catch (error) {
+
+  } catch (error) {
       console.error("Error signing out: ", error);
-    }
-  };
+  }
+};
+
 
   const closeModalOnOutsideClick = (e) => {
     if (e.target.id === "user-modal-overlay") {
@@ -44,26 +66,40 @@ const Main = () => {
 
 
   useEffect(() => {
-    // Setup listener for the submitted data
+    // Setup listener for the users collection
     const usersRef = collection(db, 'users');
     const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
         const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const auth = getAuth();
+        // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Find the current user in the submitted data by matching their email
+                // Find the current user in Firestore by matching their email
                 const currentUser = usersList.find((doc) => doc.email === user.email);
 
                 if (currentUser) {
-                    // Set the current user ID in the state if found in the submitted deposits
+                    // Set the current user data in state
                     setLogUserData(currentUser);
-                    // console.log('User found in submittedReportsDeposits:', currentUser);
+
+                    // Update `isActive` to true in Firestore
+                    const userDocRef = doc(db, 'users', currentUser.id);
+                    updateDoc(userDocRef, { isActive: true })
+                        .then(() => console.log('User isActive set to true'))
+                        .catch((error) => console.error('Error updating user:', error));
                 } else {
                     console.log('User not found in users');
                 }
             } else {
                 console.log('No user is currently logged in');
+
+                // Set `isActive` to false for all users in Firestore when no user is logged in
+                usersList.forEach(userDoc => {
+                    const userDocRef = doc(db, 'users', userDoc.id);
+                    updateDoc(userDocRef, { isActive: false })
+                        .then(() => console.log(`isActive set to false for user ${userDoc.email}`))
+                        .catch((error) => console.error('Error updating user:', error));
+                });
             }
         });
     });
@@ -73,6 +109,7 @@ const Main = () => {
       unsubscribeUsers();
     };
 }, []);  // Only runs once on mount
+
 
   return (
     <Fragment>
