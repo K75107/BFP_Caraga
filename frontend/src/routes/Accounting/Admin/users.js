@@ -11,11 +11,11 @@ import SubmitButton from "../../../components/submitButton";
 // Firebase
 import { auth } from "../../../config/firebase-config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, set, onValue } from 'firebase/database';
+import { ref, set,onValue} from 'firebase/database';
 
 
 
-import { db, storage } from "../../../config/firebase-config";
+import { db, realtimeDb } from "../../../config/firebase-config";
 import { doc, setDoc } from "firebase/firestore";
 import { collection, getDocs } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -61,44 +61,49 @@ export default function Users() {
 
   //Get User Data from firebase
 
-  const [isActive, setIsActive] = useState(null);
-
   useEffect(() => {
-    const fetchUsers = async () => {
+    const getUserList = async () => {
       try {
+        // Retrieve users from Firestore
         const querySnapshot = await getDocs(collection(db, "users"));
         const usersData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-
-        // Get active users from Realtime Database
-        const usersRef = ref(db, "activeUsers");
+        
+        // Set the initial user list from Firestore
+        setUserList(usersData);
+  
+        // Retrieve active users from Realtime Database
+        const usersRef = ref(realtimeDb, "status");
         onValue(usersRef, (snapshot) => {
           const data = snapshot.val();
+          
           if (data) {
-            const activeUsers = Object.entries(data).map(([userId, userData]) => ({
-              id: userId,
-              isActive: userData.isActive,
-            }));
-
-            // Merge active status with the usersList
-            const updatedUsersList = usersData.map(user => {
-              const activeUser = activeUsers.find(activeUser => activeUser.id === user.id);
-              return activeUser ? { ...user, isActive: activeUser.isActive } : user;
-            });
-
-            setUserList(updatedUsersList);
+            // Format active users from Realtime Database as an object for easier lookup
+            const activeUsersMap = Object.fromEntries(
+              Object.entries(data).map(([key, value]) => [key, { ...value, id: key }])
+            );
+  
+            // Merge Firestore users with status from Realtime Database
+            setUserList(prevList => 
+              prevList.map(user => ({
+                ...user,
+                status: activeUsersMap[user.id]?.status || "offline" // Default to "offline" if no status found
+              }))
+            );
           }
         });
       } catch (err) {
-        console.error(err);
+        console.error("Error retrieving user data:", err);
       }
     };
-
-    fetchUsers();
+  
+    getUserList();
   }, []);
+  
 
+  
 
   const handleAddUser = async () => {
     try {
@@ -272,11 +277,10 @@ export default function Users() {
                   </td>
                   <td className="px-6 py-2">
                     <span
-                      className={`inline-block w-3 h-3 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"
+                      className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
                         }`}
-                    />
+                    ></span>
                   </td>
-
                   <td className="px-6 py-2 text-right">
                     <button className="text-blue-600 hover:underline">View</button>
                   </td>
