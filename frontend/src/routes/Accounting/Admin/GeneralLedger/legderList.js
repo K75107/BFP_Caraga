@@ -8,7 +8,7 @@ import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import AddButton from "../../../../components/addButton";
-import ExportButton from "../../../../components/exportButton";
+
 
 export default function LedgerList() {
     const [showModal, setShowModal] = useState(false);
@@ -169,9 +169,6 @@ export default function LedgerList() {
                     <AddButton
                         onClick={() => setShowModal(true)}
                         label="ADD LEDGER"
-                    />
-                    <ExportButton
-                        label="EXPORT"
                     />
 
 
