@@ -269,7 +269,7 @@ export default function FirestationReports() {
 
                         <AddButton
                             // onClick={() => setShowModal(true)}
-                            label="GENERATE CHANGES IN EQUITY"
+                            label="GENERATE REPORT"
                         />
                     </div>
                 </div>

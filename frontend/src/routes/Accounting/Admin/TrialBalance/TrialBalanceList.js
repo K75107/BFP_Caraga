@@ -12,7 +12,6 @@ import {
     onSnapshot
 } from "firebase/firestore";
 import { PiListChecks, PiListChecksFill } from "react-icons/pi";
-import SearchBar from "../../../../components/searchBar";
 import AddButton from "../../../../components/addButton";
 
 export default function TrialBalanceList() {
@@ -139,10 +138,6 @@ export default function TrialBalanceList() {
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Trial Balance</h1>
                 <div class="flex space-x-4">
-                    <SearchBar
-                        placeholder="Search..."
-                    />
-
                     <AddButton
                         onClick={() => {
                             setCurrentModal(1);

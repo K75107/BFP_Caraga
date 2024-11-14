@@ -7,7 +7,7 @@ import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
-import SearchBar from "../../../../components/searchBar";
+
 import AddButton from "../../../../components/addButton";
 
 export default function BalanceSheet() {
@@ -169,10 +169,6 @@ export default function BalanceSheet() {
             <div className="flex justify-between w-full">
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
                 <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search..."
-
-                        />
                         <AddButton
                             onClick={() => setShowModal(true)}
                             label="GENERATE BALANCE SHEET"

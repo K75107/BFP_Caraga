@@ -5,7 +5,6 @@ import { collection, getDocs, addDoc, getDoc, deleteDoc, doc } from "firebase/fi
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../../components/addButton";
-import SearchBar from "../../../../components/searchBar";
 
 export default function Cashflows() {
     const navigate = useNavigate();
@@ -129,10 +128,6 @@ export default function Cashflows() {
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
 
                     <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search..."
-
-                        />
                         <AddButton
                             onClick={() => setShowModal(true)}
                             label="GENERATE CASHFLOW"
