@@ -15,9 +15,7 @@ import { ref, set,onValue} from 'firebase/database';
 
 
 
-
-
-import { db, storage } from "../../../config/firebase-config";
+import { db, realtimeDb } from "../../../config/firebase-config";
 import { doc, setDoc } from "firebase/firestore";
 import { collection, getDocs } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -76,31 +74,46 @@ export default function Users() {
   useEffect(() => {
     const getUserList = async () => {
       try {
+        // Retrieve users from Firestore
         const querySnapshot = await getDocs(collection(db, "users"));
         const usersData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
+        // Set the initial user list from Firestore
         setUserList(usersData);
-
+  
         // Retrieve active users from Realtime Database
-        const usersRef = ref(db, "activeUsers");
+        const usersRef = ref(realtimeDb, "status");
         onValue(usersRef, (snapshot) => {
           const data = snapshot.val();
+          
           if (data) {
-            // Convert the active user data from Realtime DB into a format similar to Firestore
-            const activeUsers = Object.values(data);
-            setUserList((prevList) => [...prevList, ...activeUsers]);
+            // Format active users from Realtime Database as an object for easier lookup
+            const activeUsersMap = Object.fromEntries(
+              Object.entries(data).map(([key, value]) => [key, { ...value, id: key }])
+            );
+  
+            // Merge Firestore users with status from Realtime Database
+            setUserList(prevList => 
+              prevList.map(user => ({
+                ...user,
+                status: activeUsersMap[user.id]?.status || "offline" // Default to "offline" if no status found
+              }))
+            );
           }
         });
       } catch (err) {
-        console.error(err);
+        console.error("Error retrieving user data:", err);
       }
     };
-
+  
     getUserList();
   }, []);
+  
 
+  
 
   const handleAddUser = async () => {
     try {
