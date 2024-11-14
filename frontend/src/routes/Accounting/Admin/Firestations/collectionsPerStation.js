@@ -651,7 +651,7 @@ export default function CollectionsPerStation() {
                                                                 className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] ${col.id === 'collectionAmount' || col.id === 'dateSubmitted' || col.id === 'natureOfCollection' ? 'pl-5' : ''
                                                                     }`}
                                                             >
-                                                                {col.id === 'natureOfCollection'
+                                                                {col.id === 'natureOfCollection' && selectedCategory === 'natureOfCollection'
                                                                     ? '' // Show empty string if col.id is 'natureOfCollection'
                                                                     : col.id === 'dateSubmitted'
                                                                         ? formattedDate
