@@ -1,39 +1,49 @@
-import React, { Fragment, useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import React, { Fragment, useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
-import Modal from "../../../../components/Modal"; // Import the Modal component
-import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
+import Modal from "../../../../components/Modal";
+import { useLocation } from "react-router-dom";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import { UseLedgerData } from './incomeStatementContext';
 import { IncomeStatementPeriodProvider } from './incomeStatementContext';
+import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
+import { IoIosSearch } from "react-icons/io";
 
 
 export default function IncomeStatement() {
     const navigate = useNavigate();
-    const { incomeStatementID } = useParams();
+    const { incomeStatementID} = useParams(); // Get the ID from the URL
     const [incomeStatement, setIncomeStatement] = useState(null);
-    const [accountTitles, setAccountTitles] = useState([]);
-    const [accounts, setAccounts] = useState([]);
-    const [incomeStatementData, setIncomeStatementData] = useState([]
-    );
+    const [accountTitles, setAccountTitles] = useState([]); // Store account titles
+    const [accounts, setAccounts] = useState([]); // Separate state for accounts
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [currentModal, setCurrentModal] = useState(1); // Modal state
     const [showModal, setShowModal] = useState(false);
+
     const [selectedLedger, setSelectedLedger] = useState("");
-    const [selectedincomeStatement, setSelectedIncomeStatement] = useState("");
-    const [selectedincomeStatementList, setSelectedIncomeStatementList] = useState([]);
     const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
+
+    const location = useLocation();
     const [isSuccess, setIsSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
-    const location = useLocation();
+
     const [stateStartDate, setStateStartDate] = useState(null);
     const [stateEndDate, setStateEndDate] = useState(null);
-    const [currentModal, setCurrentModal] = useState(1); // Modal state
-    
+
+    const [showRightClickModal, setShowRightClickModal] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
+    // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
+    // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
+    // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
+    // const [showPeriodColumn, setShowPeriodColumn] = useState(false);
 
 
-    const [isClicked, setIsClicked] = useState(false);
     const {
         accountTitlesPeriod, updateAccountTitlesPeriod,
         accountsPeriod, updateAccountsPeriod,
@@ -41,19 +51,131 @@ export default function IncomeStatement() {
         showPeriodColumn, updateShowPeriodColumn
     } = UseLedgerData();
 
-
-    // Access data specific to this 
+    // Access data specific to this balance sheet ID
     const currentAccountTitlesPeriod = accountTitlesPeriod[incomeStatementID] || [];
     const currentAccountsPeriod = accountsPeriod[incomeStatementID] || [];
     const currentSelectedLedgerYear = selectedLedgerYear[incomeStatementID] || null;
     const currentShowPeriodColumn = showPeriodColumn[incomeStatementID] || false;
 
+    // Functions to update data for this balance sheet ID
     const setAccountTitlesPeriod = (data) => updateAccountTitlesPeriod(incomeStatementID, data);
     const setAccountsPeriod = (data) => updateAccountsPeriod(incomeStatementID, data);
     const setSelectedLedgerYear = (year) => updateSelectedLedgerYear(incomeStatementID, year);
     const setShowPeriodColumn = (value) => updateShowPeriodColumn(incomeStatementID, value);
 
+    // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
+    // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
 
+    const [isClicked, setIsClicked] = useState(false);
+    const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
+    const [secondSubcategoryModal, setSecondSubcategoryModal] = useState(false);
+    const [thirdSubcategoryModal, setThirdSubcategoryModal] = useState(false);
+    const [selectParentCategory, setSelectParentCategory] = useState(["Revenue", "Expenses", "Subsidy"]);
+    const [subcategory, setSubcategory] = useState([]);
+    const [currentSelection, setCurrentSelection] = useState("");
+    const [selectedMainCategory, setSelectedMainCategory] = useState(null);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const handleSearchChange = (e) => setSearchTerm(e.target.value);
+
+    const [checkedAccounts, setCheckedAccounts] = useState(new Set());
+    const handleCheckboxChange = (accountTitle) => {
+        setCheckedAccounts((prev) => {
+            const updatedCheckedAccounts = new Set(prev);
+            if (!updatedCheckedAccounts.has(accountTitle)) {
+                updatedCheckedAccounts.delete(accountTitle);
+                updatedCheckedAccounts.add(accountTitle);
+            } else {
+                updatedCheckedAccounts.add(accountTitle);
+                updatedCheckedAccounts.delete   (accountTitle);
+            }
+            return updatedCheckedAccounts;
+        });
+    };
+
+    const [selectedAccounts, setSelectedAccounts] = useState([]);
+    const handleConfirm = () => {
+        const selected = Array.from(checkedAccounts); // Convert Set to array
+        setSelectedAccounts(prevSelected => [...prevSelected, ...selected]); // Append new selections
+        console.log("Selected Accounts for Categorization:", selected);
+
+        setCheckedAccounts(new Set());
+    };
+
+    // Function to dynamically filter accounts based on updated data
+    const getFilteredAccounts = () => {
+        return accountTitles
+            .filter(account => ["Revenue", "Expenses", "Subsidy", "Contra Assets"].includes(account.accountType))
+            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude already selected accounts
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle));
+    };
+
+
+    const [subcategories, setSubcategories] = useState([]);
+    const addSubcategory = (newName, newParentCategory, newSelectedAccounts = []) => {
+        // Ensure newSelectedAccounts is always an array
+        const accountTitlesArray = Array.isArray(newSelectedAccounts)
+            ? newSelectedAccounts
+            : Array.from(newSelectedAccounts || []); // Fallback to empty array if null or undefined
+
+        setSubcategories(prevSubcategories => [
+            ...prevSubcategories,
+            {
+                subcategoryName: newName,
+                parentCategory: newParentCategory,
+                accountTitles: accountTitlesArray
+            }
+        ]);
+    };
+
+
+
+    // console.log("Data of selectParentCategory: ", selectParentCategory);
+    // console.log("Data of currentSelection: ", currentSelection);
+    // console.log("Data of Selected Accounts", selectedAccounts);
+    // console.log("Data of Checked Accounts Array", checkedAccounts);
+    // console.log("Data of filteredAccounts", getFilteredAccounts);
+    // console.log("Data of subcategories", subcategories);
+
+
+    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+
+    const handleRightClick = useCallback((event, item) => {
+        event.preventDefault();
+        setModalPosition({ x: event.clientX, y: event.clientY });
+        setSelectedSubcategory(item.name);
+        setShowRightClickModal(true);
+    }, []);
+    
+
+    const handleDeleteRow = (subcategoryName) => {
+        // Get the names of deleted subcategories and removed accounts
+        const { removedSubcategoryNames, removedAccountTitles } = deleteSubcategoryAndDescendants(subcategoryName, subcategories);
+
+        // Update `selectedAccounts` to reflect removed accounts
+        const updatedSelectedAccounts = selectedAccounts.filter(
+            account => !removedAccountTitles.includes(account)
+        );
+        setSelectedAccounts(updatedSelectedAccounts);
+
+        // Update `selectParentCategory` to remove all deleted subcategories
+        const updatedParentCategories = selectParentCategory.filter(
+            category => !removedSubcategoryNames.includes(category)
+        );
+        setSelectParentCategory(updatedParentCategories);
+    };
+
+
+    const closeModalOnOutsideClick = () => {
+        setShowRightClickModal(false);
+        setSelectedSubcategory(null);
+    };
+
+
+    // Spinner Component
     const Spinner = () => (
         <div className="flex justify-center items-center h-screen">
             <div role="status">
@@ -77,57 +199,131 @@ export default function IncomeStatement() {
             </div>
         </div>
     );
-    
-    //----------------------------------------------------------------------------------------------------------------------------------------
 
-    const getLedgerList = async () => {
-        try {
-            const data = await getDocs(collection(db, "ledger"));
-            const filteredData = data.docs.map((doc) => ({
-                ...doc.data(),
-                id: doc.id,
-            }));
-            setIncomeStatementLedgerList(filteredData);
-        } catch (err) {
-            console.error("Error fetching ledger data:", err);
-        }
-    };
-    //---------------------------------------------------------------------------------------------------------------------------------------
+    // ---------Fetching ledger list from the Firestore-----------------
+    useEffect(() => {
+        const getLedgerList = async () => {
+            try {
+                const data = await getDocs(collection(db, "ledger"));
+                const filteredData = data.docs.map((doc) => ({
+                    ...doc.data(),
+                    id: doc.id,
+                }));
+                setIncomeStatementLedgerList(filteredData);
+            } catch (err) {
+                console.error("Error fetching ledger data:", err);
+            }
+        };
 
-    const getIncomeStatementDescription = async () => {
-        try {
-            const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the balance sheet document
-            const docSnap = await getDoc(docRef); // Get the document snapshot
+        getLedgerList();
+    }, []); // No dependencies for getLedgerList, so it only runs once on mount
+    // -----------------------------------------------------------------
 
-            if (docSnap.exists()) {
-                const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
+    // Fetch the balance sheet description and its associated ledger year
+    useEffect(() => {
+        const getIncomeStatementDescription = async () => {
+            try {
+                const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the balance sheet document
+                const docSnap = await getDoc(docRef); // Get the document snapshot
 
-                // Convert Firestore timestamps to "yyyy-mm-dd" format, adjusted for local timezone
-                const convertToLocalDate = (timestamp) => {
-                    const date = new Date(timestamp.seconds * 1000); // Convert Firestore timestamp to JavaScript Date
-                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000); // Adjust to local timezone
-                    return localDate.toISOString().split("T")[0]; // Convert to "yyyy-mm-dd" format
-                };
+                if (docSnap.exists()) {
+                    const incomeStatementData = { id: docSnap.id, ...docSnap.data() };
 
-                const startDate = convertToLocalDate(incomeStatementData.start_date);
-                const endDate = convertToLocalDate(incomeStatementData.end_date);
+                    const convertToLocalDate = (timestamp) => {
+                        const date = new Date(timestamp.seconds * 1000);
+                        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                        return localDate.toISOString().split("T")[0];
+                    };
 
-                // Set dates in the component's state
-                setStateStartDate(startDate);
-                setStateEndDate(endDate);
+                    const startDate = convertToLocalDate(incomeStatementData.start_date);
+                    const endDate = convertToLocalDate(incomeStatementData.end_date);
+
+                    setStateStartDate(startDate);
+                    setStateEndDate(endDate);
+
+                    if (incomeStatementData.ledgerID) {
+                        const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
+                        const ledgerSnap = await getDoc(ledgerRef);
+
+                        if (ledgerSnap.exists()) {
+                            incomeStatementData.ledgerYear = ledgerSnap.data().year;
+
+                            const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
+                            const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                            const accountTitlesData = [];
+                            const accountsData = [];
+
+                            for (const titleDoc of accountTitlesSnap.docs) {
+                                const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                                const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
+                                let accountsQuery = query(
+                                    accountsRef,
+                                    where("date", ">=", startDate),
+                                    where("date", "<=", endDate)
+                                );
+                                const accountsSnap = await getDocs(accountsQuery);
+
+                                if (!accountsSnap.empty) {
+                                    let totalDebit = 0;
+                                    let totalCredit = 0;
+
+                                    const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                        const accountData = {
+                                            id: accountDoc.id,
+                                            accountTitleID: titleDoc.id,
+                                            ...accountDoc.data(),
+                                        };
+
+                                        totalDebit += parseFloat(accountData.debit) || 0;
+                                        totalCredit += parseFloat(accountData.credit) || 0;
+
+                                        return accountData;
+                                    });
+
+                                    titleData.difference = totalDebit - totalCredit;
 
 
-                // Check if ledgerID exists in the balance sheet
-                if (incomeStatementData.ledgerID) {
-                    // Fetch the associated ledger document
-                    const ledgerRef = doc(db, "ledger", incomeStatementData.ledgerID);
+                                    accountTitlesData.push(titleData);
+                                    accountsData.push(...titleAccounts);
+                                }
+                            }
+
+                            setAccountTitles(accountTitlesData);
+                            setAccounts(accountsData);
+                        } else {
+                            incomeStatementData.ledgerYear = "N/A";
+                        }
+                    }
+
+                    setIncomeStatement(incomeStatementData);
+                } else {
+                    setError("No income statement found.");
+                }
+            } catch (err) {
+                console.error("Error fetching income statement data:", err);
+                setError("Error fetching income statement data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        getIncomeStatementDescription();
+    }, [incomeStatementID]);
+
+    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+    useEffect(() => {
+        const getSelectedLedgerData = async () => {
+            try {
+                if (selectedLedger) {
+                    const ledgerRef = doc(db, "ledger", selectedLedger);
                     const ledgerSnap = await getDoc(ledgerRef);
 
                     if (ledgerSnap.exists()) {
-                        incomeStatementData.ledgerYear = ledgerSnap.data().year; // Attach year from ledger
+                        const ledgerYear = ledgerSnap.data().year;
 
-                        // Fetch account titles from the ledger
-                        const accountTitlesRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles");
+                        const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
                         const accountTitlesSnap = await getDocs(accountTitlesRef);
 
                         const accountTitlesData = [];
@@ -136,144 +332,81 @@ export default function IncomeStatement() {
                         for (const titleDoc of accountTitlesSnap.docs) {
                             const titleData = { id: titleDoc.id, ...titleDoc.data() };
 
-                            // Fetch accounts subcollection for each account title
-                            const accountsRef = collection(db, "ledger", incomeStatementData.ledgerID, "accounttitles", titleDoc.id, "accounts");
-                            let accountsQuery = query(
+                            const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                            const accountsQuery = query(
                                 accountsRef,
-                                where("date", ">=", startDate),   // Filter by start_date
-                                where("date", "<=", endDate)      // Filter by end_date
+                                where("date", ">=", stateStartDate),
+                                where("date", "<=", stateEndDate)
                             );
                             const accountsSnap = await getDocs(accountsQuery);
 
-                            // Only proceed if there are accounts within the date range
                             if (!accountsSnap.empty) {
-                                // Initialize sums for debit and credit
-                                let totalDebit = 0;
-                                let totalCredit = 0;
+                                let totalDebit2 = 0;
+                                let totalCredit2 = 0;
 
                                 const titleAccounts = accountsSnap.docs.map(accountDoc => {
                                     const accountData = {
                                         id: accountDoc.id,
-                                        accountTitleID: titleDoc.id, // Link to the account title ID
+                                        accountTitleID: titleDoc.id,
                                         ...accountDoc.data(),
                                     };
 
-                                    totalDebit += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                    totalCredit += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
+                                    totalDebit2 += parseFloat(accountData.debit) || 0;
+                                    totalCredit2 += parseFloat(accountData.credit) || 0;
 
                                     return accountData;
                                 });
 
-                                // After processing all account documents, you can attach the difference (debit - credit) to the account title
-                                titleData.difference = totalDebit - totalCredit;  // Attach the debit - credit difference to the account title
-                                titleData.differenceContra = totalCredit - totalDebit;
+                                titleData.difference2 = totalDebit2 - totalCredit2;
 
-                                // Continue to add this account title to the list
-                                accountTitlesData.push(titleData);  // Add account title to state
-
-                                // Add accounts to a separate state for accounts
+                                accountTitlesData.push(titleData);
                                 accountsData.push(...titleAccounts);
                             }
                         }
 
-                        setAccountTitles(accountTitlesData); // Set account titles
-                        setAccounts(accountsData); // Set accounts separately
-
+                        setAccountTitlesPeriod(accountTitlesData);
+                        setAccountsPeriod(accountsData);
+                        setSelectedLedgerYear(ledgerYear);
                     } else {
-                        incomeStatementData.ledgerYear = "N/A"; // Handle missing ledger case
+                        console.error("Selected ledger not found.");
                     }
                 }
-
-                setIncomeStatement(incomeStatementData); // Set balance sheet data with ledger year
-            } else {
-                setError("No balance sheet found.");
+            } catch (error) {
+                console.error("Error fetching selected ledger data:", error);
             }
-        } catch (err) {
-            console.error("Error fetching balance sheet data:", err);
-            setError("Error fetching balance sheet data.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
-     // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
-     const getSelectedLedgerData = async () => {
-        try {
-            if (selectedLedger) {
-                // Fetch the associated ledger document using the selectedLedgerID
-                const ledgerRef = doc(db, "ledger", selectedLedger);
-                const ledgerSnap = await getDoc(ledgerRef);
-
-                if (ledgerSnap.exists()) {
-                    const ledgerYear = ledgerSnap.data().year; // Get the ledger year
-
-                    // Fetch account titles from the selected ledger
-                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
-                    const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                    const accountTitlesData = [];
-                    const accountsData = [];
-
-                    for (const titleDoc of accountTitlesSnap.docs) {
-                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                        // Fetch accounts subcollection for each account title
-                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
-                        const accountsQuery = query(
-                            accountsRef,
-                            where("date", ">=", stateStartDate),   // Filter by start_date
-                            where("date", "<=", stateEndDate)      // Filter by end_date
-                        );
-                        const accountsSnap = await getDocs(accountsQuery);
-
-                        // Only proceed if there are accounts within the date range
-                        if (!accountsSnap.empty) {
-                            // Initialize sums for debit and credit
-                            let totalDebit2 = 0;
-                            let totalCredit2 = 0;
-
-                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                const accountData = {
-                                    id: accountDoc.id,
-                                    accountTitleID: titleDoc.id, // Link to the account title ID
-                                    ...accountDoc.data(),
-                                };
-
-                                totalDebit2 += parseFloat(accountData.debit) || 0;  // Parse to number, default to 0 if invalid or missing
-                                totalCredit2 += parseFloat(accountData.credit) || 0; // Parse to number, default to 0 if invalid or missing
-                                return accountData;
-                            });
-
-                            // Attach the difference (debit - credit) to the account title
-                            titleData.difference2 = totalDebit2 - totalCredit2;  // Attach the debit - credit difference to the account title
-
-                            // Add account title and accounts data to their respective arrays
-                            accountTitlesData.push(titleData);  // Add account title to the list
-                            accountsData.push(...titleAccounts);  // Add account data to the list
-                        }
-                    }
-
-                    // Update the state with the fetched data
-                    setAccountTitlesPeriod(accountTitlesData); // Set account titles
-                    setAccountsPeriod(accountsData); // Set accounts separately
-
-                    // Optionally, if you want to show the year
-                    setSelectedLedgerYear(ledgerYear);
-                } else {
-                    console.error("Selected ledger not found.");
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching selected ledger data:", error);
-        }
-    };
+        getSelectedLedgerData();
+    }, [selectedLedger, stateStartDate, stateEndDate]); // Triggered by selectedLedger, stateStartDate, and stateEndDate
     // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
 
-    useEffect(() => {   
-        getLedgerList();
-        getIncomeStatementDescription();
-        getSelectedLedgerData();
-    }, [incomeStatementID]);
+    // useEffect(() => {
+    //     if (!showRightClickModal) {
+    //         // Fetch data when incomeStatementIDor selectedLedger changes
+    //         getIncomeStatementDescription();
+    //         getLedgerList();
+    //         getSelectedLedgerData();
+    //     }
+
+    //     // Display success message if loading is complete and there's a success message in location.state
+    //     if (!loading && location.state?.successMessage) {
+    //         setSuccessMessage(location.state.successMessage);
+    //         setIsSuccess(true);
+
+    //         const timer = setTimeout(() => {
+    //             setIsSuccess(false);
+    //         }, 2000);
+
+    //         // Clear timeout when the effect cleans up
+    //         return () => clearTimeout(timer);
+    //     }
+    // }, [incomeStatementID, selectedLedger, loading, location.state, showRightClickModal]);
+
+    // useEffect(() => {
+    //     getIncomeStatementDescription();
+    //     getLedgerList();
+    //     getSelectedLedgerData();
+    // }, [incomeStatementID, selectedLedger]);
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -295,145 +428,319 @@ export default function IncomeStatement() {
     if (error) {
         return <p>{error}</p>;
     }
-    // Calculate total Revenue
+
     const totalRevenues = accountTitles
-        .filter(accountTitle =>
-            accountTitle.accountType === "Revenue")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount; // Sum the amounts
-        }, 0);
+    .filter(accountTitle =>
+        accountTitle.accountType === "Revenue")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference;
+        return total + amount; // Sum the amounts
+    }, 0);
 
-    // Calculate total Expenses
-    const totalExpenses = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Expenses")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount;
-        }, 0);
+// Calculate total Expenses
+const totalExpenses = accountTitles
+    .filter(accountTitle => accountTitle.accountType === "Expenses")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference;
+        return total + amount;
+    }, 0);
 
-    const totalSubsidy = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Subsidy")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount;
-        }, 0);
+const totalSubsidy = accountTitles
+    .filter(accountTitle => accountTitle.accountType === "Subsidy")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference;
+        return total + amount;
+    }, 0);
 
-    let totalNetSurplusDeficit = totalRevenues - totalExpenses;
+let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
-    const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
-        try {
-            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
-            await updateDoc(incomeStatementRef, {
-                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
-            });
-            console.log("Total net Revenues successfully updated in Firestore.");
-        } catch (err) {
-            console.error("Error updating total Subsidy:", err);
-        }
-    };
-    updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
-
-
+const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
+    try {
+        const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
+        await updateDoc(incomeStatementRef, {
+            totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
+        });
+        console.log("Total net Revenues successfully updated in Firestore.");
+    } catch (err) {
+        console.error("Error updating total Subsidy:", err);
+    }
+};
+updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
-
     const totalRevenues2 = currentAccountTitlesPeriod
-        .filter(accountTitle => accountTitle.accountType === "Revenue")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference2;
-            return total + amount;
-        }, 0);
+    .filter(accountTitle => accountTitle.accountType === "Revenue")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference2;
+        return total + amount;
+    }, 0);
 
-    // Calculate total amount for Expenses
-    const totalExpenses2 = currentAccountTitlesPeriod
-        .filter(accountTitle => accountTitle.accountType === "Expenses")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference2;
-            return total + amount;
-        }, 0);
+// Calculate total amount for Expenses
+const totalExpenses2 = currentAccountTitlesPeriod
+    .filter(accountTitle => accountTitle.accountType === "Expenses")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference2;
+        return total + amount;
+    }, 0);
 
-    // Calculate base equity as Revenues - Expenses
-    let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
-    let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
+// Calculate base equity as Revenues - Expenses
+let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
+let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
 
-    const totalSubsidy2 = currentAccountTitlesPeriod
-        .filter(accountTitle => accountTitle.accountType === "Subsidy")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference2;
-            return total + amount;
-        }, 0);
+const totalSubsidy2 = currentAccountTitlesPeriod
+    .filter(accountTitle => accountTitle.accountType === "Subsidy")
+    .reduce((total, accountTitle) => {
+        const amount = accountTitle.difference2;
+        return total + amount;
+    }, 0);
+
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
+
+    // ------------------------------------- REVENUE  A C C O U N T  T I T L E S -------------------------------------
+    const assetsAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
+
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Revenue"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Revenue");
+
+        return accountTitles
+        .filter(accountTitle =>
+            accountTitle.accountType === "Revenue" &&
+            !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+        )
+        .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+        .map(accountTitle => {
+            const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+            );
+
+            return {
+                name: accountTitle.accountTitle,
+                amount: accountTitle.difference,
+                amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+            };
+        }); 
+};
+    // ------------------------------------- REVENUE  A C C O U N T  T I T L E S -------------------------------------
+
+    // -------------------------------- E X P E N S E S  A C C O U N T  T I T L E S --------------------------------
+    const liabilitiesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
+
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Expenses"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Expenses");
+
+        return accountTitles
+            .filter(accountTitle =>
+                accountTitle.accountType === "Expenses" &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                };
+            });
+    };
+    // -------------------------------- E X P E N S E S  A C C O U N T  T I T L E S --------------------------------
+
+    // ------------------------------------- SUBSIDY A C C O U N T  T I T L E S -------------------------------------
+    const equityAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        // Gather all account titles from subcategories recursively
+        const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
+            let subcategoryAccountTitles = [];
+
+            // Recursively accumulate account titles for each subcategory
+            subcategories
+                .filter(sub => sub.parentCategory === parentCategory)
+                .forEach(sub => {
+                    // Add current subcategory's account titles
+                    if (sub.accountTitles) {
+                        subcategoryAccountTitles.push(...sub.accountTitles);
+                    }
+                    // Recursively add child subcategories' account titles
+                    subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
+                });
+
+            return subcategoryAccountTitles;
+        };
+
+        // Get all account titles in the nested subcategories under "Subsidy"
+        const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Subsidy");
+
+        return accountTitles
+            .filter(accountTitle =>
+                accountTitle.accountType === "Subsidy" &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                };
+            }); 
+    };
+    // ------------------------------------- SUBSIDY A C C O U N T  T I T L E S -------------------------------------
+
+    // Recursive function to get nested subcategories
+    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
+        return subcategories
+            .filter(sub => sub.parentCategory === parentName)
+            .map(sub => ({
+                name: sub.subcategoryName,
+                children: [
+                    // Get account titles specific to this subcategory
+                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
+
+                    // Recursively add nested subcategories
+                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
+                ]
+            }));
+    };
+
+    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+    // Updated `subcategoriesAccountTitles` to use `parentCategory`
+    const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+        const subcategoryAccountNames = subcategories
+            .flatMap(sub => sub.accountTitles || [])
+            .map(account => account);
+
+        return accountTitles
+            .filter(accountTitle =>
+                (accountTitle.accountType === "Revenue" ||
+                    accountTitle.accountType === "Expenses" ||
+                    accountTitle.accountType === "Subsidy") &&
+                subcategoryAccountNames.includes(accountTitle.accountTitle)
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
+
+                // Return structure based on accountType
+                if (accountTitle.accountType === "Expenses" || accountTitle.accountType === "Subsidy") {
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.difference,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                    };
+                } else if (accountTitle.accountType === "Revenue" || accountTitle.accountType === "Contra Assets") {
+                    return {
+                        name: accountTitle.accountTitle,
+                        amount: accountTitle.difference,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                    };
+                }
+            });
+    };
+
+    const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
+        let removedSubcategoryNames = [subcategoryName]; // Start with the main subcategory
+        let removedAccountTitles = [];
+
+        const deleteRecursive = (parentCategory) => {
+            const index = subcategories.findIndex(sub => sub.subcategoryName === parentCategory);
+
+            if (index > -1) {
+                const subcategory = subcategories[index];
+                if (subcategory.accountTitles) {
+                    removedAccountTitles.push(...subcategory.accountTitles);
+                }
+
+                // Collect the name of the subcategory being deleted
+                removedSubcategoryNames.push(subcategory.subcategoryName);
+
+                // Remove the subcategory
+                subcategories.splice(index, 1);
+
+                // Recursively delete nested subcategories
+                subcategories
+                    .filter(sub => sub.parentCategory === parentCategory)
+                    .forEach(sub => deleteRecursive(sub.subcategoryName));
+            }
+        };
+
+        deleteRecursive(subcategoryName);
+
+        // Return both removed subcategory names and account titles
+        return { removedSubcategoryNames, removedAccountTitles };
+    };
+    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+
+    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
     const incomeStatementDetailsData = [
         {
             name: "Revenue",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Revenue"
-                )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map(accountTitle => {
-                    // Match by accountTitle with accountTitlesPeriod
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
+            children: [
+                ...getNestedSubcategories(subcategories, "Revenue", accountTitles, currentAccountTitlesPeriod),
+                ...assetsAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
 
-                    return {
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.difference,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
-                    };
-                }),
+            ],
             amount: totalRevenues,
-            amount2: totalRevenues2 !== 0 ? totalRevenues2 : null  // Display amount2 if it exists and if not the set to null // Add the calculated total amount for Revenue
+            amount2: totalRevenues2 !== 0 ? totalRevenues2 : null
         },
         {
             name: "Expenses",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Expenses"
-                )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map(accountTitle => {
-                    // Match by accountTitle with accountTitlesPeriod
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
-
-                    return {
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.difference,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
-                    };
-                }),
+            children: [
+                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
+                ...getNestedSubcategories(subcategories, "Expenses", accountTitles, currentAccountTitlesPeriod)
+            ],
             amount: totalExpenses,
             amount2: totalExpenses2 !== 0 ? totalExpenses2 : null
         },
         {
-            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs",
-            children: accountTitles
-                .filter(accountTitle =>
-                    accountTitle.accountType === "Subsidy"
-                )
-                .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)) // Sort alphabetically by accountTitle
-                .map(accountTitle => {
-                    // Match by accountTitle with accountTitlesPeriod
-                    const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                        periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-                    );
-
-                    return {
-                        name: accountTitle.accountTitle,
-                        amount: accountTitle.difference,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null // Display amount2 if it exists and if not the set to null
-                    };
-                }),
+            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCsP",
+            children: [
+                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
+                ...getNestedSubcategories(subcategories, "Subsidy", accountTitles, currentAccountTitlesPeriod)
+            ],
             amount: totalSubsidy,
-            amount2: totalSubsidy2 !== 0 ? totalSubsidy2 : null  // Display amount2 if it exists and if not the set to null
-        },
+            amount2: totalSubsidy2 !== 0 ? totalSubsidy2 : null
+        }
     ];
-
+    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
 
     // Group data for the cards
     const groupData = [
@@ -462,7 +769,7 @@ export default function IncomeStatement() {
 
             items: [
                 {
-                    label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus" : "TOTAL Deficit",
+                    label: totalNetSurplusDeficit > 0 ? "TOTAL Surplus for the Period" : "TOTAL Deficit for the Period",
                     value: totalNetSurplusDeficit < 0 ? Math.abs(totalNetSurplusDeficit).toLocaleString() : totalNetSurplusDeficit.toLocaleString()
                 },
 
@@ -470,6 +777,8 @@ export default function IncomeStatement() {
         },
 
     ];
+
+    // Card component for group data
     const Card = ({ title, items }) => (
         <div className="card bg-white shadow-md rounded-lg p-4 m-4 w-[200px] h-[80px] pt-6"> {/* Adjust width and margin */}
             <h3 className="text-lg font-semibold mb-2">{title}</h3>
@@ -482,11 +791,8 @@ export default function IncomeStatement() {
         </div>
     );
 
-
-
-
-
-    const Row = ({ item, depth = 0 }) => {
+    // Recursive component to render rows
+    const Row = ({ item, depth = 0, handleRightClick }) => {
         const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
         // Helper function to format amounts with parentheses for negative or contra amounts
@@ -508,16 +814,22 @@ export default function IncomeStatement() {
             }
         };
 
-        // Check if the row is a parent row for "Revenues, Expenses or Subsidy"
+        // Check if the row is a parent row for "Revenue", "Expenses", or "Subsidy"
         const isMainCategory = ["Revenue", "Expenses", "Subsidy"].includes(item.name);
 
         return (
             <>
-                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <tr className="border-t bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    onContextMenu={(event) => handleRightClick(event, item)}
+                >
                     {/* Account name with indentation */}
                     <td
                         className={`px-6 py-4 ${isMainCategory ? "cursor-pointer" : ""}`}
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={() => {
+                            console.log("isOpen Status Before: ", !isOpen);
+                            setIsOpen(!isOpen);
+                            console.log("isOpen Status After: ", !isOpen);
+                        }}
                         style={{ paddingLeft: `${depth * 20}px` }} // Adjust indentation based on depth
                     >
                         {item.children ? (
@@ -556,7 +868,7 @@ export default function IncomeStatement() {
                 {isOpen && item.children && (
                     <>
                         {item.children.map((childItem, index) => (
-                            <Row key={index} item={childItem} depth={depth + 1} /> // Increment depth for children
+                            <Row key={index} item={childItem} depth={depth + 1} handleRightClick={handleRightClick} /> // Increment depth for children
                         ))}
                     </>
                 )}
@@ -576,22 +888,21 @@ export default function IncomeStatement() {
                     />
                 </div>
             )}
-
             {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                    <li class="inline-flex items-center">
-                        <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                            <RiFileAddFill className="mr-2"></RiFileAddFill>
+            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li className="inline-flex classNameitems-center">
+                        <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                        <RiFileAddFill className="mr-2"></RiFileAddFill>
                             Income Statement
                         </button>
                     </li>
                     <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-Width="2" d="m1 9 4-4-4-4" />
+                        <div className="flex items-center">
+                            <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
                             </svg>
-                            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{incomeStatement.description}</span>
+                            <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{incomeStatement.description}</span>
                         </div>
                     </li>
                 </ol>
@@ -603,13 +914,15 @@ export default function IncomeStatement() {
                     {incomeStatement.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
+                        onClick={() => setFirstSubcategoryModal(true)}
+                    >
+                        ADD SUBCATEGORY
                     </button>
                     <button
-                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium border border-gray-400 ${isClicked
-                            ? 'bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
-                            : 'bg-white text-black hover:bg-color-lighter-gray'
+                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium ${isClicked
+                            ? 'bg-[#2196F3] text-white' //'border border-gray-400 bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
+                            : 'bg-[#2196F3] text-white' //'border border-gray-400 bg-white text-black hover:bg-color-lighter-gray'
                             }`}
                         onClick={() => {
                             setIsClicked(true);
@@ -619,10 +932,14 @@ export default function IncomeStatement() {
                     >
                         ADD PERIOD
                     </button>
+                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
+                        EXPORT TO EXCEL
+                    </button>
                 </div>
             </div>
-            
+
             <hr className="border-t border-[#7694D4] my-4" />
+
             {/* TABLE */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
@@ -640,7 +957,7 @@ export default function IncomeStatement() {
                     </thead>
                     <tbody>
                         {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} /> 
+                            <Row key={index} item={item} depth={1} handleRightClick={handleRightClick} /> // Start with depth 1 for main categories
                         ))}
                     </tbody>
                 </table>
@@ -653,9 +970,8 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-
- {/* Modal */}
- {showModal && currentModal === 1 && (
+            {/* Modal 1 */}
+            {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
@@ -686,13 +1002,9 @@ export default function IncomeStatement() {
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
                                     if (selectedLedger) {
-                                        // Call the function to get ledger data for the selected period
-                                        getSelectedLedgerData(selectedLedger, stateStartDate, stateEndDate);
-
-                                        // Optionally move to the next modal step
-                                        setCurrentModal(2);
-
+                                        // Only update state and let useEffect handle the data fetching
                                         setShowPeriodColumn(true);  // Show the period column
+                                        setCurrentModal(2);         // Move to the next modal step
                                         setIsClicked(false);
                                     }
                                 }}
@@ -700,6 +1012,301 @@ export default function IncomeStatement() {
                             >
                                 ADD
                             </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            {/* Right-click context modal */}
+            {showRightClickModal && (
+                <div
+                    id="user-modal-overlay"
+                    className="fixed inset-0 flex justify-center items-center"
+                    onClick={closeModalOnOutsideClick}
+                >
+                    <div
+                        style={{ top: modalPosition.y, left: modalPosition.x }}
+                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                    >
+                        <button
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => {
+                                handleDeleteRow(selectedSubcategory); // Call delete function with selected subcategory
+                                setShowRightClickModal(false); // Close the modal
+                            }}
+                        >
+                            Delete Row
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 1st Modal For Add Subcategory */}
+            {firstSubcategoryModal && (
+                <Modal isVisible={firstSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4 overflow-y-auto ">
+                        <div className="flex justify-between">
+                            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Create Subcategory</h1>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]"
+                                onClick={() => {
+                                    setSubcategory('');        // Reset subcategory input
+                                    setCurrentSelection('');    // Reset select dropdown
+                                    setFirstSubcategoryModal(false); // Close modal
+                                }}>
+                                ×
+                            </button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        <div className="flex p-2.5">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    id="name"
+                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
+                                    placeholder=" "
+                                    value={subcategory}
+                                    onChange={(e) => setSubcategory(e.target.value)}
+                                />
+                                <label
+                                    htmlFor="name"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2"
+                                >
+                                    Subcategory Name
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex p-2.5 overflow-y-auto ">
+                            <div className="relative w-80">
+                                <select
+                                    id="categoryselect"
+                                    className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    value={currentSelection}
+                                    onChange={(e) => setCurrentSelection(e.target.value)}
+                                >
+                                    <option value=""></option>
+                                    {selectParentCategory.map((parentCategory, index) => (
+                                        <option key={index} value={parentCategory}>
+                                            {parentCategory}
+                                        </option>
+                                    ))}
+                                </select>
+                                <label
+                                    htmlFor="categoryselect"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2"
+                                >
+                                    Select Parent Category
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end py-3 px-4 flex-row">
+                            <button
+                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 
+                                        ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={subcategory.length === 0 || currentSelection === ''}
+                                onClick={() => {
+                                    setFirstSubcategoryModal(false)
+                                    setSecondSubcategoryModal(true)
+                                }}
+                            >
+                                NEXT
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* 2nd Modal For Add Subcategory */}
+            {secondSubcategoryModal && (
+                <Modal isVisible={secondSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h1 className="font-poppins font-bold text-xl text-gray-700">Add Accounts to {subcategory}</h1>
+                            <button
+                                type="button"
+                                className="text-2xl font-semibold text-gray-500 focus:outline-none"
+                                onClick={() => {
+                                    setSecondSubcategoryModal(false);
+                                    setSubcategory('');
+                                    setCurrentSelection('');
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <hr className="border-t border-[#7694D4] my-3" />
+
+                        {/* Content */}
+                        <div className="p-6 text-center">
+                            <QuestionMarkCircleIcon className="mx-auto mb-4 text-gray-400 w-16 h-16" />
+                            <h3 className="mb-6 text-lg font-medium text-gray-600">
+                                Would you like to add accounts to this subcategory?
+                            </h3>
+
+                            {/* Buttons */}
+                            <div className="flex justify-center space-x-10">
+                                <button
+                                    type="button"
+                                    className="bg-[#2196F3] hover:bg-[#1976D2] transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
+                                    onClick={() => {
+                                        setThirdSubcategoryModal(true)
+                                        setSecondSubcategoryModal(false)
+                                    }}
+                                >
+                                    YES
+                                </button>
+                                <button
+                                    type="button"
+                                    className="bg-gray-100 rounded-lg text-sm text-gray-700 font-poppins font-medium py-2.5 px-6 border border-gray-300 hover:border-red-500 hover:text-white hover:bg-red-500 transition-all focus:outline-none focus:ring-2 focus:ring-red-200 shadow-md"
+                                    onClick={() => {
+                                        setSecondSubcategoryModal(false)
+                                        setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]); // Append new selections
+                                        console.log("No button clicked with:", selectParentCategory);
+                                        setSubcategory('');
+                                        setCurrentSelection('');
+                                        addSubcategory(subcategory, currentSelection, []);
+                                    }}
+                                >
+                                    NO
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* 3rd Modal For Add Subcategory */}
+            {thirdSubcategoryModal && (
+                <Modal isVisible={thirdSubcategoryModal}>
+                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl flex flex-col justify-between">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h1 className="font-poppins font-bold text-xl text-gray-700">Select Accounts to Add</h1>
+                            <button
+                                className="text-2xl font-semibold text-gray-500 focus:outline-none"
+                                onClick={() => {
+                                    setIsDropdownOpen(false);
+                                    setCheckedAccounts(new Set());
+                                    setThirdSubcategoryModal(false);
+                                    setSubcategory('');
+                                    setCurrentSelection('');
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <hr className="border-t border-[#7694D4] -my-1" />
+
+                        {/* Content */}
+                        <div className="p-8 pt-16 text-center flex justify-center">
+                            <div className="relative">
+                                <button
+                                    id="dropdownSearchButton"
+                                    onClick={toggleDropdown}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                    type="button"
+                                >
+                                    Available Accounts
+                                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1l4 4 4-4" />
+                                    </svg>
+                                </button>
+
+                                {/* Dropdown menu */}
+                                <div
+                                    id="dropdownSearch"
+                                    className={`z-10 ${isDropdownOpen ? '' : 'hidden'} absolute top-full -left-8 mt-2 bg-white rounded-lg shadow w-60 dark:bg-gray-700`}
+                                >
+                                    <div className="p-3">
+                                        <label htmlFor="input-group-search" className="sr-only">Search</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                                                <IoIosSearch className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                id="input-group-search"
+                                                value={searchTerm}
+                                                onChange={handleSearchChange}
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                                placeholder="Search Account"
+                                            />
+                                        </div>
+                                    </div>
+                                    <ul
+                                        className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
+                                        aria-labelledby="dropdownSearchButton"
+                                    >
+                                        {getFilteredAccounts().length === 0 ? (
+                                            <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
+                                                No Available Accounts
+                                            </li>
+                                        ) : (
+                                            getFilteredAccounts().map((account) => (
+                                                <li key={account.id}>
+                                                    <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+                                                        <input
+                                                            id={`checkbox-item-${account.accountTitle}`}
+                                                            type="checkbox"
+                                                            value={account.accountTitle}
+                                                            checked={checkedAccounts.has(account.accountTitle)}
+                                                            onChange={() => handleCheckboxChange(account.accountTitle)}
+                                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+                                                        />
+                                                        <label
+                                                            htmlFor={`checkbox-item-${account.id}`}
+                                                            className="w-full ms-2 text-sm font-medium text-gray-900 rounded dark:text-gray-300"
+                                                        >
+                                                            {account.accountTitle}
+                                                        </label>
+                                                    </div>
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer with Confirm Button */}
+                        <div className="flex justify-end mt-4 p-4">
+                            {getFilteredAccounts().length === 0 ? (
+                                <button
+                                    type="button"
+                                    className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
+                                    onClick={() => {
+                                        setIsDropdownOpen(false);
+                                        setThirdSubcategoryModal(false);
+                                        // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
+                                        setSubcategory('');
+                                        setCurrentSelection('');;
+
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className={`text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4 ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={checkedAccounts.size === 0}
+                                    onClick={() => {
+                                        setIsDropdownOpen(false);
+                                        setThirdSubcategoryModal(false);
+                                        setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
+                                        addSubcategory(subcategory, currentSelection, checkedAccounts);
+                                        handleConfirm(); // Clear checked accounts after adding
+                                        setSubcategory('');
+                                        setCurrentSelection('');
+                                    }}
+                                >
+                                    Confirm
+                                </button>
+                            )}
                         </div>
                     </div>
                 </Modal>
