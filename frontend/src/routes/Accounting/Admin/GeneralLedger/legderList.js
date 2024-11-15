@@ -235,7 +235,7 @@ export default function LedgerList() {
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add New Ledger
                         </h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" >
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
                             ×
                         </button>
                     </div>

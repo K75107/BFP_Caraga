@@ -62,6 +62,8 @@ export default function LedgerDetails() {
   const [searchQuery, setSearchQuery] = useState(''); // Search input state
   const [filteredAccountTitles, setFilteredAccountTitles] = useState([]); // Filtered account titles
 
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   useEffect(() => {
     if (!ledgerId) {
@@ -155,12 +157,30 @@ export default function LedgerDetails() {
 
   // Filter account titles based on searchQuery
   useEffect(() => {
-    const filteredTitles = accountTitles.filter((title) =>
-      title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTitles = accountTitles.filter((title) => {
+      const matchesSearch = title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase());
+  
+      const transactions = accountsData[title.id] || [];
+      const matchesDate = transactions.some((transaction) => {
+        if (!transaction.date) return false;
+  
+        const transactionDate = new Date(transaction.date);
+        const isAfterStartDate = startDate ? transactionDate >= new Date(startDate) : true;
+  
+        // Adjust the end date to include the entire day
+        const adjustedEndDate = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+        const isBeforeEndDate = adjustedEndDate ? transactionDate <= adjustedEndDate : true;
+  
+        return isAfterStartDate && isBeforeEndDate;
+      });
+  
+      return matchesSearch && matchesDate;
+    });
+  
     setFilteredAccountTitles(filteredTitles);
-  }, [searchQuery, accountTitles]);
-
+  }, [searchQuery, accountTitles, accountsData, startDate, endDate]);
+  
+  
 
   //Right Click Functions
 
@@ -838,22 +858,22 @@ export default function LedgerDetails() {
                     Start Date
                   </h6>
                   <DatePicker
-                    // selected={selectedDate}
-                    // onChange={(date) => setSelectedDate(date)}
-                    placeholderText="mm/dd/yyyy"
-                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"  // Apply custom styling class
-                  />
+                  selected={startDate}
+                  onChange={(date) => setStartDate(date)}
+                  placeholderText="Start Date"
+                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                />
                 </div>
                 <div className='px-3 py-1'>
                   <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
                     End Date
                   </h6>
                   <DatePicker
-                    // selected={selectedDate}
-                    // onChange={(date) => setSelectedDate(date)}
-                    placeholderText="mm/dd/yyyy"
-                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"  // Apply custom styling class
-                  />
+                  selected={endDate}
+                  onChange={(date) => setEndDate(date)}
+                  placeholderText="End Date"
+                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                />
                 </div>
 
               </div>
