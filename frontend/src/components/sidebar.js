@@ -28,7 +28,7 @@ const Sidebar = () => {
     const currentPath = location.pathname;
     if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger') || path === '/main/reports/firestationReports' && currentPath.startsWith('/main/reports') || path === '/main/TrialBalance' && currentPath.startsWith('/main/TrialBalance') ||
       (path === '/main/balanceSheet' && currentPath.startsWith('/main/balanceSheet')) || (path === '/main/incomeStatement' && currentPath.startsWith('/main/incomeStatement')) 
-      || (path === '/main/collections' && currentPath.startsWith('/main/collections')) || (path === '/main/cashflowStatement' && currentPath.startsWith('/main/cashflowStatement')) || (path === '/main/changesInEquityMain' && currentPath.startsWith('/main/changesInEquityMain'))) {
+      || (path === '/main/collections' && currentPath.startsWith('/main/collections')) || (path === '/main/cashflowStatement' && currentPath.startsWith('/main/cashflowStatement')) ||(path === '/main/firestation/deposits' && currentPath.startsWith('/main/firestation/deposits')) ||(path === '/main/firestation/collections' && currentPath.startsWith('/main/firestation/collections')) || (path === '/main/changesInEquityMain' && currentPath.startsWith('/main/changesInEquityMain'))) {
       return true;
     }
     return currentPath === path;

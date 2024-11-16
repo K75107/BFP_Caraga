@@ -241,7 +241,7 @@ export default function Users() {
               />
             <AddButton
               onClick={() => setShowModal(true)}
-              label="ADD LEDGER"
+              label="ADD USER"
             />
           </div>
         </div>
@@ -258,7 +258,6 @@ export default function Users() {
                 <th scope="col" className="px-6 py-4">EMAIL</th>
                 <th scope="col" className="px-6 py-4">USERTYPE</th>
                 <th scope="col" className="px-6 py-4">ACTIVE</th>
-                <th scope="col" className="px-6 py-4"><span className="sr-only">View</span></th>
               </tr>
             </thead>
             <tbody>
@@ -292,9 +291,6 @@ export default function Users() {
                       className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
                         }`}
                     ></span>
-                  </td>
-                  <td className="px-6 py-2 text-right">
-                    <button className="text-blue-600 hover:underline">View</button>
                   </td>
                 </tr>
               ))}
