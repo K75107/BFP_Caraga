@@ -163,28 +163,28 @@ export default function LedgerDetails() {
   useEffect(() => {
     const filteredTitles = accountTitles.filter((title) => {
       const matchesSearch = title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase());
-  
+
       const transactions = accountsData[title.id] || [];
       const matchesDate = transactions.some((transaction) => {
         if (!transaction.date) return false;
-  
+
         const transactionDate = new Date(transaction.date);
         const isAfterStartDate = startDate ? transactionDate >= new Date(startDate) : true;
-  
+
         // Adjust the end date to include the entire day
         const adjustedEndDate = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
         const isBeforeEndDate = adjustedEndDate ? transactionDate <= adjustedEndDate : true;
-  
+
         return isAfterStartDate && isBeforeEndDate;
       });
-  
+
       return matchesSearch && matchesDate;
     });
-  
+
     setFilteredAccountTitles(filteredTitles);
   }, [searchQuery, accountTitles, accountsData, startDate, endDate]);
-  
-  
+
+
 
   //Right Click Functions
 
@@ -686,113 +686,113 @@ export default function LedgerDetails() {
   //if (loading) return <p>Loading...</p>;
 
 
-      // Function to export the data to Excel
-      const exportToExcel = async () => {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('General Ledger');
-    
-        accountTitles.forEach((accountTitle, index) => {
-            // Starting row for each account title's section with spacing
-            const startRow = worksheet.lastRow ? worksheet.lastRow.number + 5 : 1;
-    
-            // Header Information for each Account Title
-            worksheet.mergeCells(`A${startRow}:G${startRow}`);
-            worksheet.getCell(`A${startRow}`).value = 'GENERAL LEDGER';
-            worksheet.getCell(`A${startRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`A${startRow}`).font = { bold: true, size: 14 };
-    
-            worksheet.mergeCells(`A${startRow + 1}:G${startRow + 1}`);
-            worksheet.getCell(`A${startRow + 1}`).value = 'Bureau of Fire Protection';
-            worksheet.getCell(`A${startRow + 1}`).alignment = { horizontal: 'center' };
-            worksheet.getCell(`A${startRow + 1}`).font = { italic: true };
-    
-            worksheet.mergeCells(`A${startRow + 2}:G${startRow + 2}`);
-            worksheet.getCell(`A${startRow + 2}`).value = 'Agency Name';
-            worksheet.getCell(`A${startRow + 2}`).alignment = { horizontal: 'center' };
-    
-            worksheet.getCell(`A${startRow + 4}`).value = `Account Title: ${accountTitle.accountTitle}`;
-            worksheet.getCell(`A${startRow + 4}`).font = { bold: true };
-            worksheet.getCell(`E${startRow + 4}`).value = `Account Code: ${accountTitle.accountCode}`;
-            worksheet.getCell(`E${startRow + 4}`).font = { bold: true };
-    
-            // Column headers for transactions
-            const headersRow = worksheet.getRow(startRow + 6);
-            headersRow.values = ['Date', 'Particulars', 'Ref.', '', 'Debit', 'Credit', 'Balance'];
-            headersRow.font = { bold: true };
-    
-            // Apply borders and alignments to headers
-            headersRow.eachCell((cell) => {
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' },
-                };
-                cell.alignment = { horizontal: 'center' };
-            });
-    
-            let previousBalance = 0; // Initialize the previous balance for each account title
-            let currentRowNumber = startRow + 7; // Starting row for transactions
-    
-            (accountsData[accountTitle.id] || []).forEach((transaction) => {
-                // Calculate the current balance based on account type, debit, credit, and previous balance
-                const currentBalance = calculateBalance(
-                    accountTitle.accountType,
-                    transaction.debit || 0,
-                    transaction.credit || 0,
-                    previousBalance
-                );
-    
-                const row = worksheet.addRow([
-                    transaction.date,
-                    transaction.particulars,
-                    transaction.ref || '',
-                    '',
-                    transaction.debit || 0,
-                    transaction.credit || 0,
-                    currentBalance, // Insert calculated balance
-                ]);
-    
-                // Update previous balance to current for the next row
-                previousBalance = currentBalance;
-    
-                // Apply borders to each transaction row cell
-                row.eachCell((cell) => {
-                    cell.border = {
-                        top: { style: 'thin' },
-                        left: { style: 'thin' },
-                        bottom: { style: 'thin' },
-                        right: { style: 'thin' },
-                    };
-                });
-    
-                // Format Debit, Credit, and Balance columns as currency
-                row.getCell(5).numFmt = '0.00';
-                row.getCell(6).numFmt = '0.00';
-                row.getCell(7).numFmt = '0.00';
-    
-                currentRowNumber += 1;
-            });
-    
-            // Set column widths for readability
-            worksheet.getColumn(1).width = 10; // Date
-            worksheet.getColumn(2).width = 25; // Particulars
-            worksheet.getColumn(3).width = 10; // Ref.
-            worksheet.getColumn(5).width = 15; // Debit
-            worksheet.getColumn(6).width = 15; // Credit
-            worksheet.getColumn(7).width = 15; // Balance
+  // Function to export the data to Excel
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('General Ledger');
+
+    accountTitles.forEach((accountTitle, index) => {
+      // Starting row for each account title's section with spacing
+      const startRow = worksheet.lastRow ? worksheet.lastRow.number + 5 : 1;
+
+      // Header Information for each Account Title
+      worksheet.mergeCells(`A${startRow}:G${startRow}`);
+      worksheet.getCell(`A${startRow}`).value = 'GENERAL LEDGER';
+      worksheet.getCell(`A${startRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getCell(`A${startRow}`).font = { bold: true, size: 14 };
+
+      worksheet.mergeCells(`A${startRow + 1}:G${startRow + 1}`);
+      worksheet.getCell(`A${startRow + 1}`).value = 'Bureau of Fire Protection';
+      worksheet.getCell(`A${startRow + 1}`).alignment = { horizontal: 'center' };
+      worksheet.getCell(`A${startRow + 1}`).font = { italic: true };
+
+      worksheet.mergeCells(`A${startRow + 2}:G${startRow + 2}`);
+      worksheet.getCell(`A${startRow + 2}`).value = 'Agency Name';
+      worksheet.getCell(`A${startRow + 2}`).alignment = { horizontal: 'center' };
+
+      worksheet.getCell(`A${startRow + 4}`).value = `Account Title: ${accountTitle.accountTitle}`;
+      worksheet.getCell(`A${startRow + 4}`).font = { bold: true };
+      worksheet.getCell(`E${startRow + 4}`).value = `Account Code: ${accountTitle.accountCode}`;
+      worksheet.getCell(`E${startRow + 4}`).font = { bold: true };
+
+      // Column headers for transactions
+      const headersRow = worksheet.getRow(startRow + 6);
+      headersRow.values = ['Date', 'Particulars', 'Ref.', '', 'Debit', 'Credit', 'Balance'];
+      headersRow.font = { bold: true };
+
+      // Apply borders and alignments to headers
+      headersRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+        cell.alignment = { horizontal: 'center' };
+      });
+
+      let previousBalance = 0; // Initialize the previous balance for each account title
+      let currentRowNumber = startRow + 7; // Starting row for transactions
+
+      (accountsData[accountTitle.id] || []).forEach((transaction) => {
+        // Calculate the current balance based on account type, debit, credit, and previous balance
+        const currentBalance = calculateBalance(
+          accountTitle.accountType,
+          transaction.debit || 0,
+          transaction.credit || 0,
+          previousBalance
+        );
+
+        const row = worksheet.addRow([
+          transaction.date,
+          transaction.particulars,
+          transaction.ref || '',
+          '',
+          transaction.debit || 0,
+          transaction.credit || 0,
+          currentBalance, // Insert calculated balance
+        ]);
+
+        // Update previous balance to current for the next row
+        previousBalance = currentBalance;
+
+        // Apply borders to each transaction row cell
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
         });
-    
-        // Export file as Excel
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'GeneralLedger.xlsx';
-        link.click();
-    };
-    
+
+        // Format Debit, Credit, and Balance columns as currency
+        row.getCell(5).numFmt = '0.00';
+        row.getCell(6).numFmt = '0.00';
+        row.getCell(7).numFmt = '0.00';
+
+        currentRowNumber += 1;
+      });
+
+      // Set column widths for readability
+      worksheet.getColumn(1).width = 10; // Date
+      worksheet.getColumn(2).width = 25; // Particulars
+      worksheet.getColumn(3).width = 10; // Ref.
+      worksheet.getColumn(5).width = 15; // Debit
+      worksheet.getColumn(6).width = 15; // Credit
+      worksheet.getColumn(7).width = 15; // Balance
+    });
+
+    // Export file as Excel
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'GeneralLedger.xlsx';
+    link.click();
+  };
+
 
   return (
     <Fragment>
@@ -862,22 +862,27 @@ export default function LedgerDetails() {
                     Start Date
                   </h6>
                   <DatePicker
-                  selected={startDate}
-                  onChange={(date) => setStartDate(date)}
-                  placeholderText="Start Date"
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)} 
+                    placeholderText="Start Date"
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                    dateFormat="yyyy-MM-dd" 
+                    onKeyDown={(e) => e.stopPropagation()} 
+                  />
                 </div>
+
                 <div className='px-3 py-1'>
                   <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
                     End Date
                   </h6>
                   <DatePicker
-                  selected={endDate}
-                  onChange={(date) => setEndDate(date)}
-                  placeholderText="End Date"
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    placeholderText="End Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
                 </div>
 
               </div>
@@ -905,26 +910,30 @@ export default function LedgerDetails() {
               <div className="px-3 py-1 flex flex-row justify-between">
                 <div className='px-3 py-1'>
                   <DatePicker
-                  selected={startExportDate}
-                  onChange={(date) => setStartExportDate(date)}
-                  placeholderText="Start Date"
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
+                    selected={startDate}
+                    onChange={(date) => setStartExportDate(date)}
+                    placeholderText="Start Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
                 </div>
                 <div className='px-3 py-1'>
                   <DatePicker
-                  selected={endExportDate}
-                  onChange={(date) => setEndExportDate(date)}
-                  placeholderText="End Date"
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
+                    selected={endDate}
+                    onChange={(date) => setEndExportDate(date)}
+                    placeholderText="End Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
                 </div>
 
                 <div className='px-3 py-1'>
-                <ExportButton
-                        label="EXPORT"
-                        onClick={exportToExcel}
-                    />
+                  <ExportButton
+                    label="EXPORT"
+                    onClick={exportToExcel}
+                  />
                 </div>
               </div>
             </Dropdown>
@@ -1210,7 +1219,7 @@ export default function LedgerDetails() {
             >ADD</button>
 
             <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
-            onClick={() => navigate("/main/accounts")}
+              onClick={() => navigate("/main/accounts")}
             >EDIT ACCOUNT TITLES</button>
           </div>
         </div>
