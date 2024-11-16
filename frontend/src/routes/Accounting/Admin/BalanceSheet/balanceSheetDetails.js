@@ -213,7 +213,7 @@ export default function BalanceSheet() {
         </div>
     );
 
-    // ---------Fetching ledger list from the Firestore-----------------
+    // ----------------------------------------- F E T C H  L E D G E R  L I S T -----------------------------------------
     useEffect(() => {
         const getLedgerList = async () => {
             try {
@@ -230,9 +230,9 @@ export default function BalanceSheet() {
 
         getLedgerList();
     }, []); // No dependencies for getLedgerList, so it only runs once on mount
-    // -----------------------------------------------------------------
+    // ----------------------------------------- F E T C H  L E D G E R  L I S T -----------------------------------------
 
-    // Function to update totalEquity in the balanceSheet collection
+    // -------------------------- Function to update totalEquity in the balanceSheet collection --------------------------
     const updateTotalEquityInFirestore = async (balanceSheetID, totalEquity) => {
         try {
             const balanceSheetRef = doc(db, "balancesheet", balanceSheetID);
@@ -244,8 +244,9 @@ export default function BalanceSheet() {
             console.error("Error updating total equity:", err);
         }
     };
+    // -------------------------- Function to update totalEquity in the balanceSheet collection --------------------------
 
-    // Fetch the balance sheet description and its associated ledger year
+    // --------------------------- FETCH BALANCE SHEET DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
     useEffect(() => {
         const getBalanceSheetDescription = async () => {
             try {
@@ -368,7 +369,8 @@ export default function BalanceSheet() {
         getBalanceSheetDescription();
     }, []);
 
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
+    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
     useEffect(() => {
         const getSelectedLedgerData = async () => {
             try {
@@ -435,7 +437,7 @@ export default function BalanceSheet() {
 
         getSelectedLedgerData();
     }, [selectedLedger]);
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -458,8 +460,7 @@ export default function BalanceSheet() {
         return <p>{error}</p>;
     }
 
-    //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
-    // Calculate total amount for Assets
+    // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
     const totalAssets2 = currentAccountTitlesPeriod
         .filter(accountTitle =>
             accountTitle.accountType === "Assets" ||
@@ -491,8 +492,7 @@ export default function BalanceSheet() {
             const amount = accountTitle.differenceContra2; // Use differenceContra for Equity accounts if applicable
             return total + amount; // Sum equity amounts
         }, 0);
-
-    //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
+    // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
 
     // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
     const assetsAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
@@ -632,24 +632,7 @@ export default function BalanceSheet() {
                 };
             });
     };
-    // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
-
-    // Recursive function to get ------------------------ N E S T E D  S U B C A T E G O R I E S -------------------------
-    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
-        return subcategories
-            .filter(sub => sub.parentCategory === parentName)
-            .map(sub => ({
-                name: sub.subcategoryName,
-                children: [
-                    // Get account titles specific to this subcategory
-                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
-
-                    // Recursively add nested subcategories
-                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
-                ]
-            }));
-    };
-    // --------------------------------------- N E S T E D  S U B C A T E G O R I E S --------------------------------------
+    // ------------------------------------ E Q U I T Y  A C C O U N T  T I T L E S ------------------------------------
 
     //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
     const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
@@ -693,7 +676,24 @@ export default function BalanceSheet() {
                 }
             });
     };
-    //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
+    //------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S ------------------------------
+
+    // Recursive function to get ------------------------ N E S T E D  S U B C A T E G O R I E S -------------------------
+    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
+        return subcategories
+            .filter(sub => sub.parentCategory === parentName)
+            .map(sub => ({
+                name: sub.subcategoryName,
+                children: [
+                    // Get account titles specific to this subcategory
+                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
+
+                    // Recursively add nested subcategories
+                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
+                ]
+            }));
+    };
+    // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
 
     //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
     const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
@@ -809,7 +809,7 @@ export default function BalanceSheet() {
         </div>
     );
 
-    // Recursive component to render rows
+    // Recursive component to render rows --------------------------- R E C U R S I V E  R O W ---------------------------
     const Row = ({ item, depth = 0, handleRightClick }) => {
         const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
@@ -893,6 +893,7 @@ export default function BalanceSheet() {
             </>
         );
     };
+    //--------------------------------------------- R E C U R S I V E  R O W ---------------------------------------------
 
     return (
         <Fragment>
@@ -961,11 +962,13 @@ export default function BalanceSheet() {
             {/* TABLE */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheet?.ledgerYear || "N/A"}`}</th>
-                            {currentShowPeriodColumn && (
+                            {!currentShowPeriodColumn ? (
+                                <th scope="col" className="px-6 py-3"></th>
+                            ) : (
                                 <th scope="col" className="px-6 py-3 text-right">
                                     {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
                                 </th>
