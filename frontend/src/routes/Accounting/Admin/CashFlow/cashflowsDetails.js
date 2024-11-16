@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where, setDoc } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -129,18 +129,21 @@ export default function CashflowsDetails() {
         const cashflowsCollectionsDAtaRef = collection(db, "cashflow", cashflowId, "categories");
         const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
             try {
+
                 const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
 
-                setCashflowCategoriesData(sortCategoriesRecursively(data));
+                const sortedData = sortCategoriesRecursively(data);
+                setCashflowCategoriesData(sortedData);
 
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
                 setIsError(true);
             }
         });
+
 
         // For list of cashflows
         const cashflowListRef = collection(db, "cashflow");
@@ -182,11 +185,10 @@ export default function CashflowsDetails() {
         };
     }, [cashflowId]);
 
-
+    //Period Data
     useEffect(() => {
         if (periodId) {
-            // For SelectedPeriodData
-            // For cashflow data
+           
             const cashflowsCollectionsDAtaRef = collection(db, "cashflow", periodId, "categories");
             const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
                 try {
@@ -198,74 +200,6 @@ export default function CashflowsDetails() {
 
                     const sortedPeriodData = sortCategoriesRecursively(data);
 
-                    // Get main categories for the period
-                    const mainCategoriesPeriod = sortedPeriodData.filter(period => period.level === 0);
-                    // console.log("Main Categories from Period", mainCategoriesPeriod);
-
-                    // Helper function to get cash flows by main category for a given dataset
-                    const getCashFlowsByCategory = (data, mainCategory, flowType) => {
-                        const activitySubCategories = data.filter(item => item.parentID === mainCategory.id);
-                        const cashFlows = activitySubCategories.filter(sub => sub.categoryName === flowType);
-
-                        // Get IDs of specified cash flow type to fetch subcategories under it
-                        const cashFlowIds = cashFlows.map(flow => flow.id);
-                        return data.filter(item => cashFlowIds.includes(item.parentID));
-                    };
-
-                    // Selected Period Cash Flows based on main categories
-                    const selectedPeriodCashFlows = mainCategoriesPeriod.map(mainCategory => ({
-                        categoryName: mainCategory.categoryName,
-                        CashInflows: getCashFlowsByCategory(sortedPeriodData, mainCategory, "Cash Inflows"),
-                        CashOutflows: getCashFlowsByCategory(sortedPeriodData, mainCategory, "Cash Outflows")
-                    }));
-
-                    // console.log("Selected Period Cash Flows", selectedPeriodCashFlows);
-
-                    // Get main categories for the current year
-                    const mainCategoriesCurrentYear = cashflowCategoriesData.filter(current => current.level === 0);
-                    console.log("Main Categories from Current Year", mainCategoriesCurrentYear);
-
-                    // Current Year Cash Flows based on main categories
-                    const currentYearCashFlows = mainCategoriesCurrentYear.map(mainCategory => ({
-                        categoryName: mainCategory.categoryName,
-                        CashInflows: getCashFlowsByCategory(cashflowCategoriesData, mainCategory, "Cash Inflows"),
-                        CashOutflows: getCashFlowsByCategory(cashflowCategoriesData, mainCategory, "Cash Outflows")
-                    }));
-
-                    // console.log("Current Year Cash Flows", currentYearCashFlows);
-
-                    const stringSimilarity = require('string-similarity');
-                    // Helper function to get unmatched categories by string similarity
-                    const getUnmatchedCategories = (periodData, currentData, threshold = 0.7) => {
-                        const unmatched = [];
-
-                        periodData.forEach(periodCategory => {
-                            // Get the best match for periodCategory in currentData
-                            const currentCategoryNames = currentData.map(current => current.categoryName);
-                            const { bestMatch } = stringSimilarity.findBestMatch(periodCategory.categoryName, currentCategoryNames);
-
-                            // If similarity is below the threshold, add to unmatched list
-                            if (bestMatch.rating < threshold) {
-                                unmatched.push(periodCategory);
-                            }
-                        });
-
-                        return unmatched;
-                    };
-
-                    // Example Usage
-                    // Retrieve Cash Inflows subcategories for each main category in the selected period and current year
-                    const selectedPeriodUnmatchedCashInflows = selectedPeriodCashFlows.reduce((acc, category) => {
-                        const periodCashInflows = category.CashInflows;
-                        const currentCashInflows = currentYearCashFlows.find(current => current.categoryName === category.categoryName)?.CashInflows || [];
-
-                        acc.push(...getUnmatchedCategories(periodCashInflows, currentCashInflows));
-                        return acc;
-                    }, []);
-
-                    console.log("Unmatched Cash Inflows from Selected Period", selectedPeriodUnmatchedCashInflows);
-
-
                 } catch (error) {
                     console.error("Error fetching and sorting categories:", error);
                     setIsError(true);
@@ -274,6 +208,11 @@ export default function CashflowsDetails() {
             return () => unsubscribe();
         }
     }, [periodId]);
+
+
+    
+
+
 
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {

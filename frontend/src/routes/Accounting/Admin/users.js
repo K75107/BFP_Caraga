@@ -99,7 +99,7 @@ export default function Users() {
             setUserList(prevList => 
               prevList.map(user => ({
                 ...user,
-                status: activeUsersMap[user.id]?.status || "offline" // Default to "offline" if no status found
+                isActive: activeUsersMap[user.id]?.isActive || false
               }))
             );
           }
@@ -112,7 +112,7 @@ export default function Users() {
     getUserList();
   }, []);
   
-
+console.log(usersList)
   
 
   const handleAddUser = async () => {
@@ -132,7 +132,7 @@ export default function Users() {
         province: selectedProvince,
         municipalityCity: selectedCityMunicipality,
         usertype: usertype,
-        isActive: true, // Assuming new users are active by default
+        isActive: false, // Assuming new users are active by default
       });
 
       // console.log("User added successfully!");
