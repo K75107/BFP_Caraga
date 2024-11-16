@@ -28,7 +28,7 @@ const Sidebar = () => {
     const currentPath = location.pathname;
     if (path === '/main/generalLedger' && currentPath.startsWith('/main/generalLedger') || path === '/main/reports/firestationReports' && currentPath.startsWith('/main/reports') || path === '/main/TrialBalance' && currentPath.startsWith('/main/TrialBalance') ||
       (path === '/main/balanceSheet' && currentPath.startsWith('/main/balanceSheet')) || (path === '/main/incomeStatement' && currentPath.startsWith('/main/incomeStatement')) 
-      || (path === '/main/collections' && currentPath.startsWith('/main/collections')) || (path === '/main/cashflowStatement' && currentPath.startsWith('/main/cashflowStatement')) || (path === '/main/changesInEquityMain' && currentPath.startsWith('/main/changesInEquityMain'))) {
+      || (path === '/main/collections' && currentPath.startsWith('/main/collections')) || (path === '/main/cashflowStatement' && currentPath.startsWith('/main/cashflowStatement')) ||(path === '/main/firestation/deposits' && currentPath.startsWith('/main/firestation/deposits')) ||(path === '/main/firestation/collections' && currentPath.startsWith('/main/firestation/collections')) || (path === '/main/changesInEquityMain' && currentPath.startsWith('/main/changesInEquityMain'))) {
       return true;
     }
     return currentPath === path;
@@ -99,7 +99,13 @@ const Sidebar = () => {
       { path: '/main/firestation/deposits', icon: isActive('/main/firestation/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/firestation/collections', icon: isActive('/main/firestation/collections') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections' },
       { path: '/main/firestation/officers', icon: isActive('/main/firestation/officers') ? <HiUsers size={18} /> : <HiUsers size={18} />, label: 'Officers' },
-    ]
+    ],
+
+    "bookkeeper":[
+      { path: '/main/bookkeeper/dashboard', icon: isActive('/main/bookkeeper/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+    ],
   };
 
   const currentMenuItems = menuItems[userType] || [];
