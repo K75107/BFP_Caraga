@@ -99,7 +99,7 @@ export default function Users() {
             setUserList(prevList => 
               prevList.map(user => ({
                 ...user,
-                status: activeUsersMap[user.id]?.status || "offline" // Default to "offline" if no status found
+                isActive: activeUsersMap[user.id]?.isActive || false
               }))
             );
           }
@@ -112,7 +112,7 @@ export default function Users() {
     getUserList();
   }, []);
   
-
+console.log(usersList)
   
 
   const handleAddUser = async () => {
@@ -132,7 +132,7 @@ export default function Users() {
         province: selectedProvince,
         municipalityCity: selectedCityMunicipality,
         usertype: usertype,
-        isActive: true, // Assuming new users are active by default
+        isActive: false, // Assuming new users are active by default
       });
 
       // console.log("User added successfully!");
@@ -241,24 +241,23 @@ export default function Users() {
               />
             <AddButton
               onClick={() => setShowModal(true)}
-              label="ADD LEDGER"
+              label="ADD USER"
             />
           </div>
         </div>
 
-        <hr className="border-t border-[#7694D4] my-2" />
+        <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
         {/* TABLE */}
-        <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <div className="relative overflow-x-auto shadow-lg sm:rounded-lg ">
           <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white ">
               <tr>
-                <th scope="col" className="px-6 py-3 ">USER</th>
-                <th scope="col" className="px-6 py-3">LOCATION</th>
-                <th scope="col" className="px-6 py-3">EMAIL</th>
-                <th scope="col" className="px-6 py-3">USERTYPE</th>
-                <th scope="col" className="px-6 py-3">ACTIVE</th>
-                <th scope="col" className="px-6 py-3"><span className="sr-only">View</span></th>
+                <th scope="col" className="px-6 py-4 ">USER</th>
+                <th scope="col" className="px-6 py-4">LOCATION</th>
+                <th scope="col" className="px-6 py-4">EMAIL</th>
+                <th scope="col" className="px-6 py-4">USERTYPE</th>
+                <th scope="col" className="px-6 py-4">ACTIVE</th>
               </tr>
             </thead>
             <tbody>
@@ -292,9 +291,6 @@ export default function Users() {
                       className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
                         }`}
                     ></span>
-                  </td>
-                  <td className="px-6 py-2 text-right">
-                    <button className="text-blue-600 hover:underline">View</button>
                   </td>
                 </tr>
               ))}

@@ -9,8 +9,8 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { PiStack, PiStackFill } from "react-icons/pi";
 import SearchBar from "../../../../components/searchBar";
-import AddButton from "../../../../components/addButton";
-
+import ExportButton from "../../../../components/exportButton";
+import { CiFilter } from "react-icons/ci";
 export default function FirestationReports() {
     const navigate = useNavigate();
     const [usersData, setUsersData] = useState([]);
@@ -26,7 +26,7 @@ export default function FirestationReports() {
             users.username.toLowerCase().includes(searchQuery.toLowerCase())
         );
         setFilteredUsersData(filteredUsers);
-    
+
         // Group the data by province based on filteredUsers
         const groupedData = filteredUsers.reduce((acc, collection) => {
             const { province } = collection;
@@ -36,10 +36,10 @@ export default function FirestationReports() {
             acc[province].push(collection);
             return acc;
         }, {});
-        
+
         setFilteredGroupedData(groupedData);
     }, [searchQuery, usersData]);
-    
+
 
     useEffect(() => {
         const fetchUsersData = async () => {
@@ -101,52 +101,23 @@ export default function FirestationReports() {
                         Fire Station Reports
                     </h1>
                     <div class="flex space-x-4">
-                    <SearchBar
-                    placeholder="Search Firestation"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    listSource={filteredUsersData}
-                    />
+                        <SearchBar
+                            placeholder="Search Firestation"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            listSource={filteredUsersData}
+                        />
 
                         {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
                         {/* Buttons and Dropdowns */}
                         <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
-                            <Dropdown
-                                label={
-                                    <div className="flex items-center">
-                                        <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
-                                        <span className="mr-2">Period</span>
-                                        <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
-                                    </div>
-                                }
-                                dismissOnClick={false}
-                                inline={true}
-                                arrowIcon={false} // Disabled default arrow icon
-                                className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-                            >
-                                <div className="p-4 w-40">
-                                    <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                                        Period
-                                    </h6>
-                                    <ul className="space-y-2 text-sm">
-                                        {years.map((year) => (
-                                            <li key={year} className="flex items-center hover:bg-gray-100 p-1">
-                                                <Checkbox
-                                                    id={`year-${year}`}
-                                                    label="Year"
-                                                />
-                                                <span className="ml-2">{year}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </Dropdown>
+
                             {/* Filter Dropdown */}
                             <Dropdown
                                 label={
-                                    <div className="flex items-center">
-                                        <BiFilterAlt className="w-4 h-4 mr-2 text-gray-400" /> {/* Filter Icon */}
-                                        <span className="mr-2">Filter</span>
+                                    <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                                        <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
+                                        <span className="mr-2 font-medium">Filter</span>
                                         <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                                     </div>
                                 }
@@ -223,53 +194,34 @@ export default function FirestationReports() {
                                             <span className="ml-2">Surigao del Sur</span>
                                         </li>
                                     </ul>
-
-                                    {/* New Section for Deposit Filter */}
-                                    <h6 className="mt-4 mb-3 text-sm font-medium text-gray-900 dark:text-white ">
-                                        Deposit Status
-                                    </h6>
-                                    <div className="space-y-2">
-                                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
-                                            <input
-                                                type="radio"
-                                                value="all"
-                                                // checked={selectedDepositFilter === 'all'}
-                                                // onChange={() => setSelectedDepositFilter('all')}
-                                                className="mr-2"
-                                            />
-                                            <span>All</span>
-                                        </label>
-                                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
-                                            <input
-                                                type="radio"
-                                                value="deposited"
-                                                // checked={selectedDepositFilter === 'deposited'}
-                                                // onChange={() => setSelectedDepositFilter('deposited')}
-                                                className="mr-2"
-                                            />
-                                            <span>Deposited</span>
-                                        </label>
-                                        <label className="flex items-center hover:bg-gray-100 p-1 text-sm">
-                                            <input
-                                                type="radio"
-                                                value="undeposited"
-                                                // checked={selectedDepositFilter === 'undeposited'}
-                                                // onChange={() => setSelectedDepositFilter('undeposited')}
-                                                className="mr-2"
-                                            />
-                                            <span>Undeposited</span>
-                                        </label>
-                                    </div>
-
                                 </div>
+                                {/* New Section for Deposit Filter */}
+                                <div className="px-7 py-2 w-40">
+                                    <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
+                                        Period
+                                    </h6>
+                                    <ul className="space-y-2 text-sm">
+                                        {years.map((year) => (
+                                            <li key={year} className="flex items-center hover:bg-gray-100 p-1">
+                                                <Checkbox
+                                                    id={`year-${year}`}
+                                                    label="Year"
+                                                />
+                                                <span className="ml-2">{year}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+
                             </Dropdown>
                         </div>
 
                         {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
 
-                        <AddButton
+                        <ExportButton
                             // onClick={() => setShowModal(true)}
-                            label="GENERATE REPORT"
+                            label="EXPORT"
                         />
                     </div>
                 </div>
@@ -285,23 +237,23 @@ export default function FirestationReports() {
 
 
 
-            <hr className="border-t border-[#7694D4] my-2" />
+            <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
 
 
             <div className="flex flex-row">
                 <div className="grow bg-white">
-                    <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                        <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
                             <table className="w-full text-left text-black-700 ">
-                                <thead className="text-[12px] uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                                     <tr>
-                                        <th scope="col" className="px-2 py-3 w-[120px]">Province</th>
-                                        <th scope="col" className="px-2 py-3 w-[120px]">Firestation</th>
-                                        <th scope="col" className="px-2 py-3 w-[150px]">Location</th>
-                                        <th scope="col" className="px-2 py-3 w-[150px]">Total Collections</th>
-                                        <th scope="col" className="px-2 py-3 w-[150px]">Total Deposits</th>
-                                        <th scope="col" className="px-2 py-3 w-[150px]">Submission Status</th>
+                                        <th scope="col" className="px-6 py-4 w-[140px]">Province</th>
+                                        <th scope="col" className="px-6 py-4 w-[120px]">Firestation</th>
+                                        <th scope="col" className="px-6 py-4 w-[170px]">Location</th>
+                                        <th scope="col" className="px-6 py-4 w-[130px]">Total Collections</th>
+                                        <th scope="col" className="px-6 py-4 w-[130px]">Total Deposits</th>
+                                        <th scope="col" className="px-6 py-4 w-[130px]">Submission Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -311,7 +263,7 @@ export default function FirestationReports() {
                                                 className=" text-[14px] bg-gray-100 h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
                                                 onClick={() => toggleProvince(province)}
                                             >
-                                                <td className=" table-cell px-2 py-2 w-[120px] text-[14px] h-8 px-2">
+                                                <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2">
                                                     {province}
 
                                                     {toggledRows[province] ? (
@@ -321,11 +273,11 @@ export default function FirestationReports() {
                                                     )}
 
                                                 </td>
-                                                <td className=" table-cell px-2 py-2 w-[120px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
                                                 <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
 
                                             </tr>
 
@@ -335,15 +287,15 @@ export default function FirestationReports() {
                                                     className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer h-8"
                                                     onClick={() => navigate(`/main/reports/overview/${collection.id}`)}
                                                 >
-                                                    <td className="text-[14px] px-2 py-2 w-[120px]"></td>
-                                                    <td className="text-[14px] px-2 py-2 w-[120px]">
+                                                    <td className="text-[14px] px-6 py-2 w-[120px]"></td>
+                                                    <td className="text-[14px] px-6 py-2 w-[120px]">
                                                         {collection.username}
                                                     </td>
-                                                    <td className="text-[14px] px-2 py-2 w-[150px]">
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]">
                                                         {collection.province + ', ' + collection.municipalityCity}
                                                     </td>
-                                                    <td className="text-[14px] px-2 py-2 w-[150px]"></td>
-                                                    <td className="text-[14px] px-2 py-2 w-[150px]"></td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]"></td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]"></td>
 
                                                 </tr>
                                             ))}

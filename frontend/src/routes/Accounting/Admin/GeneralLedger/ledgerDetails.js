@@ -7,15 +7,16 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { IoMdAddCircleOutline } from "react-icons/io"; // Icon
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
-import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
+import { BiFilterAlt, BiChevronDown, BiExport } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { debounce } from 'lodash'; // Import debounce
 import { useNavigate } from 'react-router-dom';
 import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import SearchBar from '../../../../components/searchBar';
-import FilterButton from '../../../../components/filterButton';
 import AddButton from '../../../../components/addButton';
 import { CiFilter } from "react-icons/ci";
+import ExportButton from "../../../../components/exportButton";
+import ExcelJS from 'exceljs';
 
 export default function LedgerDetails() {
 
@@ -60,6 +61,12 @@ export default function LedgerDetails() {
 
   const [searchQuery, setSearchQuery] = useState(''); // Search input state
   const [filteredAccountTitles, setFilteredAccountTitles] = useState([]); // Filtered account titles
+
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+
+  const [startExportDate, setStartExportDate] = useState(null);
+  const [endExportDate, setEndExportDate] = useState(null);
 
 
   useEffect(() => {
@@ -154,11 +161,29 @@ export default function LedgerDetails() {
 
   // Filter account titles based on searchQuery
   useEffect(() => {
-    const filteredTitles = accountTitles.filter((title) =>
-      title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTitles = accountTitles.filter((title) => {
+      const matchesSearch = title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const transactions = accountsData[title.id] || [];
+      const matchesDate = transactions.some((transaction) => {
+        if (!transaction.date) return false;
+
+        const transactionDate = new Date(transaction.date);
+        const isAfterStartDate = startDate ? transactionDate >= new Date(startDate) : true;
+
+        // Adjust the end date to include the entire day
+        const adjustedEndDate = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+        const isBeforeEndDate = adjustedEndDate ? transactionDate <= adjustedEndDate : true;
+
+        return isAfterStartDate && isBeforeEndDate;
+      });
+
+      return matchesSearch && matchesDate;
+    });
+
     setFilteredAccountTitles(filteredTitles);
-  }, [searchQuery, accountTitles]);
+  }, [searchQuery, accountTitles, accountsData, startDate, endDate]);
+
 
 
   //Right Click Functions
@@ -660,6 +685,115 @@ export default function LedgerDetails() {
 
   //if (loading) return <p>Loading...</p>;
 
+
+  // Function to export the data to Excel
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('General Ledger');
+
+    accountTitles.forEach((accountTitle, index) => {
+      // Starting row for each account title's section with spacing
+      const startRow = worksheet.lastRow ? worksheet.lastRow.number + 5 : 1;
+
+      // Header Information for each Account Title
+      worksheet.mergeCells(`A${startRow}:G${startRow}`);
+      worksheet.getCell(`A${startRow}`).value = 'GENERAL LEDGER';
+      worksheet.getCell(`A${startRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getCell(`A${startRow}`).font = { bold: true, size: 14 };
+
+      worksheet.mergeCells(`A${startRow + 1}:G${startRow + 1}`);
+      worksheet.getCell(`A${startRow + 1}`).value = 'Bureau of Fire Protection';
+      worksheet.getCell(`A${startRow + 1}`).alignment = { horizontal: 'center' };
+      worksheet.getCell(`A${startRow + 1}`).font = { italic: true };
+
+      worksheet.mergeCells(`A${startRow + 2}:G${startRow + 2}`);
+      worksheet.getCell(`A${startRow + 2}`).value = 'Agency Name';
+      worksheet.getCell(`A${startRow + 2}`).alignment = { horizontal: 'center' };
+
+      worksheet.getCell(`A${startRow + 4}`).value = `Account Title: ${accountTitle.accountTitle}`;
+      worksheet.getCell(`A${startRow + 4}`).font = { bold: true };
+      worksheet.getCell(`E${startRow + 4}`).value = `Account Code: ${accountTitle.accountCode}`;
+      worksheet.getCell(`E${startRow + 4}`).font = { bold: true };
+
+      // Column headers for transactions
+      const headersRow = worksheet.getRow(startRow + 6);
+      headersRow.values = ['Date', 'Particulars', 'Ref.', '', 'Debit', 'Credit', 'Balance'];
+      headersRow.font = { bold: true };
+
+      // Apply borders and alignments to headers
+      headersRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+        cell.alignment = { horizontal: 'center' };
+      });
+
+      let previousBalance = 0; // Initialize the previous balance for each account title
+      let currentRowNumber = startRow + 7; // Starting row for transactions
+
+      (accountsData[accountTitle.id] || []).forEach((transaction) => {
+        // Calculate the current balance based on account type, debit, credit, and previous balance
+        const currentBalance = calculateBalance(
+          accountTitle.accountType,
+          transaction.debit || 0,
+          transaction.credit || 0,
+          previousBalance
+        );
+
+        const row = worksheet.addRow([
+          transaction.date,
+          transaction.particulars,
+          transaction.ref || '',
+          '',
+          transaction.debit || 0,
+          transaction.credit || 0,
+          currentBalance, // Insert calculated balance
+        ]);
+
+        // Update previous balance to current for the next row
+        previousBalance = currentBalance;
+
+        // Apply borders to each transaction row cell
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
+
+        // Format Debit, Credit, and Balance columns as currency
+        row.getCell(5).numFmt = '0.00';
+        row.getCell(6).numFmt = '0.00';
+        row.getCell(7).numFmt = '0.00';
+
+        currentRowNumber += 1;
+      });
+
+      // Set column widths for readability
+      worksheet.getColumn(1).width = 10; // Date
+      worksheet.getColumn(2).width = 25; // Particulars
+      worksheet.getColumn(3).width = 10; // Ref.
+      worksheet.getColumn(5).width = 15; // Debit
+      worksheet.getColumn(6).width = 15; // Credit
+      worksheet.getColumn(7).width = 15; // Balance
+    });
+
+    // Export file as Excel
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'GeneralLedger.xlsx';
+    link.click();
+  };
+
+
   return (
     <Fragment>
       {/**Breadcrumbs */}
@@ -706,35 +840,101 @@ export default function LedgerDetails() {
             {/* Filter Dropdown */}
             <Dropdown
               label={
-                <div className="flex items-center py-2 px-4 text-xs h-10 ring-1 ring-blue-600 text-blue-600 rounded-full hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 transition">
+                <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
                   <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                  <span className="mr-2">Filter</span>
+                  <span className="mr-2 font-medium">Filter</span>
                   <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                 </div>
               }
               dismissOnClick={false}
               inline={true}
               arrowIcon={false} // Disabled default arrow icon
-              className="text-gray-900 bg-white border border-gray-200 rounded-lg md:w-auto hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+              className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
             >
-              <div className="p-3">
-                <h6 className="mb-3 text-sm font-medium text-gray-900 dark:text-white">
-                  Category
-                </h6>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <Checkbox id="apple" label="Apple (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="fitbit" label="Fitbit (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="dell" label="Dell (56)" defaultChecked={false} />
-                  </li>
-                  <li className="flex items-center">
-                    <Checkbox id="asus" label="Asus (97)" defaultChecked={true} />
-                  </li>
-                </ul>
+              <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                Filter by Date
+              </h6>
+              <hr className="border-t bordergray-50 my-1" />
+
+              <div className="px-3 py-1 flex flex-row justify-between">
+                <div className='px-3 py-1'>
+                  <h6 className="mb-2 text-xs text-gray-700 dark:text-white text-left font-medium">
+                    Start Date
+                  </h6>
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)} 
+                    placeholderText="Start Date"
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                    dateFormat="yyyy-MM-dd" 
+                    onKeyDown={(e) => e.stopPropagation()} 
+                  />
+                </div>
+
+                <div className='px-3 py-1'>
+                  <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
+                    End Date
+                  </h6>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    placeholderText="End Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
+                </div>
+
+              </div>
+            </Dropdown>
+
+            {/* Filter Dropdown */}
+            <Dropdown
+              label={
+                <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                  <BiExport className="mr-2 text-[15px] font-bold" />
+                  <span className="mr-2 font-medium">Export</span>
+                  <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                </div>
+              }
+              dismissOnClick={false}
+              inline={true}
+              arrowIcon={false} // Disabled default arrow icon
+              className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+            >
+              <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                Export by Date
+              </h6>
+              <hr className="border-t bordergray-50 my-1" />
+
+              <div className="px-3 py-1 flex flex-row justify-between">
+                <div className='px-3 py-1'>
+                  <DatePicker
+                    selected={startExportDate}
+                    onChange={(date) => setStartExportDate(date)}
+                    placeholderText="Start Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
+                </div>
+                <div className='px-3 py-1'>
+                  <DatePicker
+                    selected={endExportDate}
+                    onChange={(date) => setEndExportDate(date)}
+                    placeholderText="End Date"
+                    dateFormat="yyyy-MM-dd"
+                    onKeyDown={(e) => e.stopPropagation()} 
+                    className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                  />
+                </div>
+
+                <div className='px-3 py-1'>
+                  <ExportButton
+                    label="EXPORT"
+                    onClick={exportToExcel}
+                  />
+                </div>
               </div>
             </Dropdown>
 
@@ -742,23 +942,24 @@ export default function LedgerDetails() {
         </div>
       </div>
 
-      <hr className="border-t border-[#7694D4] my-2" />
+      <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
 
       {/*TABLE*/}
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
+          <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
             <tr>
 
-              <th scope="col" className="px-6 py-3 w-72 ">ACCOUNT TITLE</th>
-              <th scope="col" className="px-6 py-3 w-48">ACCOUNT CODE</th>
-              <th scope="col" className="px-6 py-3 w-32">DATE</th>
-              <th scope="col" className="px-6 py-3 w-80">PARTICULARS</th>
-              <th scope="col" className="px-6 py-3 w-48">DEBIT</th>
-              <th scope="col" className="px-6 py-3 w-48">CREDIT</th>
-              <th scope="col" className="px-6 py-3 w-48 text-center">BALANCE</th>
+              <th scope="col" className="px-6 py-4 w-72 ">ACCOUNT TITLE</th>
+              <th scope="col" className="px-6 py-4 w-48">ACCOUNT CODE</th>
+              <th scope="col" className="px-6 py-4 w-32">DATE</th>
+              <th scope="col" className="px-6 py-4 w-80">PARTICULARS</th>
+              <th scope="col" className="px-6 py-4 w-48">DEBIT</th>
+              <th scope="col" className="px-6 py-4 w-48">CREDIT</th>
+              <th scope="col" className="px-6 py-4 w-48 text-center">BALANCE</th>
               <th scope="col" className=" w-[20px] "></th>
+              <td className="table-cell py-4 w-10"></td>
 
             </tr>
           </thead>
@@ -802,7 +1003,7 @@ export default function LedgerDetails() {
 
                   return (
                     <Fragment key={accountTitle.id}>
-                      <tr className=" text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 font-bold"
+                      <tr className=" text-[12px] bg-white border-b w-full font-bold bg-blue-50"
                         onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
                       >
                         <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
@@ -814,6 +1015,7 @@ export default function LedgerDetails() {
                         <td className="table-cell px-6 py-3 w-[20px] text-center">
                           {formatBalance(finalRunningBalance)}
                         </td>
+                        <td className="table-cell py-3 "></td>
                       </tr>
 
                       {accountsData[accountTitle.id]?.map((account) => {
@@ -848,7 +1050,7 @@ export default function LedgerDetails() {
                                   placeholderText="Select date"
                                   onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
                                   autoFocus
-                                  style ={{fontSize: '12px'}}
+                                  style={{ fontSize: '12px' }}
                                 />
                               ) : (
                                 <span
@@ -1017,7 +1219,7 @@ export default function LedgerDetails() {
             >ADD</button>
 
             <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
-
+              onClick={() => navigate("/main/accounts")}
             >EDIT ACCOUNT TITLES</button>
           </div>
         </div>

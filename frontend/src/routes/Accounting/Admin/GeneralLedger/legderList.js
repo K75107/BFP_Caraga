@@ -166,25 +166,27 @@ export default function LedgerList() {
 
                 <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
                 <div class="flex space-x-4">
-
                     <AddButton
                         onClick={() => setShowModal(true)}
                         label="ADD LEDGER"
                     />
+
+
+
                 </div>
             </div>
 
 
-            <hr className="border-t border-[#7694D4] my-2" />
+            <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
             {/*TABLE*/}
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400 sticky">
+                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                         <tr>
-                            <th scope="col" className="px-6 py-3 w-96">DESCRIPTION</th>
-                            <th scope="col" className="px-4 py-3 w-72">Year</th>
-                            <th scope="col" className="pr-6 py-3 w-72 text-center">Actions
+                            <th scope="col" className="px-6 py-4 w-96">DESCRIPTION</th>
+                            <th scope="col" className="px-4 py-4 w-72">Year</th>
+                            <th scope="col" className="pr-6 py-4 w-72 text-center">Actions
                                 <span className="sr-only">View</span>
                             </th>
                         </tr>
@@ -233,7 +235,7 @@ export default function LedgerList() {
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add New Ledger
                         </h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" >
+                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
                             ×
                         </button>
                     </div>

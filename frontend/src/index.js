@@ -66,6 +66,9 @@ import FireStationDeposits from './routes/Accounting/FireStations/deposits/fireS
 import FireStationDashboard from './routes/Accounting/FireStations/fireStationDashboard';
 
 
+//Bookkeeper
+import BookkeeperDashboard from './routes/Accounting/Bookkeeper/bookkeeperDashboard';
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -289,6 +292,10 @@ const router = createBrowserRouter([
       {
         path: 'fireStation/officers',
         element: <FireStationOfficers />,
+      },
+      {
+        path: 'bookkeeper/dashboard',
+        element: <BookkeeperDashboard />,
       },
     ],
   },

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faLock, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,33 +22,49 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
   
-      // Example: const role = user.role; // Retrieve role from user object or database
-      const role = "Admin"; // Replace with actual role fetching logic
+      // Fetch user data from Firestore
+      const db = getFirestore();
+      const userDocRef = doc(db, "users", user.uid); // Ensure "users" is your collection name
+      const userDoc = await getDoc(userDocRef);
   
-      // Store 'true' as a string explicitly
-      sessionStorage.setItem('loginSuccess', 'true');
+      if (userDoc.exists()) {
+        const userType = userDoc.data().usertype;
+  
+        // Store login success in session storage
+        sessionStorage.setItem("loginSuccess", "true");
+  
+        // Navigate based on usertype
+        const normalizedUserType = userType.toLowerCase(); // Normalize for case sensitivity
+        switch (normalizedUserType) {
+          case "admin":
+            navigate("/main/dashboard");
+            break;
+          case "regional accountant":
+            navigate("/main/generalLedger");
+            break;
+          case "bookkeeper":
+            navigate("/main/bookkeeper/dashboard");
+            break;
+            case "fire-stations":
+              navigate("/main/firestation/dashboard");
+              break;
+          default:
+            setError("User data not found. Please contact the administrator.");
+            break;
+        }
+      } else {
 
-  
-      // Redirect based on the role
-      switch (role) {
-        case 'Admin':
-          navigate('/main/dashboard');
-          break;
-        case 'Regional Accountant':
-          navigate('/main/generalLedger');
-          break;
-        default:
-          navigate('/main/dashboard');
       }
     } catch (error) {
-      setError("Invalid email or password. Please try again.");
+      console.error("Error logging in:", error.message);
+      setError("User data not found. Please contact the administrator.");
     }
   };
-  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center" style={{ backgroundImage: 'url(/bfpbackground.png)' }}>
