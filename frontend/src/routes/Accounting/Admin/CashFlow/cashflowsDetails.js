@@ -11,8 +11,6 @@ import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import { current } from "@reduxjs/toolkit";
-import stringSimilarity from 'string-similarity';
-import { isEqual } from 'lodash';
 
 
 
@@ -39,27 +37,23 @@ export default function CashflowsDetails() {
     const [periodDataCategories, setPeriodDataCategories] = useState([]);
     const [periodId, setPeriodId] = useState(null);
 
-    const [mergedCategories, setMergedCategories] = useState([]);
-
     useEffect(() => {
-        // References for cashflow data
         const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
-        const cashflowListRef = collection(db, "cashflow");
-        const cashflowRef = doc(db, "cashflow", cashflowId);
-    
-        // Listener for cashflow categories data
-        const unsubscribe = onSnapshot(cashflowsCollectionRef, async (querySnapshot) => {
+
+        const fetchAndInitializeCategories = async () => {
             try {
+                const querySnapshot = await getDocs(cashflowsCollectionRef);
                 const data = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
-    
+                setCashflowCategoriesData(sortCategoriesRecursively(data));
+
                 // Initialize data if empty
                 if (data.length === 0) {
                     const batch = writeBatch(cashflowsCollectionRef.firestore);
                     let position = 1;
-    
+
                     // Function to add a main category
                     const addMainCategory = (name) => {
                         const ref = doc(cashflowsCollectionRef);
@@ -71,7 +65,7 @@ export default function CashflowsDetails() {
                         });
                         return ref.id;
                     };
-    
+
                     // Function to add inflows/outflows with blank rows
                     const addSubcategoryWithBlanks = (name, parentId) => {
                         const ref = doc(cashflowsCollectionRef);
@@ -81,7 +75,7 @@ export default function CashflowsDetails() {
                             created_at: new Date(),
                             position: position++,
                         });
-    
+
                         // Add two blank rows
                         batch.set(doc(cashflowsCollectionRef), {
                             categoryName: '',
@@ -96,200 +90,43 @@ export default function CashflowsDetails() {
                             position: position++,
                         });
                     };
-    
+
                     // Add categories and subcategories
                     const operatingId = addMainCategory('Operating Activities');
                     addSubcategoryWithBlanks('Cash Inflows', operatingId);
                     addSubcategoryWithBlanks('Cash Outflows', operatingId);
-    
+
                     const investingId = addMainCategory('Investing Activities');
                     addSubcategoryWithBlanks('Cash Inflows', investingId);
                     addSubcategoryWithBlanks('Cash Outflows', investingId);
-    
+
                     const financingId = addMainCategory('Financing Activities');
                     addSubcategoryWithBlanks('Cash Inflows', financingId);
                     addSubcategoryWithBlanks('Cash Outflows', financingId);
-    
+
                     // Additional standalone categories
                     addMainCategory('Net Increase(Decrease) in Cash and Cash Equivalents');
                     addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
                     addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
                     addMainCategory('Cash and Cash Equivalents at the End of the Period');
-    
+
                     // Commit batch
                     await batch.commit();
-                } else {
-                    setCashflowCategoriesData(sortCategoriesRecursively(data));
                 }
-    
-                // Get Cashflow Data
-                if (periodId) {
-                    const cashflowsCollectionsDataRef = collection(db, "cashflow", periodId, "categories");
-    
-                    // Sort `cashflowCategoriesData` only once outside the listener
-                    const sortedCurrentYearData = sortCategoriesRecursively(cashflowCategoriesData);
-    
-                    // Listener for selected period data
-                    const unsubscribePeriodData = onSnapshot(cashflowsCollectionsDataRef, async (querySnapshot) => {
-                        try {
-                            const periodData = querySnapshot.docs.map((doc) => ({
-                                id: doc.id,
-                                ...doc.data(),
-                            }));
-                            const sortedPeriodData = sortCategoriesRecursively(periodData);
-    
-                            let mergedData = [...sortedCurrentYearData];
-                            const similarityThreshold = 0.8;
-    
-                            sortedPeriodData.forEach(periodCategory => {
-                                // Skip main categories "Cash Inflows" and "Cash Outflows"
-                                if (periodCategory.categoryName === "Cash Inflows" || periodCategory.categoryName === "Cash Outflows") {
-                                    return;
-                                }
-    
-                                const existingIndex = mergedData.findIndex(currentCategory =>
-                                    stringSimilarity.compareTwoStrings(currentCategory.categoryName, periodCategory.categoryName) >= similarityThreshold &&
-                                    currentCategory.level === periodCategory.level &&
-                                    currentCategory.parentID === periodCategory.parentID
-                                );
-    
-                                if (periodCategory.categoryName !== "") {
-                                    const existingIndex = mergedData.findIndex(
-                                        mergedEntry => stringSimilarity.compareTwoStrings(mergedEntry.categoryName, periodCategory.categoryName) >= similarityThreshold
-                                    );
-    
-                                    if (existingIndex !== -1) {
-                                        // Update matched entry with amountPeriod
-                                        mergedData[existingIndex] = {
-                                            ...mergedData[existingIndex],
-                                            amountPeriod: periodCategory.amount
-                                        };
-                                    } else {
-                                        // Step 1: Traverse the hierarchy in sortedPeriodData to build the parent structure in mergedData
-                                        let currentParentId = periodCategory.parentID;
-                                        let currentCategory = periodCategory;
-    
-                                        // Create an array to store the hierarchy path
-                                        const hierarchyPath = [];
-    
-                                        // Traverse up to the top-level parent, collecting each level
-                                        while (currentParentId) {
-                                            const parentCategory = sortedPeriodData.find(category => category.id === currentParentId);
-                                            if (!parentCategory) break;
-                                            hierarchyPath.unshift(parentCategory);
-                                            currentParentId = parentCategory.parentID;
-                                        }
-    
-                                        // Step 2: Traverse or create the hierarchy path in mergedData
-                                        let lastParentId = null;
-    
-                                        hierarchyPath.forEach(levelCategory => {
-                                            // Check if the category already exists in mergedData
-                                            let existingCategory = mergedData.find(cat => cat.categoryName === levelCategory.categoryName && cat.parentID === lastParentId);
-                                            if (!existingCategory) {
-                                                // Create new entry in mergedData if it doesn't exist
-                                                existingCategory = {
-                                                    ...levelCategory,
-                                                    id: `merged_${Date.now()}_${Math.random()}`, // Generate unique ID
-                                                    parentID: lastParentId,
-                                                    position: mergedData.filter(item => item.parentID === lastParentId).length + 1, // Position within the parent
-                                                    amount: 0,
-                                                };
-                                                mergedData.push(existingCategory);
-                                            }
-    
-                                            // Set this as the last parent for the next iteration
-                                            lastParentId = existingCategory.id;
-                                        });
-    
-                                        // Step 3: Finally, add the periodCategory itself under its immediate parent in the hierarchy
-                                        const newEntry = {
-                                            ...periodCategory,
-                                            parentID: lastParentId,
-                                            amountPeriod: periodCategory.amount,
-                                            position: mergedData.filter(item => item.parentID === lastParentId).length + 1,
-                                            amount: 0,
-                                        };
-                                        mergedData.push(newEntry);
-                                    }
-                                }
-                            });
-    
-                            // Sort categories recursively and reassign positions
-                            const sortedData = sortCategoriesRecursively(mergedData);
-                            sortedData.forEach((item, index) => {
-                                item.position = index;  // Reassign position based on the sorted order
-                            });
-    
-                            // Only set mergedData if there are actual changes
-                            if (!isEqual(mergedData, sortedData)) {
-                                setCashflowCategoriesData(sortedData);
-                            }
-    
-                            console.log("Sorted and Updated Merged Data:", sortedData);
-                            
-
-                        } catch (error) {
-                            console.error("Error updating merged categories:", error);
-                        }
-                    });
-    
-                    // Return function to clean up nested listener
-                    return () => {
-                        unsubscribePeriodData();
-                    };
-                }
-    
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
                 setIsError(true);
             }
-        });
-    
-        // Listener for list of cashflows
-        const unsubscribeCashflowList = onSnapshot(cashflowListRef, (querySnapshot) => {
-            try {
-                const data = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setCashflowList(data);
-    
-            } catch (error) {
-                console.log("Error fetching period list", error);
-            }
-        });
-    
-        // Listener for selected period data
-        const unsubscribeCashflow = onSnapshot(cashflowRef, async (docSnapshot) => {
-            try {
-                if (docSnapshot.exists()) {
-                    const data = { id: docSnapshot.id, ...docSnapshot.data() };
-                    setPeriodId(data.selectedPeriod);
-                } else {
-                    console.log("No such document!");
-                }
-            } catch (error) {
-                console.log("Error fetching period data", error);
-            }
-        });
-    
-        // Cleanup function to unsubscribe from all listeners
-        return () => {
-            unsubscribe();
-            unsubscribeCashflowList();
-            unsubscribeCashflow();
         };
-    }, [cashflowId, periodId]);
-    
+
+        fetchAndInitializeCategories();
+    }, [cashflowId]);
 
     // Fetch categories data only once initially to reduce continuous reads
     useEffect(() => {
 
         // For cashflow data
         const cashflowsCollectionsDAtaRef = collection(db, "cashflow", cashflowId, "categories");
-
-        //Get cashflowcategories Data
         const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
             try {
                 const data = querySnapshot.docs.map((doc) => ({
@@ -298,20 +135,6 @@ export default function CashflowsDetails() {
                 }));
 
                 setCashflowCategoriesData(sortCategoriesRecursively(data));
-                
-                //Get Cashflow Data
-
-
-                //Merge Cashflow and SelectedPeriod
-
-
-                //Store in a new collection under the collection collection(db, "cashflow", cashflowId)
-
-
-
-
-
-
 
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
@@ -360,125 +183,97 @@ export default function CashflowsDetails() {
     }, [cashflowId]);
 
 
+    useEffect(() => {
+        if (periodId) {
+            // For SelectedPeriodData
+            // For cashflow data
+            const cashflowsCollectionsDAtaRef = collection(db, "cashflow", periodId, "categories");
+            const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
+                try {
+                    const data = querySnapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+                    setPeriodDataCategories(sortCategoriesRecursively(data));
 
-    // useEffect(() => {
+                    const sortedPeriodData = sortCategoriesRecursively(data);
 
-    //     if (periodId) {
-    //         const cashflowsCollectionsDataRef = collection(db, "cashflow", periodId, "categories");
+                    // Get main categories for the period
+                    const mainCategoriesPeriod = sortedPeriodData.filter(period => period.level === 0);
+                    // console.log("Main Categories from Period", mainCategoriesPeriod);
 
-    //         // Sort `cashflowCategoriesData` only once outside the listener
-    //         const sortedCurrentYearData = sortCategoriesRecursively(cashflowCategoriesData);
+                    // Helper function to get cash flows by main category for a given dataset
+                    const getCashFlowsByCategory = (data, mainCategory, flowType) => {
+                        const activitySubCategories = data.filter(item => item.parentID === mainCategory.id);
+                        const cashFlows = activitySubCategories.filter(sub => sub.categoryName === flowType);
 
-    //         const unsubscribe = onSnapshot(cashflowsCollectionsDataRef, async (querySnapshot) => {
-    //             try {
-    //                 const periodData = querySnapshot.docs.map((doc) => ({
-    //                     id: doc.id,
-    //                     ...doc.data(),
-    //                 }));
-    //                 const sortedPeriodData = sortCategoriesRecursively(periodData);
+                        // Get IDs of specified cash flow type to fetch subcategories under it
+                        const cashFlowIds = cashFlows.map(flow => flow.id);
+                        return data.filter(item => cashFlowIds.includes(item.parentID));
+                    };
 
-    //                 let mergedData = [...sortedCurrentYearData];
-    //                 const similarityThreshold = 0.8;
+                    // Selected Period Cash Flows based on main categories
+                    const selectedPeriodCashFlows = mainCategoriesPeriod.map(mainCategory => ({
+                        categoryName: mainCategory.categoryName,
+                        CashInflows: getCashFlowsByCategory(sortedPeriodData, mainCategory, "Cash Inflows"),
+                        CashOutflows: getCashFlowsByCategory(sortedPeriodData, mainCategory, "Cash Outflows")
+                    }));
 
-    //                 sortedPeriodData.forEach(periodCategory => {
-    //                     // Skip main categories "Cash Inflows" and "Cash Outflows"
-    //                     if (periodCategory.categoryName === "Cash Inflows" || periodCategory.categoryName === "Cash Outflows") {
-    //                         return;
-    //                     }
+                    // console.log("Selected Period Cash Flows", selectedPeriodCashFlows);
 
-    //                     const existingIndex = mergedData.findIndex(currentCategory =>
-    //                         stringSimilarity.compareTwoStrings(currentCategory.categoryName, periodCategory.categoryName) >= similarityThreshold &&
-    //                         currentCategory.level === periodCategory.level &&
-    //                         currentCategory.parentID === periodCategory.parentID
-    //                     );
+                    // Get main categories for the current year
+                    const mainCategoriesCurrentYear = cashflowCategoriesData.filter(current => current.level === 0);
+                    console.log("Main Categories from Current Year", mainCategoriesCurrentYear);
 
-    //                     if (periodCategory.categoryName !== "") {
-    //                         const existingIndex = mergedData.findIndex(
-    //                             mergedEntry => stringSimilarity.compareTwoStrings(mergedEntry.categoryName, periodCategory.categoryName) >= similarityThreshold
-    //                         );
+                    // Current Year Cash Flows based on main categories
+                    const currentYearCashFlows = mainCategoriesCurrentYear.map(mainCategory => ({
+                        categoryName: mainCategory.categoryName,
+                        CashInflows: getCashFlowsByCategory(cashflowCategoriesData, mainCategory, "Cash Inflows"),
+                        CashOutflows: getCashFlowsByCategory(cashflowCategoriesData, mainCategory, "Cash Outflows")
+                    }));
 
-    //                         if (existingIndex !== -1) {
-    //                             // Update matched entry with amountPeriod
-    //                             mergedData[existingIndex] = {
-    //                                 ...mergedData[existingIndex],
-    //                                 amountPeriod: periodCategory.amount
-    //                             };
-    //                         } else {
-    //                             // Step 1: Traverse the hierarchy in sortedPeriodData to build the parent structure in mergedData
-    //                             let currentParentId = periodCategory.parentID;
-    //                             let currentCategory = periodCategory;
+                    // console.log("Current Year Cash Flows", currentYearCashFlows);
 
-    //                             // Create an array to store the hierarchy path
-    //                             const hierarchyPath = [];
+                    const stringSimilarity = require('string-similarity');
+                    // Helper function to get unmatched categories by string similarity
+                    const getUnmatchedCategories = (periodData, currentData, threshold = 0.7) => {
+                        const unmatched = [];
 
-    //                             // Traverse up to the top-level parent, collecting each level
-    //                             while (currentParentId) {
-    //                                 const parentCategory = sortedPeriodData.find(category => category.id === currentParentId);
-    //                                 if (!parentCategory) break;
-    //                                 hierarchyPath.unshift(parentCategory);
-    //                                 currentParentId = parentCategory.parentID;
-    //                             }
+                        periodData.forEach(periodCategory => {
+                            // Get the best match for periodCategory in currentData
+                            const currentCategoryNames = currentData.map(current => current.categoryName);
+                            const { bestMatch } = stringSimilarity.findBestMatch(periodCategory.categoryName, currentCategoryNames);
 
-    //                             // Step 2: Traverse or create the hierarchy path in mergedData
-    //                             let lastParentId = null;
+                            // If similarity is below the threshold, add to unmatched list
+                            if (bestMatch.rating < threshold) {
+                                unmatched.push(periodCategory);
+                            }
+                        });
 
-    //                             hierarchyPath.forEach(levelCategory => {
-    //                                 // Check if the category already exists in mergedData
-    //                                 let existingCategory = mergedData.find(cat => cat.categoryName === levelCategory.categoryName && cat.parentID === lastParentId);
-    //                                 if (!existingCategory) {
-    //                                     // Create new entry in mergedData if it doesn't exist
-    //                                     existingCategory = {
-    //                                         ...levelCategory,
-    //                                         id: `merged_${Date.now()}_${Math.random()}`, // Generate unique ID
-    //                                         parentID: lastParentId,
-    //                                         position: mergedData.filter(item => item.parentID === lastParentId).length + 1, // Position within the parent
-    //                                         amount: 0,
-    //                                     };
-    //                                     mergedData.push(existingCategory);
-    //                                 }
+                        return unmatched;
+                    };
 
-    //                                 // Set this as the last parent for the next iteration
-    //                                 lastParentId = existingCategory.id;
-    //                             });
+                    // Example Usage
+                    // Retrieve Cash Inflows subcategories for each main category in the selected period and current year
+                    const selectedPeriodUnmatchedCashInflows = selectedPeriodCashFlows.reduce((acc, category) => {
+                        const periodCashInflows = category.CashInflows;
+                        const currentCashInflows = currentYearCashFlows.find(current => current.categoryName === category.categoryName)?.CashInflows || [];
 
-    //                             // Step 3: Finally, add the periodCategory itself under its immediate parent in the hierarchy
-    //                             const newEntry = {
-    //                                 ...periodCategory,
-    //                                 parentID: lastParentId,
-    //                                 amountPeriod: periodCategory.amount,
-    //                                 position: mergedData.filter(item => item.parentID === lastParentId).length + 1,
-    //                                 amount: 0,
-    //                             };
-    //                             mergedData.push(newEntry);
-    //                         }
-    //                     }
+                        acc.push(...getUnmatchedCategories(periodCashInflows, currentCashInflows));
+                        return acc;
+                    }, []);
 
-    //                 });
-
-    //                 // Sort categories recursively and reassign positions
-    //                 const sortedData = sortCategoriesRecursively(mergedData);
-    //                 sortedData.forEach((item, index) => {
-    //                     item.position = index;  // Reassign position based on the sorted order
-    //                 });
-
-    //                 // Only set mergedData if there are actual changes
-    //                 if (!isEqual(mergedData, sortedData)) {
-    //                     setCashflowCategoriesData(sortedData);
-    //                 }
-
-    //                 console.log("Sorted and Updated Merged Data:", sortedData);
+                    console.log("Unmatched Cash Inflows from Selected Period", selectedPeriodUnmatchedCashInflows);
 
 
-    //             } catch (error) {
-    //                 console.error("Error updating merged categories:", error);
-    //             }
-    //         });
-
-    //         return unsubscribe;
-    //     }
-
-
-    // }, [periodId]);
+                } catch (error) {
+                    console.error("Error fetching and sorting categories:", error);
+                    setIsError(true);
+                }
+            })
+            return () => unsubscribe();
+        }
+    }, [periodId]);
 
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
@@ -752,32 +547,27 @@ export default function CashflowsDetails() {
         return totalAmount;
     }
 
-
-    function getLeafCategoryAmountTotals(categoryId, data) {
+    function getLeafCategoryAmountTotal(categoryId, data) {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
 
-        // Initialize totals for amount and amountPeriod
+        // Initialize the total amount
         let totalAmount = 0;
-        let totalAmountPeriod = 0;
 
         subcategories.forEach(subCat => {
             // Check if the subcategory has any further subcategories
             const hasChildren = data.some(cat => cat.parentID === subCat.id);
 
             if (!hasChildren) {
-                // If no children, add both amounts to the totals
+                // If no children, add its amount to the total
                 totalAmount += subCat.amount || 0;
-                totalAmountPeriod += subCat.amountPeriod || 0;
             } else {
-                // If it has children, recursively calculate the totals for those children
-                const childTotals = getLeafCategoryAmountTotals(subCat.id, data);
-                totalAmount += childTotals.totalAmount;
-                totalAmountPeriod += childTotals.totalAmountPeriod;
+                // If it has children, recursively calculate the total for those children
+                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
             }
         });
 
-        return { totalAmount, totalAmountPeriod };
+        return totalAmount;
     }
 
     const [inputWidth, setInputWidth] = useState('auto');
@@ -799,7 +589,7 @@ export default function CashflowsDetails() {
         };
 
         const hasSubcategories = category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id);
-        const totalLeafAmounts = getLeafCategoryAmountTotals(category.id, cashflowCategoriesData);
+        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cashflowCategoriesData);
 
 
 
@@ -875,7 +665,7 @@ export default function CashflowsDetails() {
 
                 <td className="px-2 py-2 w-56 h-6 ">
                     {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmounts.totalAmount) || '-'}</span>
+                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
                     ) : (
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
@@ -900,13 +690,7 @@ export default function CashflowsDetails() {
                     )}
                 </td>
                 <td className="px-2 py-3 text-center">
-                    {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmounts.totalAmountPeriod) || '-'}</span>
-                    ) : (
-                        <span className="block w-full h-8 px-2 py-1">
-                            {formatNumber(category.amountPeriod) || '-'}
-                        </span>
-                    )}
+                    {/* Display matching data or fallback */}
 
                 </td>
             </tr>
@@ -921,9 +705,6 @@ export default function CashflowsDetails() {
 
             const activeIndex = cashflowCategoriesData.findIndex(item => item.id === active.id);
             const activeItem = cashflowCategoriesData[activeIndex];
-
-            console.log("Cashflow Categories from handle Dragend", cashflowCategoriesData);
-
 
             let overIndex = cashflowCategoriesData.findIndex(item => item.id === over.id);
             let overItem = cashflowCategoriesData[overIndex];
@@ -1233,7 +1014,6 @@ export default function CashflowsDetails() {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
             const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
 
-            // Helper function to get all nested subcategories of a given parent category
             const getAllSubcategories = async (parentId) => {
                 const subcategories = [];
                 const subcategoriesQuery = query(categoriesCollectionRef, where('parentID', '==', parentId));
@@ -1248,51 +1028,20 @@ export default function CashflowsDetails() {
                 return subcategories;
             };
 
+            const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
+
             const batch = writeBatch(db);
 
-            if (selectedRowData.categoryName === "Operating Activities" || "Investing Activities" || "Financing Activities") {
-                // Only delete subcategories, not the main category
-                const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
+            const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
+            batch.delete(categoryDocRef);
 
-                subcategoriesToDelete.forEach((subcategoryDoc) => {
-                    batch.delete(subcategoryDoc.ref);
-                });
-
-                // Add new "Cash Inflows" and "Cash Outflows" subcategories
-                const newSubcategories = [
-                    { categoryName: "Cash Inflows", parentID: selectedRowData.id, level: 1, position: 0 },
-                    { categoryName: "Cash Outflows", parentID: selectedRowData.id, level: 1, position: 1 }
-                ];
-
-                newSubcategories.forEach((subcategory) => {
-                    const newDocRef = doc(categoriesCollectionRef);
-                    batch.set(newDocRef, subcategory);
-
-                    // Add two blank rows under each new subcategory
-                    const blankRows = [
-                        { categoryName: "", parentID: newDocRef.id, level: 2, position: 0, amount: 0 },
-                        { categoryName: "", parentID: newDocRef.id, level: 2, position: 1, amount: 0 }
-                    ];
-
-                    blankRows.forEach((blankRow) => {
-                        const blankDocRef = doc(categoriesCollectionRef);
-                        batch.set(blankDocRef, blankRow);
-                    });
-                });
-            } else {
-                // Delete selected category and its subcategories if not "Operating Activities"
-                const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
-                batch.delete(categoryDocRef);
-
-                const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
-                subcategoriesToDelete.forEach((subcategoryDoc) => {
-                    batch.delete(subcategoryDoc.ref);
-                });
-            }
+            subcategoriesToDelete.forEach((subcategoryDoc) => {
+                batch.delete(subcategoryDoc.ref);
+            });
 
             await batch.commit();
-            setShowRightClickModal(false);
 
+            setShowRightClickModal(false);
         } catch (error) {
             console.log("Error deleting document:", error);
         }

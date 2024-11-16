@@ -905,7 +905,7 @@ export default function LedgerDetails() {
               <div className="px-3 py-1 flex flex-row justify-between">
                 <div className='px-3 py-1'>
                   <DatePicker
-                  selected={startDate}
+                  selected={startExportDate}
                   onChange={(date) => setStartExportDate(date)}
                   placeholderText="Start Date"
                   className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
@@ -913,7 +913,7 @@ export default function LedgerDetails() {
                 </div>
                 <div className='px-3 py-1'>
                   <DatePicker
-                  selected={endDate}
+                  selected={endExportDate}
                   onChange={(date) => setEndExportDate(date)}
                   placeholderText="End Date"
                   className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
