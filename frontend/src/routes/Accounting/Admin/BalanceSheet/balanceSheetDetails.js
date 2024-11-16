@@ -34,9 +34,10 @@ export default function BalanceSheet() {
     const [stateStartDate, setStateStartDate] = useState(null);
     const [stateEndDate, setStateEndDate] = useState(null);
 
-    const [showRightClickModal, setShowRightClickModal] = useState(false);
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [selectedRowData, setSelectedRowData] = useState(null);
+    const [totalAssets, setTotalAssets] = useState(0);
+    const [totalLiabilities, setTotalLiabilities] = useState(0);
+    const [totalNetAssets, setTotalNetAssets] = useState(0);
+    const [totalEquity, setTotalEquity] = useState(0);
 
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
@@ -104,44 +105,56 @@ export default function BalanceSheet() {
         setCheckedAccounts(new Set());
     };
 
-    // Function to dynamically filter accounts based on updated data
-    const getFilteredAccounts = () => {
-        return accountTitles
-            .filter(account => ["Assets", "Liabilities", "Equity", "Contra Assets"].includes(account.accountType))
-            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase()))
-            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude already selected accounts
-            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle));
+    const [subcategoryType, setSubcategoryType] = useState('');
+    const determineSubcategoryType = (parentCategoryName) => {
+        // Determine the subcategoryType based on the parent category
+        const parentCategory = subcategories.find(
+            (sub) => sub.subcategoryName === parentCategoryName
+        );
+        return parentCategory
+            ? parentCategory.subcategoryType // inherit from the parent
+            : parentCategoryName; // if root, use the root category type
     };
 
+    // Function to dynamically filter accounts based on updated data
+    const getFilteredAccounts = (subcategoryType) => {
+        return accountTitles
+            .filter(account => {
+                if (subcategoryType === "Assets") {
+                    return ["Assets", "Contra Assets"].includes(account.accountType);
+                } else if (subcategoryType === "Liabilities") {
+                    return account.accountType === "Liabilities";
+                } else if (subcategoryType === "Equity") {
+                    return account.accountType === "Equity";
+                }
+                return false; // Exclude any account that doesn't match the subcategoryType
+            })
+            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase())) // Search filter
+            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude selected accounts
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)); // Sort alphabetically by accountTitle
+    };
 
     const [subcategories, setSubcategories] = useState([]);
-    const addSubcategory = (newName, newParentCategory, newSelectedAccounts = []) => {
-        // Ensure newSelectedAccounts is always an array
+    const addSubcategory = (newName, newParentCategory, newSubcategoryType, newSelectedAccounts = []) => {
         const accountTitlesArray = Array.isArray(newSelectedAccounts)
             ? newSelectedAccounts
-            : Array.from(newSelectedAccounts || []); // Fallback to empty array if null or undefined
+            : Array.from(newSelectedAccounts || []);
 
-        setSubcategories(prevSubcategories => [
+        setSubcategories((prevSubcategories) => [
             ...prevSubcategories,
             {
                 subcategoryName: newName,
                 parentCategory: newParentCategory,
+                subcategoryType: newSubcategoryType,
                 accountTitles: accountTitlesArray
             }
         ]);
     };
-
-
-
-    // console.log("Data of selectParentCategory: ", selectParentCategory);
-    // console.log("Data of currentSelection: ", currentSelection);
-    // console.log("Data of Selected Accounts", selectedAccounts);
-    // console.log("Data of Checked Accounts Array", checkedAccounts);
-    // console.log("Data of filteredAccounts", getFilteredAccounts);
-    // console.log("Data of subcategories", subcategories);
-
+    console.log("Data of subcategories: ", subcategories)
 
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [showRightClickModal, setShowRightClickModal] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
     const handleRightClick = useCallback((event, item) => {
         event.preventDefault();
@@ -149,7 +162,7 @@ export default function BalanceSheet() {
         setSelectedSubcategory(item.name);
         setShowRightClickModal(true);
     }, []);
-    
+
 
     const handleDeleteRow = (subcategoryName) => {
         // Get the names of deleted subcategories and removed accounts
@@ -218,6 +231,19 @@ export default function BalanceSheet() {
         getLedgerList();
     }, []); // No dependencies for getLedgerList, so it only runs once on mount
     // -----------------------------------------------------------------
+
+    // Function to update totalEquity in the balanceSheet collection
+    const updateTotalEquityInFirestore = async (balanceSheetID, totalEquity) => {
+        try {
+            const balanceSheetRef = doc(db, "balancesheet", balanceSheetID);
+            await updateDoc(balanceSheetRef, {
+                totalNetAssets: totalEquity // Push the totalEquity value to Firestore
+            });
+            console.log("Total net assets successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total equity:", err);
+        }
+    };
 
     // Fetch the balance sheet description and its associated ledger year
     useEffect(() => {
@@ -292,6 +318,36 @@ export default function BalanceSheet() {
 
                             setAccountTitles(accountTitlesData);
                             setAccounts(accountsData);
+
+                            // Calculate totals
+                            const assets = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Assets" || accountTitle.accountType === "Contra Assets")
+                                .reduce((total, accountTitle) => {
+                                    const amount = accountTitle.accountType === "Contra Assets"
+                                        ? +accountTitle.differenceContra
+                                        : accountTitle.difference;
+                                    return total + amount;
+                                }, 0);
+
+                            const liabilities = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Liabilities")
+                                .reduce((total, accountTitle) => total + accountTitle.differenceContra, 0);
+
+                            const equity = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Equity")
+                                .reduce((total, accountTitle) => total + accountTitle.differenceContra, 0);
+
+                            const netAssets = assets - liabilities;
+                            const finalEquity = netAssets + equity;
+
+                            // Update states with calculated values
+                            setTotalAssets(assets);
+                            setTotalLiabilities(liabilities);
+                            setTotalNetAssets(netAssets);
+                            setTotalEquity(finalEquity);
+
+                            // Update Firestore with totalEquity
+                            updateTotalEquityInFirestore(balanceSheetID, finalEquity);
                         } else {
                             balanceSheetData.ledgerYear = "N/A";
                         }
@@ -310,7 +366,7 @@ export default function BalanceSheet() {
         };
 
         getBalanceSheetDescription();
-    }, [balanceSheetID]);
+    }, []);
 
     // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
     useEffect(() => {
@@ -378,36 +434,8 @@ export default function BalanceSheet() {
         };
 
         getSelectedLedgerData();
-    }, [selectedLedger, stateStartDate, stateEndDate]); // Triggered by selectedLedger, stateStartDate, and stateEndDate
+    }, [selectedLedger]);
     // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
-
-    // useEffect(() => {
-    //     if (!showRightClickModal) {
-    //         // Fetch data when balanceSheetID or selectedLedger changes
-    //         getBalanceSheetDescription();
-    //         getLedgerList();
-    //         getSelectedLedgerData();
-    //     }
-
-    //     // Display success message if loading is complete and there's a success message in location.state
-    //     if (!loading && location.state?.successMessage) {
-    //         setSuccessMessage(location.state.successMessage);
-    //         setIsSuccess(true);
-
-    //         const timer = setTimeout(() => {
-    //             setIsSuccess(false);
-    //         }, 2000);
-
-    //         // Clear timeout when the effect cleans up
-    //         return () => clearTimeout(timer);
-    //     }
-    // }, [balanceSheetID, selectedLedger, loading, location.state, showRightClickModal]);
-
-    // useEffect(() => {
-    //     getBalanceSheetDescription();
-    //     getLedgerList();
-    //     getSelectedLedgerData();
-    // }, [balanceSheetID, selectedLedger]);
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -429,55 +457,6 @@ export default function BalanceSheet() {
     if (error) {
         return <p>{error}</p>;
     }
-
-    // Calculate total amount for Assets
-    const totalAssets = accountTitles
-        .filter(accountTitle =>
-            accountTitle.accountType === "Assets" ||
-            accountTitle.accountType === "Contra Assets"
-        )
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.accountType === "Contra Assets"
-                ? +accountTitle.differenceContra // Subtract differenceContra for Contra Assets
-                : accountTitle.difference;        // Use difference for regular Assets
-            return total + amount; // Sum the amounts
-        }, 0);
-
-    // Calculate total amount for Liabilities
-    const totalLiabilities = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Liabilities")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.differenceContra;
-            return total + amount;
-        }, 0);
-
-    // Calculate base equity as Assets - Liabilities
-    let totalNetAssets = totalAssets - totalLiabilities;
-    let totalEquity = totalNetAssets;
-
-    // Add any Equity accounts to the calculated equity
-    totalEquity += accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Equity")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.differenceContra; // Use differenceContra for Equity accounts if applicable
-            return total + amount; // Sum equity amounts
-        }, 0);
-
-    // Function to update totalEquity in the balanceSheet collection
-    const updateTotalEquityInFirestore = async (balanceSheetID, totalEquity) => {
-        try {
-            const balanceSheetRef = doc(db, "balancesheet", balanceSheetID);
-            await updateDoc(balanceSheetRef, {
-                totalNetAssets: totalEquity // Push the totalEquity value to Firestore
-            });
-            console.log("Total net assets successfully updated in Firestore.");
-        } catch (err) {
-            console.error("Error updating total equity:", err);
-        }
-    };
-
-    // Call the function to update Firestore after calculating totalEquity
-    updateTotalEquityInFirestore(balanceSheetID, totalEquity);
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
     // Calculate total amount for Assets
@@ -655,7 +634,7 @@ export default function BalanceSheet() {
     };
     // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
 
-    // Recursive function to get nested subcategories
+    // Recursive function to get ------------------------ N E S T E D  S U B C A T E G O R I E S -------------------------
     const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
         return subcategories
             .filter(sub => sub.parentCategory === parentName)
@@ -670,9 +649,9 @@ export default function BalanceSheet() {
                 ]
             }));
     };
+    // --------------------------------------- N E S T E D  S U B C A T E G O R I E S --------------------------------------
 
-    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
-    // Updated `subcategoriesAccountTitles` to use `parentCategory`
+    //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
     const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         const subcategoryAccountNames = subcategories
             .flatMap(sub => sub.accountTitles || [])
@@ -714,8 +693,16 @@ export default function BalanceSheet() {
                 }
             });
     };
+    //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
 
+    //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
     const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
+        // Prevent deletion of the main categories
+        if (["Assets", "Liabilities", "Equity"].includes(subcategoryName)) {
+            console.warn(`Deletion of Main Category "${subcategoryName}" is not allowed.`);
+            return { removedSubcategoryNames: [], removedAccountTitles: [] };
+        }
+
         let removedSubcategoryNames = [subcategoryName]; // Start with the main subcategory
         let removedAccountTitles = [];
 
@@ -746,7 +733,7 @@ export default function BalanceSheet() {
         // Return both removed subcategory names and account titles
         return { removedSubcategoryNames, removedAccountTitles };
     };
-    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+    //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
 
     // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
     const balanceSheetDetailsData = [
@@ -763,8 +750,8 @@ export default function BalanceSheet() {
         {
             name: "Liabilities",
             children: [
-                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
-                ...getNestedSubcategories(subcategories, "Liabilities", accountTitles, currentAccountTitlesPeriod)
+                ...getNestedSubcategories(subcategories, "Liabilities", accountTitles, currentAccountTitlesPeriod),
+                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
             ],
             amount: totalLiabilities,
             amount2: totalLiabilities2 !== 0 ? totalLiabilities2 : null
@@ -772,8 +759,8 @@ export default function BalanceSheet() {
         {
             name: "Equity",
             children: [
-                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
-                ...getNestedSubcategories(subcategories, "Equity", accountTitles, currentAccountTitlesPeriod)
+                ...getNestedSubcategories(subcategories, "Equity", accountTitles, currentAccountTitlesPeriod),
+                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
             ],
             amount: totalEquity,
             amount2: totalEquity2 !== 0 ? totalEquity2 : null
@@ -1002,12 +989,12 @@ export default function BalanceSheet() {
             </div>
 
             {/* Modal 1 */}
-            {showModal && currentModal === 1 && (
+            {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select Ledger Period</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setIsClicked(false); }}>×</button>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setSelectedLedger(""); }}>×</button>
                         </div>
 
                         <hr className="border-t border-[#7694D4] my-3" />
@@ -1033,10 +1020,9 @@ export default function BalanceSheet() {
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
                                     if (selectedLedger) {
-                                        // Only update state and let useEffect handle the data fetching
                                         setShowPeriodColumn(true);  // Show the period column
-                                        setCurrentModal(2);         // Move to the next modal step
-                                        setIsClicked(false);
+                                        setShowModal(false);
+                                        setSelectedLedger("");
                                     }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
@@ -1081,6 +1067,7 @@ export default function BalanceSheet() {
                                 onClick={() => {
                                     setSubcategory('');        // Reset subcategory input
                                     setCurrentSelection('');    // Reset select dropdown
+                                    setSubcategoryType('');
                                     setFirstSubcategoryModal(false); // Close modal
                                 }}>
                                 ×
@@ -1138,8 +1125,11 @@ export default function BalanceSheet() {
                                         ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={subcategory.length === 0 || currentSelection === ''}
                                 onClick={() => {
-                                    setFirstSubcategoryModal(false)
-                                    setSecondSubcategoryModal(true)
+                                    const subcategoryType = determineSubcategoryType(currentSelection);
+                                    setSubcategoryType(subcategoryType);
+                                    console.log("subcategoryType of subcategory: ", subcategoryType);
+                                    setFirstSubcategoryModal(false);
+                                    setSecondSubcategoryModal(true);
                                 }}
                             >
                                 NEXT
@@ -1163,6 +1153,7 @@ export default function BalanceSheet() {
                                     setSecondSubcategoryModal(false);
                                     setSubcategory('');
                                     setCurrentSelection('');
+                                    setSubcategoryType('');
                                 }}
                             >
                                 ×
@@ -1199,7 +1190,8 @@ export default function BalanceSheet() {
                                         console.log("No button clicked with:", selectParentCategory);
                                         setSubcategory('');
                                         setCurrentSelection('');
-                                        addSubcategory(subcategory, currentSelection, []);
+                                        setSubcategoryType('');
+                                        addSubcategory(subcategory, currentSelection, subcategoryType, []);
                                     }}
                                 >
                                     NO
@@ -1225,6 +1217,7 @@ export default function BalanceSheet() {
                                     setThirdSubcategoryModal(false);
                                     setSubcategory('');
                                     setCurrentSelection('');
+                                    setSubcategoryType('');
                                 }}
                             >
                                 ×
@@ -1272,12 +1265,12 @@ export default function BalanceSheet() {
                                         className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
                                         aria-labelledby="dropdownSearchButton"
                                     >
-                                        {getFilteredAccounts().length === 0 ? (
+                                        {getFilteredAccounts(subcategoryType).length === 0 ? (
                                             <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
                                                 No Available Accounts
                                             </li>
                                         ) : (
-                                            getFilteredAccounts().map((account) => (
+                                            getFilteredAccounts(subcategoryType).map((account) => (
                                                 <li key={account.id}>
                                                     <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
                                                         <input
@@ -1303,9 +1296,9 @@ export default function BalanceSheet() {
                             </div>
                         </div>
 
-                        {/* Footer with Confirm Button */}
+                        {/* Footer with Confirm and Cancel Button */}
                         <div className="flex justify-end mt-4 p-4">
-                            {getFilteredAccounts().length === 0 ? (
+                            {getFilteredAccounts(subcategoryType).length === 0 ? (
                                 <button
                                     type="button"
                                     className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
@@ -1315,6 +1308,7 @@ export default function BalanceSheet() {
                                         // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
                                         setSubcategory('');
                                         setCurrentSelection('');;
+                                        setSubcategoryType('');
 
                                     }}
                                 >
@@ -1329,10 +1323,11 @@ export default function BalanceSheet() {
                                         setIsDropdownOpen(false);
                                         setThirdSubcategoryModal(false);
                                         setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
-                                        addSubcategory(subcategory, currentSelection, checkedAccounts);
+                                        addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
                                         handleConfirm(); // Clear checked accounts after adding
                                         setSubcategory('');
                                         setCurrentSelection('');
+                                        setSubcategoryType('');
                                     }}
                                 >
                                     Confirm
