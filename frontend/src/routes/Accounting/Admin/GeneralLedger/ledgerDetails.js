@@ -7,7 +7,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { IoMdAddCircleOutline } from "react-icons/io"; // Icon
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
-import { BiFilterAlt, BiChevronDown } from "react-icons/bi"; // Icons for filter button
+import { BiFilterAlt, BiChevronDown, BiExport } from "react-icons/bi"; // Icons for filter button
 import { BsChevronDown } from "react-icons/bs"; // Icon for actions button
 import { debounce } from 'lodash'; // Import debounce
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +64,10 @@ export default function LedgerDetails() {
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+
+  const [startExportDate, setStartExportDate] = useState(null);
+  const [endExportDate, setEndExportDate] = useState(null);
+
 
   useEffect(() => {
     if (!ledgerId) {
@@ -879,10 +883,51 @@ export default function LedgerDetails() {
               </div>
             </Dropdown>
 
-            <ExportButton
+            {/* Filter Dropdown */}
+            <Dropdown
+              label={
+                <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                  <BiExport className="mr-2 text-[15px] font-bold" />
+                  <span className="mr-2 font-medium">Export</span>
+                  <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                </div>
+              }
+              dismissOnClick={false}
+              inline={true}
+              arrowIcon={false} // Disabled default arrow icon
+              className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+            >
+              <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                Export by Date
+              </h6>
+              <hr className="border-t bordergray-50 my-1" />
+
+              <div className="px-3 py-1 flex flex-row justify-between">
+                <div className='px-3 py-1'>
+                  <DatePicker
+                  selected={startDate}
+                  onChange={(date) => setStartExportDate(date)}
+                  placeholderText="Start Date"
+                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                />
+                </div>
+                <div className='px-3 py-1'>
+                  <DatePicker
+                  selected={endDate}
+                  onChange={(date) => setEndExportDate(date)}
+                  placeholderText="End Date"
+                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                />
+                </div>
+
+                <div className='px-3 py-1'>
+                <ExportButton
                         label="EXPORT"
                         onClick={exportToExcel}
                     />
+                </div>
+              </div>
+            </Dropdown>
 
           </div>
         </div>
@@ -1165,7 +1210,7 @@ export default function LedgerDetails() {
             >ADD</button>
 
             <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
-
+            onClick={() => navigate("/main/accounts")}
             >EDIT ACCOUNT TITLES</button>
           </div>
         </div>
