@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc, addDoc, deleteDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal";
 import { useLocation } from "react-router-dom";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -39,6 +39,8 @@ export default function BalanceSheet() {
     const [totalNetAssets, setTotalNetAssets] = useState(0);
     const [totalEquity, setTotalEquity] = useState(0);
 
+    const [fireAccountTitlesPeriod, setFireAccountTitlesPeriod] = useState([]);
+    const [dataShow, setDataShow] = useState(false);
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
@@ -55,7 +57,7 @@ export default function BalanceSheet() {
     // Access data specific to this balance sheet ID
     const currentAccountTitlesPeriod = accountTitlesPeriod[balanceSheetID] || [];
     const currentAccountsPeriod = accountsPeriod[balanceSheetID] || [];
-    const currentSelectedLedgerYear = selectedLedgerYear[balanceSheetID] || null;
+    const fireLedgerYear = selectedLedgerYear[balanceSheetID] || null;
     const currentShowPeriodColumn = showPeriodColumn[balanceSheetID] || false;
 
     // Functions to update data for this balance sheet ID
@@ -66,6 +68,10 @@ export default function BalanceSheet() {
 
     // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
     // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
+    console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
+    console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
+    console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
+    console.log("Data of fireLedgerYear: ", fireLedgerYear);
 
     const [isClicked, setIsClicked] = useState(false);
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
@@ -371,73 +377,177 @@ export default function BalanceSheet() {
 
 
     // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
+    const getSelectedLedgerData = async () => {
+        try {
+            if (selectedLedger) {
+                const ledgerRef = doc(db, "ledger", selectedLedger);
+                const ledgerSnap = await getDoc(ledgerRef);
+
+                if (ledgerSnap.exists()) {
+                    const ledgerYear = ledgerSnap.data().year;
+
+                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
+                    const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                    const accountTitlesData = [];
+                    const accountsData = [];
+
+                    for (const titleDoc of accountTitlesSnap.docs) {
+                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                        const accountsQuery = query(
+                            accountsRef,
+                            where("date", ">=", stateStartDate),
+                            where("date", "<=", stateEndDate)
+                        );
+                        const accountsSnap = await getDocs(accountsQuery);
+
+                        if (!accountsSnap.empty) {
+                            let totalDebit2 = 0;
+                            let totalCredit2 = 0;
+
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id,
+                                    ...accountDoc.data(),
+                                };
+
+                                totalDebit2 += parseFloat(accountData.debit) || 0;
+                                totalCredit2 += parseFloat(accountData.credit) || 0;
+
+                                return accountData;
+                            });
+
+                            titleData.difference2 = totalDebit2 - totalCredit2;
+                            titleData.differenceContra2 = totalCredit2 - totalDebit2;
+
+                            accountTitlesData.push(titleData);
+                            accountsData.push(...titleAccounts);
+                        }
+                    }
+                    // Delete existing period data
+                    await deletePeriodData();
+                    // Add data to Firestore and update the state
+                    await addPeriodData(accountTitlesData, ledgerYear);
+
+                    setAccountTitlesPeriod(accountTitlesData);
+                    setAccountsPeriod(accountsData);
+                    setSelectedLedgerYear(ledgerYear);
+                } else {
+                    console.error("Selected ledger not found.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching selected ledger data:", error);
+        }
+    };
+    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
+
+    const deletePeriodData = async () => {
+        try {
+            const periodDataRef = collection(db, "balancesheet", balanceSheetID, "periodData");
+            const querySnapshot = await getDocs(periodDataRef);
+
+            // Delete each document in the periodData collection
+            const deletePromises = querySnapshot.docs.map(async (doc) => {
+                await deleteDoc(doc.ref);
+                console.log(`Deleted document with ID: ${doc.id}`);
+            });
+
+            // Wait for all deletions to complete
+            await Promise.all(deletePromises);
+            console.log("All period data successfully deleted.");
+        } catch (error) {
+            console.error("Error deleting period data:", error);
+        }
+    };
+
+
+    const addPeriodData = async (accountTitlesData, ledgerYear) => {
+        try {
+            const periodDataRef = collection(db, "balancesheet", balanceSheetID, "periodData");
+
+            // Map over accountTitlesData to create an array of promises
+            const promises = accountTitlesData.map(async (element) => {
+                const data = {
+                    ledgerYear: ledgerYear,
+                    accountCode: element.accountCode,
+                    accountID: element.id,
+                    accountTitle: element.accountTitle,
+                    accountType: element.accountType,
+                    difference2: element.difference2,
+                    differenceContra2: element.differenceContra2,
+                    position: element.position,
+                };
+
+                // Add data to Firestore
+                const docRef = await addDoc(periodDataRef, data);
+                if (docRef.id) {
+                    console.log(`Document added with ID: ${docRef.id}`);
+                } else {
+                    console.warn('Document was not added.');
+                }
+            });
+
+            // Wait for all promises to resolve
+            await Promise.all(promises);
+            console.log("All data successfully added to Firestore!");
+        } catch (error) {
+            console.error("Error adding data to Firestore:", error);
+        }
+    };
+
+    const fetchPeriodData = async () => {
+        try {
+            const periodDataRef = collection(db, "balancesheet", balanceSheetID, "periodData");
+            const querySnapshot = await getDocs(periodDataRef);
+
+            const data = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            setFireAccountTitlesPeriod(data);
+
+            // Extract the ledgerYear from the first document (assuming consistent ledgerYear for all docs)
+            if (data.length > 0 && data[0].ledgerYear) {
+                setSelectedLedgerYear(data[0].ledgerYear);
+                setShowPeriodColumn(true);
+            } else {
+                console.warn("No ledgerYear found in the fetched data.");
+            }
+
+            console.log("Fetched data:", data);
+            return data;
+        } catch (error) {
+            console.error("Error fetching data from Firestore:", error);
+        }
+    };
+
+
     useEffect(() => {
-        const getSelectedLedgerData = async () => {
+        const initializeData = async () => {
             try {
                 if (selectedLedger) {
-                    const ledgerRef = doc(db, "ledger", selectedLedger);
-                    const ledgerSnap = await getDoc(ledgerRef);
-
-                    if (ledgerSnap.exists()) {
-                        const ledgerYear = ledgerSnap.data().year;
-
-                        const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
-                        const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                        const accountTitlesData = [];
-                        const accountsData = [];
-
-                        for (const titleDoc of accountTitlesSnap.docs) {
-                            const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                            const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
-                            const accountsQuery = query(
-                                accountsRef,
-                                where("date", ">=", stateStartDate),
-                                where("date", "<=", stateEndDate)
-                            );
-                            const accountsSnap = await getDocs(accountsQuery);
-
-                            if (!accountsSnap.empty) {
-                                let totalDebit2 = 0;
-                                let totalCredit2 = 0;
-
-                                const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                    const accountData = {
-                                        id: accountDoc.id,
-                                        accountTitleID: titleDoc.id,
-                                        ...accountDoc.data(),
-                                    };
-
-                                    totalDebit2 += parseFloat(accountData.debit) || 0;
-                                    totalCredit2 += parseFloat(accountData.credit) || 0;
-
-                                    return accountData;
-                                });
-
-                                titleData.difference2 = totalDebit2 - totalCredit2;
-                                titleData.differenceContra2 = totalCredit2 - totalDebit2;
-
-                                accountTitlesData.push(titleData);
-                                accountsData.push(...titleAccounts);
-                            }
-                        }
-
-                        setAccountTitlesPeriod(accountTitlesData);
-                        setAccountsPeriod(accountsData);
-                        setSelectedLedgerYear(ledgerYear);
-                    } else {
-                        console.error("Selected ledger not found.");
-                    }
+                    await getSelectedLedgerData();
                 }
+                await fetchPeriodData();
             } catch (error) {
-                console.error("Error fetching selected ledger data:", error);
+                console.error("Error initializing data:", error);
             }
         };
 
-        getSelectedLedgerData();
+        initializeData();
     }, [selectedLedger]);
-    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
+
+    useEffect(() => {
+        fetchPeriodData();
+    }, []);
+
+    // Your existing functions (fetchPeriodData, getSelectedLedgerData, etc.) remain unchanged
+
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -461,7 +571,7 @@ export default function BalanceSheet() {
     }
 
     // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
-    const totalAssets2 = currentAccountTitlesPeriod
+    const totalAssets2 = fireAccountTitlesPeriod
         .filter(accountTitle =>
             accountTitle.accountType === "Assets" ||
             accountTitle.accountType === "Contra Assets"
@@ -474,7 +584,7 @@ export default function BalanceSheet() {
         }, 0);
 
     // Calculate total amount for Liabilities
-    const totalLiabilities2 = currentAccountTitlesPeriod
+    const totalLiabilities2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Liabilities")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.differenceContra2;
@@ -486,7 +596,7 @@ export default function BalanceSheet() {
     let totalEquity2 = totalNetAssets2;
 
     // Add any Equity accounts to the calculated equity
-    totalEquity2 += currentAccountTitlesPeriod
+    totalEquity2 += fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Equity")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.differenceContra2; // Use differenceContra for Equity accounts if applicable
@@ -740,8 +850,8 @@ export default function BalanceSheet() {
         {
             name: "Assets",
             children: [
-                ...getNestedSubcategories(subcategories, "Assets", accountTitles, currentAccountTitlesPeriod),
-                ...assetsAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
+                ...getNestedSubcategories(subcategories, "Assets", accountTitles, fireAccountTitlesPeriod),
+                ...assetsAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
 
             ],
             amount: totalAssets,
@@ -750,8 +860,8 @@ export default function BalanceSheet() {
         {
             name: "Liabilities",
             children: [
-                ...getNestedSubcategories(subcategories, "Liabilities", accountTitles, currentAccountTitlesPeriod),
-                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
+                ...getNestedSubcategories(subcategories, "Liabilities", accountTitles, fireAccountTitlesPeriod),
+                ...liabilitiesAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
             ],
             amount: totalLiabilities,
             amount2: totalLiabilities2 !== 0 ? totalLiabilities2 : null
@@ -759,8 +869,8 @@ export default function BalanceSheet() {
         {
             name: "Equity",
             children: [
-                ...getNestedSubcategories(subcategories, "Equity", accountTitles, currentAccountTitlesPeriod),
-                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
+                ...getNestedSubcategories(subcategories, "Equity", accountTitles, fireAccountTitlesPeriod),
+                ...equityAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
             ],
             amount: totalEquity,
             amount2: totalEquity2 !== 0 ? totalEquity2 : null
@@ -970,7 +1080,7 @@ export default function BalanceSheet() {
                                 <th scope="col" className="px-6 py-3"></th>
                             ) : (
                                 <th scope="col" className="px-6 py-3 text-right">
-                                    {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
+                                    {fireLedgerYear ? `Period - ${fireLedgerYear}` : "Period - ××××"}
                                 </th>
                             )}
                             <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
@@ -1022,11 +1132,12 @@ export default function BalanceSheet() {
                             <button
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
-                                    if (selectedLedger) {
-                                        setShowPeriodColumn(true);  // Show the period column
-                                        setShowModal(false);
-                                        setSelectedLedger("");
-                                    }
+                                    setShowPeriodColumn(true);  // Show the period column
+                                    setShowModal(false);
+                                    setSelectedLedger("");
+                                    // if (selectedLedger) {
+
+                                    // }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
                             >
