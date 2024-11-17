@@ -50,9 +50,12 @@ export default function Login() {
           case "bookkeeper":
             navigate("/main/bookkeeper/dashboard");
             break;
-            case "fire-stations":
-              navigate("/main/firestation/dashboard");
-              break;
+          case "fire-stations":
+            navigate("/main/firestation/dashboard");
+             break;
+          case "firecode-monitoring":
+            navigate("/main/firecodemonitoring/dashboard");
+            break;
           default:
             setError("User data not found. Please contact the administrator.");
             break;
