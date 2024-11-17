@@ -107,6 +107,11 @@ const Sidebar = () => {
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
       { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
     ],
+    "firecode-monitoring":[
+      { path: '/main/firecodemonitoring/dashboard', icon: isActive('/main/firecodemonitoring/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+    ],
   };
 
   const currentMenuItems = menuItems[userType] || [];
