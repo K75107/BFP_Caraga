@@ -4,6 +4,9 @@ import { db } from "../../../../config/firebase-config";
 import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal";
 import { useLocation } from "react-router-dom";
+import ExcelJS from 'exceljs';
+import ExcelHeader from '../../../../assets/ExcelHeader.png';
+import ExportButton from "../../../../components/exportButton";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import { UseLedgerData } from './incomeStatementContext';
@@ -14,7 +17,7 @@ import { IoIosSearch } from "react-icons/io";
 
 export default function IncomeStatement() {
     const navigate = useNavigate();
-    const { incomeStatementID} = useParams(); // Get the ID from the URL
+    const { incomeStatementID } = useParams(); // Get the ID from the URL
     const [incomeStatement, setIncomeStatement] = useState(null);
     const [accountTitles, setAccountTitles] = useState([]); // Store account titles
     const [accounts, setAccounts] = useState([]); // Separate state for accounts
@@ -89,7 +92,7 @@ export default function IncomeStatement() {
                 updatedCheckedAccounts.add(accountTitle);
             } else {
                 updatedCheckedAccounts.add(accountTitle);
-                updatedCheckedAccounts.delete   (accountTitle);
+                updatedCheckedAccounts.delete(accountTitle);
             }
             return updatedCheckedAccounts;
         });
@@ -149,7 +152,7 @@ export default function IncomeStatement() {
         setSelectedSubcategory(item.name);
         setShowRightClickModal(true);
     }, []);
-    
+
 
     const handleDeleteRow = (subcategoryName) => {
         // Get the names of deleted subcategories and removed accounts
@@ -430,69 +433,69 @@ export default function IncomeStatement() {
     }
 
     const totalRevenues = accountTitles
-    .filter(accountTitle =>
-        accountTitle.accountType === "Revenue")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference;
-        return total + amount; // Sum the amounts
-    }, 0);
+        .filter(accountTitle =>
+            accountTitle.accountType === "Revenue")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount; // Sum the amounts
+        }, 0);
 
-// Calculate total Expenses
-const totalExpenses = accountTitles
-    .filter(accountTitle => accountTitle.accountType === "Expenses")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference;
-        return total + amount;
-    }, 0);
+    // Calculate total Expenses
+    const totalExpenses = accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Expenses")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount;
+        }, 0);
 
-const totalSubsidy = accountTitles
-    .filter(accountTitle => accountTitle.accountType === "Subsidy")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference;
-        return total + amount;
-    }, 0);
+    const totalSubsidy = accountTitles
+        .filter(accountTitle => accountTitle.accountType === "Subsidy")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference;
+            return total + amount;
+        }, 0);
 
-let totalNetSurplusDeficit = totalRevenues - totalExpenses;
+    let totalNetSurplusDeficit = totalRevenues - totalExpenses;
 
-const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
-    try {
-        const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
-        await updateDoc(incomeStatementRef, {
-            totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
-        });
-        console.log("Total net Revenues successfully updated in Firestore.");
-    } catch (err) {
-        console.error("Error updating total Subsidy:", err);
-    }
-};
-updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
+    const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
+        try {
+            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
+            await updateDoc(incomeStatementRef, {
+                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
+            });
+            console.log("Total net Revenues successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total Subsidy:", err);
+        }
+    };
+    updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
     const totalRevenues2 = currentAccountTitlesPeriod
-    .filter(accountTitle => accountTitle.accountType === "Revenue")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference2;
-        return total + amount;
-    }, 0);
+        .filter(accountTitle => accountTitle.accountType === "Revenue")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
 
-// Calculate total amount for Expenses
-const totalExpenses2 = currentAccountTitlesPeriod
-    .filter(accountTitle => accountTitle.accountType === "Expenses")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference2;
-        return total + amount;
-    }, 0);
+    // Calculate total amount for Expenses
+    const totalExpenses2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Expenses")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
 
-// Calculate base equity as Revenues - Expenses
-let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
-let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
+    // Calculate base equity as Revenues - Expenses
+    let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
+    let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
 
-const totalSubsidy2 = currentAccountTitlesPeriod
-    .filter(accountTitle => accountTitle.accountType === "Subsidy")
-    .reduce((total, accountTitle) => {
-        const amount = accountTitle.difference2;
-        return total + amount;
-    }, 0);
+    const totalSubsidy2 = currentAccountTitlesPeriod
+        .filter(accountTitle => accountTitle.accountType === "Subsidy")
+        .reduce((total, accountTitle) => {
+            const amount = accountTitle.difference2;
+            return total + amount;
+        }, 0);
 
 
     //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
@@ -519,23 +522,23 @@ const totalSubsidy2 = currentAccountTitlesPeriod
         const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Revenue");
 
         return accountTitles
-        .filter(accountTitle =>
-            accountTitle.accountType === "Revenue" &&
-            !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
-        )
-        .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
-        .map(accountTitle => {
-            const matchingPeriodAccount = currentAccountTitlesPeriod.find(
-                periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
-            );
+            .filter(accountTitle =>
+                accountTitle.accountType === "Revenue" &&
+                !subcategoryAccountNames.includes(accountTitle.accountTitle) // Exclude if in subcategories
+            )
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle))
+            .map(accountTitle => {
+                const matchingPeriodAccount = currentAccountTitlesPeriod.find(
+                    periodAccount => periodAccount.accountTitle === accountTitle.accountTitle
+                );
 
-            return {
-                name: accountTitle.accountTitle,
-                amount: accountTitle.difference,
-                amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
-            };
-        }); 
-};
+                return {
+                    name: accountTitle.accountTitle,
+                    amount: accountTitle.difference,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                };
+            });
+    };
     // ------------------------------------- REVENUE  A C C O U N T  T I T L E S -------------------------------------
 
     // -------------------------------- E X P E N S E S  A C C O U N T  T I T L E S --------------------------------
@@ -619,7 +622,7 @@ const totalSubsidy2 = currentAccountTitlesPeriod
                     amount: accountTitle.difference,
                     amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
                 };
-            }); 
+            });
     };
     // ------------------------------------- SUBSIDY A C C O U N T  T I T L E S -------------------------------------
 
@@ -876,6 +879,150 @@ const totalSubsidy2 = currentAccountTitlesPeriod
         );
     };
 
+    const exportToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Financial Performance');
+    
+        // Recursive function to add rows for each parent and their children
+        const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
+            const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
+            const parentRow = worksheet.addRow([
+                `${indent}${parent.name}`,
+                "",
+                parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
+                parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
+            ]);
+    
+            // Style parent row
+            parentRow.eachCell(cell => {
+                cell.font = {
+                    name: 'Arial Narrow',
+                    size: 11,
+                    bold: depth === 0, // Bold only for top-level rows
+                };
+            });
+    
+            // Add underline for totals of top-level parents
+            if (depth === 0) {
+                parentRow.getCell(3).border = { bottom: { style: 'thin' } }; // Single underline for amount
+                parentRow.getCell(4).border = { bottom: { style: 'thin' } }; // Single underline for amount2
+            }
+    
+            // Recursively process children
+            if (parent.children && parent.children.length > 0) {
+                parent.children.forEach(child => addParentAndChildrenRows(child, worksheet, depth + 1));
+            }
+        };
+    
+        // Header Data
+        const worksheetData = [
+            ["DETAILED STATEMENT OF FINANCIAL PERFORMANCE"],
+            ["REGULAR AGENCY FUND"],
+            [`FOR THE QUARTER ENDED DECEMBER 31, ${incomeStatement.ledgerYear}`],
+            ["", "", "", ""],
+            ["ACCOUNT DESCRIPTION", "", `${incomeStatement.ledgerYear}`, `${currentSelectedLedgerYear}`],
+            ["", "", "", ""],
+            ["", "", "", ""],
+        ];
+    
+        // Append Header Rows
+        worksheetData.forEach(row => worksheet.addRow(row));
+    
+        // Append Parent and Children Rows
+        incomeStatementDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
+    
+        // Footer Rows
+        worksheet.addRow(["", "", "", ""]);
+        const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", "", totalSubsidy, totalSubsidy2]);
+        worksheet.addRow(["", "", "", ""]);
+        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", "", totalNetSurplusDeficit, totalNetSurplusDeficit2]);
+    
+        // Adjust Column Widths
+        worksheet.columns = [
+            { width: 50 }, // Account Description
+            { width: 20 }, // Empty Column for Spacing
+            { width: 20 }, // Period (e.g., 20xx)
+            { width: 20 }, // Period (e.g., 20x1)
+        ];
+    
+        // Merge Header Cells
+        worksheet.mergeCells('A1:D1');
+        worksheet.mergeCells('A2:D2');
+        worksheet.mergeCells('A3:D3');
+        worksheet.mergeCells('A5:A7'); // ACCOUNT DESCRIPTION
+        worksheet.mergeCells('B5:B7'); // EMPTY FOR SPACING
+        worksheet.mergeCells('C5:C7'); // PERIOD CURRENT
+        worksheet.mergeCells('D5:D7'); // ADDED PERIOD
+    
+        // Header Styles
+        const headerStyle = {
+            font: { bold: true, size: 14, name: 'Arial Narrow' },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+    
+        const subHeaderStyle = {
+            font: { bold: true, size: 12, name: 'Arial Narrow' },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+    
+        // Apply styles to header cells
+        ['A1', 'A2', 'A3'].forEach(cell => {
+            worksheet.getCell(cell).style = headerStyle;
+        });
+    
+        worksheet.getRow(5).eachCell(cell => {
+            cell.style = subHeaderStyle;
+        });
+    
+        // Underline for header years
+        worksheet.getCell('C5').font = { underline: true, ...subHeaderStyle.font };
+        worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
+    
+        // Underline for footer rows
+        financialSubsidyRow.getCell(3).border = { bottom: { style: 'thin' } }; // Single underline for subsidy
+        financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } }; // Single underline for subsidy2
+        netSurplusRow.getCell(3).border = { bottom: { style: 'double' } }; // Double underline for surplus/deficit
+        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } }; // Double underline for surplus/deficit2
+    
+        // Format Data Rows
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 5) {
+                const isParentRow = row.values[1] && typeof row.values[1] === 'string' && !row.values[1].startsWith('   '); // Not indented
+                row.eachCell((cell, colNumber) => {
+                    const isNumericColumn = colNumber === 3 || colNumber === 4;
+                    cell.style = {
+                        font: {
+                            name: 'Arial Narrow',
+                            size: 11,
+                            bold: isParentRow,
+                        },
+                        alignment: {
+                            horizontal: isNumericColumn ? 'right' : 'left',
+                            vertical: 'middle',
+                        },
+                    };
+                    if (isNumericColumn) {
+                        cell.numFmt = '#,##0.00'; // Format numbers with commas and decimals
+                    }
+                });
+            }
+        });
+    
+        // Export the workbook to a file
+        try {
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'IncomeStatement.xlsx';
+            link.click();
+        } catch (error) {
+            console.error("Error exporting Excel file:", error);
+            alert("Failed to export Excel file. Please try again.");
+        }
+    };
+    
+
     return (
         <Fragment>
             {/* Success Alert */}
@@ -893,7 +1040,7 @@ const totalSubsidy2 = currentAccountTitlesPeriod
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li className="inline-flex classNameitems-center">
                         <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                        <RiFileAddFill className="mr-2"></RiFileAddFill>
+                            <RiFileAddFill className="mr-2"></RiFileAddFill>
                             Income Statement
                         </button>
                     </li>
@@ -932,9 +1079,11 @@ const totalSubsidy2 = currentAccountTitlesPeriod
                     >
                         ADD PERIOD
                     </button>
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
-                    </button>
+                    {/* Button to export to Excel */}
+                    <ExportButton
+                        onClick={exportToExcel}
+                        label="EXPORT AS SPREADSHEET"
+                    />
                 </div>
             </div>
 
