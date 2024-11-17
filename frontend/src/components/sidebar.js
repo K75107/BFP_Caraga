@@ -103,6 +103,7 @@ const Sidebar = () => {
 
     "bookkeeper":[
       { path: '/main/bookkeeper/dashboard', icon: isActive('/main/bookkeeper/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Ledger' },
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
       { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
     ],
