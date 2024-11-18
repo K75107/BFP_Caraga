@@ -473,6 +473,7 @@ const handleAddUser = async () => {
                 <option value="regional-accountant">Regional Accountant</option>
                 <option value="bookkeeper">Bookkeeper</option>
                 <option value="chief-fmd">Chief FMD</option>
+                <option value="disbursement-processor">Disbursement Processor Staff</option>
                 <option value="firecode-monitoring">Firecode Monitoring</option>
                 <option value="fire-stations">Fire Stations</option>
                 <option value="firecode-reconciliation">Firecode Reconciliation</option>

@@ -44,8 +44,14 @@ export default function Login() {
           case "admin":
             navigate("/main/dashboard");
             break;
-          case "regional accountant":
-            navigate("/main/generalLedger");
+          case "regional-accountant":
+            navigate("/main/dashboard");
+            break;
+          case "chief-fmd":
+            navigate("/main/dashboard");
+            break;
+          case "disbursement-processor":
+            navigate("/main/dashboard");
             break;
           case "bookkeeper":
             navigate("/main/bookkeeper/dashboard");
