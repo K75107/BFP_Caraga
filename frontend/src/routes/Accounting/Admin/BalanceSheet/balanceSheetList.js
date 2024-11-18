@@ -7,7 +7,6 @@ import { db } from "../../../../config/firebase-config";
 import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
-import ExportButton from "../../../../components/exportButton";
 import AddButton from "../../../../components/addButton";
 
 export default function BalanceSheet() {
@@ -172,9 +171,6 @@ export default function BalanceSheet() {
                     <AddButton
                         onClick={() => setShowModal(true)}
                         label="GENERATE BALANCE SHEET"
-                    />
-                    <ExportButton
-                        label="EXPORT"
                     />
                 </div>
             </div>

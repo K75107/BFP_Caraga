@@ -6,7 +6,7 @@ import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuc
 import { useNavigate } from "react-router-dom";
 import { setYear } from "date-fns";
 import AddButton from "../../../../components/addButton";
-import ExportButton from "../../../../components/exportButton";
+
 
 export default function ChangesInEquity() {
     const navigate = useNavigate();
@@ -153,9 +153,6 @@ export default function ChangesInEquity() {
                         <AddButton
                             onClick={() => setShowModal(true)}
                             label="GENERATE CHANGES IN EQUITY"
-                        />
-                        <ExportButton
-                            label="EXPORT"
                         />
                     </div>
                 </div>

@@ -15,7 +15,6 @@ import {
 } from "firebase/firestore";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import AddButton from "../../../../components/addButton";
-import ExportButton from "../../../../components/exportButton";
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -173,9 +172,6 @@ export default function IncomeStatementList() {
                             setShowModal(true);
                         }}
                         label="GENERATE INCOME STATEMENT"
-                    />
-                    <ExportButton
-                        label="EXPORT"
                     />
                 </div>
             </div>

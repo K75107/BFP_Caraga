@@ -10,6 +10,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
+import ExportButton from "../../../../components/exportButton";
 
 
 
@@ -1107,20 +1108,23 @@ export default function ChangesInEquityDetails() {
                 </div>
                 <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
                     <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
-                        <li className="ml-auto">
+                        <li className="ml-auto flex-row">
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
                             >
                                 + ADD CATEGORY
                             </button>
                             <button
                                 onClick={() => setShowModalPeriod(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
                             >
                                 + ADD PERIOD
                             </button>
                         </li>
+                        <ExportButton
+                            label="EXPORT"
+                        />
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>

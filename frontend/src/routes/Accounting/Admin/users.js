@@ -277,55 +277,64 @@ const handleAddUser = async () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsersList.map((user, index) => (
-                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">
-                  <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
-                    <div
-                      className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
-                      style={{
-                        backgroundColor:
-                          user?.province === 'Agusan del Norte' ? 'blue' :
-                            user?.province === 'Agusan del Sur' ? 'red' :
-                              user?.province === 'Dinagat Islands' ? 'brown' :
-                                user?.province === 'Surigao del Norte' ? 'orange' :
-                                  user?.province === 'Surigao del Sur' ? 'violet' :
-                                    'gray' // Default color
-                      }}
-                    >
-                      {user?.username?.charAt(0).toUpperCase()}
-                    </div>
-
-                    {user?.username || 'Unknown'}
-                  </td>
-                  <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
-                  <td className="px-6 py-2">{user?.email || 'N/A'}</td>
-                  <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {user?.usertype || 'N/A'}
-                  </td>
-                  <td className="px-6 py-2">
-                    <span
-                      className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"
-                        }`}
-                    ></span>
-                  </td>
-
-                  <td className="table-cell px-6 py-3 w-72 text-center">
-                                        <span
-                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent row click event
-                                                //deleteLedger(ledger.id); 
-                                                setDeleteUserID(user.id)// Call delete function
-                                                setShowDeleteModal(true);
-                                            }}
-                                        >
-                                            Remove
-                                        </span>
-                                    </td>
-                </tr>
-              ))}
-
-            </tbody>
+  {filteredUsersList
+    .sort((a, b) => (a.usertype === 'admin' ? -1 : b.usertype === 'admin' ? 1 : 0)) // Admins first
+    .map((user, index) => (
+      <tr
+        key={index}
+        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+      >
+        <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
+          <div
+            className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
+            style={{
+              backgroundColor:
+                user?.province === 'Agusan del Norte'
+                  ? 'blue'
+                  : user?.province === 'Agusan del Sur'
+                  ? 'red'
+                  : user?.province === 'Dinagat Islands'
+                  ? 'brown'
+                  : user?.province === 'Surigao del Norte'
+                  ? 'orange'
+                  : user?.province === 'Surigao del Sur'
+                  ? 'violet'
+                  : 'gray', // Default color
+            }}
+          >
+            {user?.username?.charAt(0).toUpperCase()}
+          </div>
+          {user?.username || 'Unknown'}
+        </td>
+        <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
+        <td className="px-6 py-2">{user?.email || 'N/A'}</td>
+        <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+          {user?.usertype || 'N/A'}
+        </td>
+        <td className="px-6 py-2">
+          <span
+            className={`inline-block w-3 h-3 rounded-full ${
+              user?.isActive ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          ></span>
+        </td>
+        <td className="table-cell px-6 py-3 w-72 text-center">
+          {user.usertype !== 'admin' && ( // Hide for admins
+            <span
+              className="font-medium text-red-600 dark:text-blue-500 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click event
+                setDeleteUserID(user.id); // Call delete function
+                setShowDeleteModal(true);
+              }}
+            >
+              Remove
+            </span>
+          )}
+        </td>
+      </tr>
+    ))}
+</tbody>
 
           </table>
         </div>
@@ -469,7 +478,6 @@ const handleAddUser = async () => {
                 onChange={(e) => setUsertype(e.target.value)}
               >
                 <option value="">Select user type</option>
-                <option value="admin">Admin</option>
                 <option value="regional-accountant">Regional Accountant</option>
                 <option value="bookkeeper">Bookkeeper</option>
                 <option value="chief-fmd">Chief FMD</option>
