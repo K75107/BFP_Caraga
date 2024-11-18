@@ -474,9 +474,9 @@ const handleAddUser = async () => {
                 <option value="bookkeeper">Bookkeeper</option>
                 <option value="chief-fmd">Chief FMD</option>
                 <option value="disbursement-processor">Disbursement Processor Staff</option>
-                <option value="firecode-monitoring">Firecode Monitoring</option>
+                <option value="firecode-monitoring">Firecode Monitoring Staff</option>
                 <option value="fire-stations">Fire Stations</option>
-                <option value="firecode-reconciliation">Firecode Reconciliation</option>
+                <option value="firecode-revenue">Firecode Revenue and Reconciliation Staff</option>
                 <option value="revenue">Revenue</option>
               </select>
               <label htmlFor="usertype" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">User Type</label>

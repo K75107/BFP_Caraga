@@ -62,6 +62,9 @@ export default function Login() {
           case "firecode-monitoring":
             navigate("/main/firecodemonitoring/dashboard");
             break;
+          case "firecode-revenue":
+            navigate("/main/firecoderevenue/dashboard");
+            break;
           default:
             setError("User data not found. Please contact the administrator.");
             break;
