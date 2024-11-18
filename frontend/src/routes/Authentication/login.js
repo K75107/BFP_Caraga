@@ -61,8 +61,10 @@ export default function Login() {
             break;
         }
       } else {
-
-      }
+        setError("User data not found. Please contact the administrator.");
+        return; // Ensure no further processing
+    }
+    
     } catch (error) {
       console.error("Error logging in:", error.message);
       setError("User data not found. Please contact the administrator.");

@@ -10,14 +10,10 @@ import SubmitButton from "../../../components/submitButton";
 
 // Firebase
 import { auth } from "../../../config/firebase-config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, set,onValue} from 'firebase/database';
-
-
-
+import { createUserWithEmailAndPassword, getAuth, deleteUser as deleteAuthUser } from "firebase/auth";
+import { ref, set, onValue } from "firebase/database";
 import { db, realtimeDb } from "../../../config/firebase-config";
-import { doc, setDoc } from "firebase/firestore";
-import { collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../components/Alerts/SuccessUnsuccessfulALert";
 
 
@@ -26,8 +22,6 @@ export default function Users() {
   //Alerts
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
-
-
 
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
@@ -41,6 +35,11 @@ export default function Users() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [usertype, setUsertype] = useState('');
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  //DELETE USER ID
+  const [deleteUserID, setDeleteUserID] = useState(null);
 
 
 
@@ -60,6 +59,41 @@ export default function Users() {
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
   const [selectedCityMunicipality, setSelectedCityMunicipality] = useState('');
+
+      // Function to delete a user
+      const deleteUser = async () => {
+        try {
+            // Delete from Firestore
+            await deleteDoc(doc(db, "users", deleteUserID));
+    
+            const auth = getAuth();
+            const currentUser = auth.currentUser;
+    
+            if (currentUser && currentUser.uid === deleteUserID) {
+                // Delete the currently logged-in user from Authentication
+                await deleteAuthUser(currentUser);
+                console.log("User deleted from Authentication");
+            } else {
+                console.error("User not logged in or doesn't match.");
+            }
+    
+            // Update UI
+            setUserList((prevUsersList) =>
+                prevUsersList.filter((user) => user.id !== deleteUserID)
+            );
+    
+            // Success alert
+            setIsSuccess(true);
+            const timer = setTimeout(() => setIsSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        } catch (err) {
+            console.error("Error deleting user:", err);
+            setIsError(true);
+            const timer = setTimeout(() => setIsError(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    };
+    
 
   useEffect(() => {
     const filteredUsers = usersList.filter((users) =>
@@ -115,104 +149,85 @@ export default function Users() {
 console.log(usersList)
   
 
-  const handleAddUser = async () => {
-    try {
+const handleAddUser = async () => {
+  try {
+      // Ensure required fields are not empty
+      if (!email || !password || !username || !usertype) {
+        setIsError(true);
+        console.error("Missing required fields.");
+        return;
+    }
 
-      // Create a new user with email and password
+      // Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
 
-
-      // Create a new document in Firestore with the user's ID as the document ID
-      const docRef = doc(db, "users", userId);
-      await setDoc(docRef, {
-        email: email,
-        username: username,
-        region: selectedRegion,
-        province: selectedProvince,
-        municipalityCity: selectedCityMunicipality,
-        usertype: usertype,
-        isActive: false, // Assuming new users are active by default
+      // Add user to Firestore
+      const userDocRef = doc(db, "users", userId);
+      await setDoc(userDocRef, {
+          email,
+          username,
+          region: selectedRegion,
+          province: selectedProvince,
+          municipalityCity: selectedCityMunicipality,
+          usertype,
+          isActive: false, // Default inactive status
       });
 
-      // console.log("User added successfully!");
-
-      // Add user to the firestationReports if the usertype is 'firestation'
+      // Add user to Firestore "firestationReports" (optional, based on usertype)
       if (usertype === "fire-stations") {
-        const unsubmitCollectionRef = doc(db, "firestationReportsDeposits", userId);
-        await setDoc(unsubmitCollectionRef, {
-          email: email,
-          username: username,
-          region: selectedRegion,
-          province: selectedProvince,
-          municipalityCity: selectedCityMunicipality,
-        });
+          const firestationDocRefs = [
+              doc(db, "firestationReportsDeposits", userId),
+              doc(db, "firestationReportsCollections", userId),
+              doc(db, "firestationReportsOfficers", userId),
+          ];
 
-        // console.log("User added to firestationReportsDeposits!");
+          for (const ref of firestationDocRefs) {
+              await setDoc(ref, {
+                  email,
+                  username,
+                  region: selectedRegion,
+                  province: selectedProvince,
+                  municipalityCity: selectedCityMunicipality,
+              });
+          }
       }
 
-      if (usertype === "fire-stations") {
-        const unsubmitCollectionRef = doc(db, "firestationReportsCollections", userId);
-        await setDoc(unsubmitCollectionRef, {
-          email: email,
-          username: username,
-          region: selectedRegion,
-          province: selectedProvince,
-          municipalityCity: selectedCityMunicipality,
-        });
-
-        // console.log("User added to firestationReportsCollections!");
-        //---------------------------------------------Alerts--------------------------------------- 
-        setIsSuccess(true);
-        const timer = setTimeout(() => {
-          setIsSuccess(false);
-        }, 2000)
-        return () => clearTimeout(timer);
-        //---------------------------------------------Alerts--------------------------------------- 
-
-      }
-
-      if (usertype === "fire-stations") {
-        const unsubmitCollectionRef = doc(db, "firestationReportsOfficers", userId);
-        await setDoc(unsubmitCollectionRef, {
-          email: email,
-          username: username,
-          region: selectedRegion,
-          province: selectedProvince,
-          municipalityCity: selectedCityMunicipality,
-        });
-
-        // console.log("User added to firestationReportsOfficers!");
-      }
-
-      // Add user to Firebase Realtime Database with initial isActive and lastActive fields
-      const userRef = ref(db, 'activeUsers/' + userId);
+      // Add user to Realtime Database
+      const userRef = ref(realtimeDb, `activeUsers/${userId}`);
       await set(userRef, {
-        isActive: false, // Marking the user as active
-        lastActive: new Date().toISOString(), // Set the last active time
+          isActive: false,
+          lastActive: new Date().toISOString(),
       });
 
-    } catch (err) {
-      // console.error("Error adding user: ", err);
+      // Success Alert
+      setIsSuccess(true);
+      const timer = setTimeout(() => {
+          setIsSuccess(false);
+      }, 2000);
+      return () => clearTimeout(timer);
 
-      //---------------------------------------------Alerts---------------------------------------
+  } catch (err) {
+      // Log the error and show an error alert
+      console.error("Error adding user: ", err.message);
       setIsError(true);
       const timer = setTimeout(() => {
-        setIsError(false);
-      }, 2000)
+          setIsError(false);
+      }, 2000);
       return () => clearTimeout(timer);
-      //---------------------------------------------Alerts---------------------------------------
-    }
-    setShowModal(false);
-    setEmail('');
-    setPassword('');
-    setUsername('');
-    setSelectedRegion('');
-    setSelectedProvince('');
-    setSelectedCityMunicipality('');
-    setUsertype('');
+  } finally {
+      // Close the modal and reset input fields
+      setShowModal(false);
+      setEmail('');
+      setPassword('');
+      setUsername('');
+      setSelectedRegion('');
+      setSelectedProvince('');
+      setSelectedCityMunicipality('');
+      setUsertype('');
+  }
+};
 
-  };
 
   return (
     <Fragment>
@@ -258,6 +273,7 @@ console.log(usersList)
                 <th scope="col" className="px-6 py-4">EMAIL</th>
                 <th scope="col" className="px-6 py-4">USERTYPE</th>
                 <th scope="col" className="px-6 py-4">ACTIVE</th>
+                <th scope="col" className="px-6 py-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -292,6 +308,20 @@ console.log(usersList)
                         }`}
                     ></span>
                   </td>
+
+                  <td className="table-cell px-6 py-3 w-72 text-center">
+                                        <span
+                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent row click event
+                                                //deleteLedger(ledger.id); 
+                                                setDeleteUserID(user.id)// Call delete function
+                                                setShowDeleteModal(true);
+                                            }}
+                                        >
+                                            Remove
+                                        </span>
+                                    </td>
                 </tr>
               ))}
 
@@ -374,8 +404,6 @@ console.log(usersList)
                 value={selectedCityMunicipality}
                 onChange={(e) => {
                   setSelectedCityMunicipality(e.target.value)
-                  setEmail(e.target.value + '@email.com')
-                  setUsername(e.target.value)
                 }}
               >
                 <option value="">Select city/municipality</option>
@@ -407,6 +435,19 @@ console.log(usersList)
               <label htmlFor="email" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Email</label>
             </div>
             {/**Email-------------------------------------------------------------------- */}
+
+            {/* Username */}
+            <div className="relative mt-4">
+              <input
+                type="text"
+                id="username"
+                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                placeholder=" "
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <label htmlFor="username" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Username</label>
+            </div>
 
             <div className="relative">
               <input
@@ -451,6 +492,32 @@ console.log(usersList)
           </div>
         </div>
       </Modal>
+            {/*DELETE MODAL*/}
+            <Modal isVisible={showDeleteModal}>
+                <div class="relative p-4 w-full max-w-md max-h-full">
+                    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                        <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="popup-modal"
+                            onClick={() => setShowDeleteModal(false)}>
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                            </svg>
+                            <span class="sr-only">Close modal</span>
+                        </button>
+                        <div class="p-4 md:p-5 text-center">
+                            <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                            <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this User?</h3>
+                            <button data-modal-hide="popup-modal" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                                onClick={() => deleteUser() & setShowDeleteModal(false)}>
+                                Yes, I'm sure
+                            </button>
+                            <button data-modal-hide="popup-modal" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                                onClick={() => setShowDeleteModal(false)}>No, cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
     </Fragment>
   );
 }
