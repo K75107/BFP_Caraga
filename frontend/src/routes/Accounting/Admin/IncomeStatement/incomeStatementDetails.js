@@ -992,14 +992,14 @@ export default function IncomeStatement() {
             const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
             const parentRow = worksheet.addRow([
                 `${indent}${parent.name}`,
-                "",
                 parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
+                "",
                 parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
             ]);
 
             // Style rows based on depth
             parentRow.eachCell((cell, colNumber) => {
-                const isNumericColumn = colNumber === 3 || colNumber === 4;
+                const isNumericColumn = colNumber === 2 || colNumber === 4;
 
                 // Style for parent rows (top-level)
                 if (depth === 0) {
@@ -1046,8 +1046,8 @@ export default function IncomeStatement() {
         // Format the end date for the header
         const end = new Date(stateEndDate);
         const months = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December",
+            "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
         ];
         const monthName = months[end.getMonth()];
         const day = end.getDate();
@@ -1057,12 +1057,12 @@ export default function IncomeStatement() {
         const worksheetData = [
             ["DETAILED STATEMENT OF FINANCIAL PERFORMANCE"],
             ["REGULAR AGENCY FUND"],
-            [`FOR THE PERIOD ENDED ${monthName} ${day}, ${year}`],
-            ["", "", "", ""],
-            ["ACCOUNT DESCRIPTION", "", `${incomeStatement.ledgerYear}`, `${fireLedgerYear}`],
-            ["", "", "", ""],
+            [`AS OF ${monthName} ${day}, ${year}`],
+            ["", "", ""],
+            ["ACCOUNT DESCRIPTION", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
             ["", "", "", ""],
         ];
+
 
         // Append Header Rows
         worksheetData.forEach(row => worksheet.addRow(row));
@@ -1071,26 +1071,26 @@ export default function IncomeStatement() {
         incomeStatementDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
 
         // Footer Rows
-        worksheet.addRow(["", "", "", ""]);
+        worksheet.addRow(["", "", "", "", ""]);
         const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", "", totalSubsidy, totalSubsidy2]);
-        worksheet.addRow(["", "", "", ""]);
+        worksheet.addRow(["", "", "", "", ""]);
         const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", "", totalNetSurplusDeficit, totalNetSurplusDeficit2]);
 
         // Adjust Column Widths
         worksheet.columns = [
             { width: 50 },
             { width: 20 },
+            { width: 3.7 },
             { width: 20 },
-            { width: 20 },
+            { width: 13 },
         ];
 
         // Merge Header Cells
-        worksheet.mergeCells('A1:D1');
-        worksheet.mergeCells('A2:D2');
-        worksheet.mergeCells('A3:D3');
+        worksheet.mergeCells('A1:E1');
+        worksheet.mergeCells('A2:E2');
+        worksheet.mergeCells('A3:E3');
         worksheet.mergeCells('A5:A7');
         worksheet.mergeCells('B5:B7');
-        worksheet.mergeCells('C5:C7');
         worksheet.mergeCells('D5:D7');
 
         // Header Styles
@@ -1114,7 +1114,7 @@ export default function IncomeStatement() {
         });
 
         // Underline for header years
-        worksheet.getCell('C5').font = { underline: true, ...subHeaderStyle.font };
+        worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
         worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
 
         // Underline for footer rows
@@ -1129,7 +1129,7 @@ export default function IncomeStatement() {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'IncomeStatement.xlsx';
+            link.download = `Income Statement for${monthName}.xlsx`;
             link.click();
         } catch (error) {
             console.error("Error exporting Excel file:", error);
