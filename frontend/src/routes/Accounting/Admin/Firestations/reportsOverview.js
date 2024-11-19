@@ -14,7 +14,6 @@ import {
   Legend,
 } from "chart.js";
 import { PiStack, PiStackFill } from "react-icons/pi";
-import ExportButton from "../../../../components/exportButton";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -276,7 +275,6 @@ export default function ReportsOverview() {
           </li>
           {/* Generate Report Button Inline */}
           <li className="ml-auto">
-            <ExportButton/>
           </li>
         </ul>
       </div>
