@@ -381,7 +381,7 @@ export default function CollectionsPerStation() {
 
             <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
                 <SearchBar
-                    placeholder="Search..."
+                    placeholder="Search Payor Name"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)} />
 
