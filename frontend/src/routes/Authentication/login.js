@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faLock, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import SubmitButton from '../../components/submitButton';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ export default function Login() {
             />
           </div>
           {error && <p style={{ color: 'red' }}>{error}</p>}
-          <button type="submit" className="w-full py-2.5 mt-12 bg-blue-500 text-white rounded-full">Log In</button>
+          <button type="submit" className="w-full py-2.5 mt-12 bg-blue-700 text-white rounded-full">Log In</button>
         </form>
       </div>
       <div className="ml-0 w-72 h-96 bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: 'url(/bfpbackground.png)' }}>
