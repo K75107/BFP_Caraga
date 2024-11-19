@@ -69,6 +69,12 @@ import FireStationDashboard from './routes/Accounting/FireStations/fireStationDa
 //Bookkeeper
 import BookkeeperDashboard from './routes/Accounting/Bookkeeper/bookkeeperDashboard';
 
+//Firecode Monitoring
+import FirecodeMonitoringDashboard from './routes/Accounting/Firecode Monitoring/firecodemonitoringDashboard';
+
+//Firecode revenue and recon staff
+import FirecodeRevenueDashboard from './routes/Accounting/Firecode Revenue/firecoderevenueDashboard';
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -296,6 +302,14 @@ const router = createBrowserRouter([
       {
         path: 'bookkeeper/dashboard',
         element: <BookkeeperDashboard />,
+      },
+      {
+        path: 'firecodemonitoring/dashboard',
+        element: <FirecodeMonitoringDashboard />,
+      },
+      {
+        path: 'firecoderevenue/dashboard',
+        element: <FirecodeRevenueDashboard />,
       },
     ],
   },

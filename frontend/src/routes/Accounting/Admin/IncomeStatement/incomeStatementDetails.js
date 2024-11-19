@@ -1,14 +1,14 @@
 import React, { Fragment, useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, where, updateDoc, addDoc, deleteDoc } from "firebase/firestore";
 import Modal from "../../../../components/Modal";
 import { useLocation } from "react-router-dom";
+import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import ExcelJS from 'exceljs';
 import ExcelHeader from '../../../../assets/ExcelHeader.png';
 import ExportButton from "../../../../components/exportButton";
-import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
-import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
+import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import { UseLedgerData } from './incomeStatementContext';
 import { IncomeStatementPeriodProvider } from './incomeStatementContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
@@ -18,7 +18,7 @@ import { IoIosSearch } from "react-icons/io";
 export default function IncomeStatement() {
     const navigate = useNavigate();
     const { incomeStatementID } = useParams(); // Get the ID from the URL
-    const [incomeStatement, setIncomeStatement] = useState(null);
+    const [incomeStatement, setincomeStatement] = useState(null);
     const [accountTitles, setAccountTitles] = useState([]); // Store account titles
     const [accounts, setAccounts] = useState([]); // Separate state for accounts
     const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function IncomeStatement() {
     const [showModal, setShowModal] = useState(false);
 
     const [selectedLedger, setSelectedLedger] = useState("");
-    const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
+    const [incomeStatementLedgerList, setincomeStatementLedgerList] = useState([]);
 
     const location = useLocation();
     const [isSuccess, setIsSuccess] = useState(false);
@@ -37,10 +37,13 @@ export default function IncomeStatement() {
     const [stateStartDate, setStateStartDate] = useState(null);
     const [stateEndDate, setStateEndDate] = useState(null);
 
-    const [showRightClickModal, setShowRightClickModal] = useState(false);
-    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-    const [selectedRowData, setSelectedRowData] = useState(null);
+    const [totalRevenues, setTotalRevenues] = useState(0);
+    const [totalExpenses, setTotalExpenses] = useState(0);
+    const [totalSubsidy, setTotalSubsidy] = useState(0);
+    const [totalNetSurplusDeficit, setTotalNetSurplusDeficit] = useState(0);
 
+    const [fireAccountTitlesPeriod, setFireAccountTitlesPeriod] = useState([]);
+    const [dataShow, setDataShow] = useState(false);
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
@@ -54,13 +57,13 @@ export default function IncomeStatement() {
         showPeriodColumn, updateShowPeriodColumn
     } = UseLedgerData();
 
-    // Access data specific to this balance sheet ID
+    // Access data specific to this income statement ID
     const currentAccountTitlesPeriod = accountTitlesPeriod[incomeStatementID] || [];
     const currentAccountsPeriod = accountsPeriod[incomeStatementID] || [];
-    const currentSelectedLedgerYear = selectedLedgerYear[incomeStatementID] || null;
+    const fireLedgerYear = selectedLedgerYear[incomeStatementID] || null;
     const currentShowPeriodColumn = showPeriodColumn[incomeStatementID] || false;
 
-    // Functions to update data for this balance sheet ID
+    // Functions to update data for this income statement ID
     const setAccountTitlesPeriod = (data) => updateAccountTitlesPeriod(incomeStatementID, data);
     const setAccountsPeriod = (data) => updateAccountsPeriod(incomeStatementID, data);
     const setSelectedLedgerYear = (year) => updateSelectedLedgerYear(incomeStatementID, year);
@@ -68,6 +71,10 @@ export default function IncomeStatement() {
 
     // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
     // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
+    console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
+    console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
+    console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
+    console.log("Data of fireLedgerYear: ", fireLedgerYear);
 
     const [isClicked, setIsClicked] = useState(false);
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
@@ -76,7 +83,7 @@ export default function IncomeStatement() {
     const [selectParentCategory, setSelectParentCategory] = useState(["Revenue", "Expenses", "Subsidy"]);
     const [subcategory, setSubcategory] = useState([]);
     const [currentSelection, setCurrentSelection] = useState("");
-    const [selectedMainCategory, setSelectedMainCategory] = useState(null);
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -107,44 +114,56 @@ export default function IncomeStatement() {
         setCheckedAccounts(new Set());
     };
 
-    // Function to dynamically filter accounts based on updated data
-    const getFilteredAccounts = () => {
-        return accountTitles
-            .filter(account => ["Revenue", "Expenses", "Subsidy", "Contra Assets"].includes(account.accountType))
-            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase()))
-            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude already selected accounts
-            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle));
+    const [subcategoryType, setSubcategoryType] = useState('');
+    const determineSubcategoryType = (parentCategoryName) => {
+        // Determine the subcategoryType based on the parent category
+        const parentCategory = subcategories.find(
+            (sub) => sub.subcategoryName === parentCategoryName
+        );
+        return parentCategory
+            ? parentCategory.subcategoryType // inherit from the parent
+            : parentCategoryName; // if root, use the root category type
     };
 
+    // Function to dynamically filter accounts based on updated data
+    const getFilteredAccounts = (subcategoryType) => {
+        return accountTitles
+            .filter(account => {
+                if (subcategoryType === "Revenue") {
+                    return ["Revenue"].includes(account.accountType);
+                } else if (subcategoryType === "Expenses") {
+                    return account.accountType === "Expenses";
+                } else if (subcategoryType === "Subsidy") {
+                    return account.accountType === "Subsidy";
+                }
+                return false; // Exclude any account that doesn't match the subcategoryType
+            })
+            .filter(account => account.accountTitle.toLowerCase().includes(searchTerm.toLowerCase())) // Search filter
+            .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude selected accounts
+            .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)); // Sort alphabetically by accountTitle
+    };
 
     const [subcategories, setSubcategories] = useState([]);
-    const addSubcategory = (newName, newParentCategory, newSelectedAccounts = []) => {
-        // Ensure newSelectedAccounts is always an array
+    const addSubcategory = (newName, newParentCategory, newSubcategoryType, newSelectedAccounts = []) => {
         const accountTitlesArray = Array.isArray(newSelectedAccounts)
             ? newSelectedAccounts
-            : Array.from(newSelectedAccounts || []); // Fallback to empty array if null or undefined
+            : Array.from(newSelectedAccounts || []);
 
-        setSubcategories(prevSubcategories => [
+        setSubcategories((prevSubcategories) => [
             ...prevSubcategories,
             {
                 subcategoryName: newName,
                 parentCategory: newParentCategory,
+                subcategoryType: newSubcategoryType,
                 accountTitles: accountTitlesArray
             }
         ]);
     };
-
-
-
-    // console.log("Data of selectParentCategory: ", selectParentCategory);
-    // console.log("Data of currentSelection: ", currentSelection);
-    // console.log("Data of Selected Accounts", selectedAccounts);
-    // console.log("Data of Checked Accounts Array", checkedAccounts);
-    // console.log("Data of filteredAccounts", getFilteredAccounts);
-    // console.log("Data of subcategories", subcategories);
-
+    console.log("Data of subcategories: ", subcategories)
 
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [showRightClickModal, setShowRightClickModal] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
     const handleRightClick = useCallback((event, item) => {
         event.preventDefault();
@@ -203,7 +222,7 @@ export default function IncomeStatement() {
         </div>
     );
 
-    // ---------Fetching ledger list from the Firestore-----------------
+    // ----------------------------------------- F E T C H  L E D G E R  L I S T -----------------------------------------
     useEffect(() => {
         const getLedgerList = async () => {
             try {
@@ -212,7 +231,7 @@ export default function IncomeStatement() {
                     ...doc.data(),
                     id: doc.id,
                 }));
-                setIncomeStatementLedgerList(filteredData);
+                setincomeStatementLedgerList(filteredData);
             } catch (err) {
                 console.error("Error fetching ledger data:", err);
             }
@@ -220,13 +239,27 @@ export default function IncomeStatement() {
 
         getLedgerList();
     }, []); // No dependencies for getLedgerList, so it only runs once on mount
-    // -----------------------------------------------------------------
+    // ----------------------------------------- F E T C H  L E D G E R  L I S T -----------------------------------------
 
-    // Fetch the balance sheet description and its associated ledger year
+    // -------------------------- Function to update totalNetSurplusDeficit in the incomeStatement collection --------------------------
+    const updateTotalNetSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
+        try {
+            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
+            await updateDoc(incomeStatementRef, {
+                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalNetSurplusDeficit value to Firestore
+            });
+            console.log("Total net revenues successfully updated in Firestore.");
+        } catch (err) {
+            console.error("Error updating total subsidy:", err);
+        }
+    };
+    // -------------------------- Function to update totalNetSurplusDeficit in the incomeStatement collection --------------------------
+
+    // --------------------------- FETCH income statement DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
     useEffect(() => {
         const getIncomeStatementDescription = async () => {
             try {
-                const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the balance sheet document
+                const docRef = doc(db, "incomestatement", incomeStatementID); // Reference to the income statement document
                 const docSnap = await getDoc(docRef); // Get the document snapshot
 
                 if (docSnap.exists()) {
@@ -286,7 +319,7 @@ export default function IncomeStatement() {
                                     });
 
                                     titleData.difference = totalDebit - totalCredit;
-
+                                    titleData.difference = totalCredit - totalDebit;
 
                                     accountTitlesData.push(titleData);
                                     accountsData.push(...titleAccounts);
@@ -295,12 +328,37 @@ export default function IncomeStatement() {
 
                             setAccountTitles(accountTitlesData);
                             setAccounts(accountsData);
+
+                            // Calculate totals
+                            const Revenue = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Revenue")
+                                .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+
+                            const Expenses = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Expenses")
+                                .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+
+                            const subsidy = accountTitlesData
+                                .filter(accountTitle => accountTitle.accountType === "Subsidy")
+                                .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+
+                            const netRevenue = Revenue - Expenses;
+                            const finalSurplusDeficit = netRevenue + subsidy;
+
+                            // Update states with calculated values
+                            setTotalRevenues(Revenue);
+                            setTotalExpenses(Expenses);
+                            setTotalSubsidy(subsidy);
+                            setTotalNetSurplusDeficit(finalSurplusDeficit);
+
+                            // Update Firestore with totalNetSurplusDeficit
+                            updateTotalNetSurplusDeficitInFirestore(incomeStatementID, finalSurplusDeficit);
                         } else {
                             incomeStatementData.ledgerYear = "N/A";
                         }
                     }
 
-                    setIncomeStatement(incomeStatementData);
+                    setincomeStatement(incomeStatementData);
                 } else {
                     setError("No income statement found.");
                 }
@@ -313,103 +371,180 @@ export default function IncomeStatement() {
         };
 
         getIncomeStatementDescription();
-    }, [incomeStatementID]);
+    }, []);
 
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+
+    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
+    const getSelectedLedgerData = async () => {
+        try {
+            if (selectedLedger) {
+                const ledgerRef = doc(db, "ledger", selectedLedger);
+                const ledgerSnap = await getDoc(ledgerRef);
+
+                if (ledgerSnap.exists()) {
+                    const ledgerYear = ledgerSnap.data().year;
+
+                    const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
+                    const accountTitlesSnap = await getDocs(accountTitlesRef);
+
+                    const accountTitlesData = [];
+                    const accountsData = [];
+
+                    for (const titleDoc of accountTitlesSnap.docs) {
+                        const titleData = { id: titleDoc.id, ...titleDoc.data() };
+
+                        const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
+                        const accountsQuery = query(
+                            accountsRef,
+                            where("date", ">=", stateStartDate),
+                            where("date", "<=", stateEndDate)
+                        );
+                        const accountsSnap = await getDocs(accountsQuery);
+
+                        if (!accountsSnap.empty) {
+                            let totalDebit2 = 0;
+                            let totalCredit2 = 0;
+
+                            const titleAccounts = accountsSnap.docs.map(accountDoc => {
+                                const accountData = {
+                                    id: accountDoc.id,
+                                    accountTitleID: titleDoc.id,
+                                    ...accountDoc.data(),
+                                };
+
+                                totalDebit2 += parseFloat(accountData.debit) || 0;
+                                totalCredit2 += parseFloat(accountData.credit) || 0;
+
+                                return accountData;
+                            });
+
+                            titleData.difference2 = totalDebit2 - totalCredit2;
+                            titleData.difference2 = totalCredit2 - totalDebit2;
+
+                            accountTitlesData.push(titleData);
+                            accountsData.push(...titleAccounts);
+                        }
+                    }
+                    // Delete existing period data
+                    await deletePeriodData();
+                    // Add data to Firestore and update the state
+                    await addPeriodData(accountTitlesData, ledgerYear);
+
+                    setAccountTitlesPeriod(accountTitlesData);
+                    setAccountsPeriod(accountsData);
+                    setSelectedLedgerYear(ledgerYear);
+                } else {
+                    console.error("Selected ledger not found.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching selected ledger data:", error);
+        }
+    };
+    // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
+
+    const deletePeriodData = async () => {
+        try {
+            const periodDataRef = collection(db, "incomestatement", incomeStatementID, "periodData");
+            const querySnapshot = await getDocs(periodDataRef);
+
+            // Delete each document in the periodData collection
+            const deletePromises = querySnapshot.docs.map(async (doc) => {
+                await deleteDoc(doc.ref);
+                console.log(`Deleted document with ID: ${doc.id}`);
+            });
+
+            // Wait for all deletions to complete
+            await Promise.all(deletePromises);
+            console.log("All period data successfully deleted.");
+        } catch (error) {
+            console.error("Error deleting period data:", error);
+        }
+    };
+
+
+    const addPeriodData = async (accountTitlesData, ledgerYear) => {
+        try {
+            const periodDataRef = collection(db, "incomestatement", incomeStatementID, "periodData");
+
+            // Map over accountTitlesData to create an array of promises
+            const promises = accountTitlesData.map(async (element) => {
+                const data = {
+                    ledgerYear: ledgerYear,
+                    accountCode: element.accountCode,
+                    accountID: element.id,
+                    accountTitle: element.accountTitle,
+                    accountType: element.accountType,
+                    difference2: element.difference2,
+                    position: element.position,
+                };
+
+                // Add data to Firestore
+                const docRef = await addDoc(periodDataRef, data);
+                if (docRef.id) {
+                    console.log(`Document added with ID: ${docRef.id}`);
+                } else {
+                    console.warn('Document was not added.');
+                }
+            });
+
+            // Wait for all promises to resolve
+            await Promise.all(promises);
+            console.log("All data successfully added to Firestore!");
+        } catch (error) {
+            console.error("Error adding data to Firestore:", error);
+        }
+    };
+
+    const fetchPeriodData = async () => {
+        try {
+            const periodDataRef = collection(db, "incomestatement", incomeStatementID, "periodData");
+            const querySnapshot = await getDocs(periodDataRef);
+
+            const data = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            setFireAccountTitlesPeriod(data);
+
+            // Extract the ledgerYear from the first document (assuming consistent ledgerYear for all docs)
+            if (data.length > 0 && data[0].ledgerYear) {
+                setSelectedLedgerYear(data[0].ledgerYear);
+                setShowPeriodColumn(true);
+            } else {
+                console.warn("No ledgerYear found in the fetched data.");
+            }
+
+            console.log("Fetched data:", data);
+            return data;
+        } catch (error) {
+            console.error("Error fetching data from Firestore:", error);
+        }
+    };
+
+
     useEffect(() => {
-        const getSelectedLedgerData = async () => {
+        const initializeData = async () => {
             try {
                 if (selectedLedger) {
-                    const ledgerRef = doc(db, "ledger", selectedLedger);
-                    const ledgerSnap = await getDoc(ledgerRef);
-
-                    if (ledgerSnap.exists()) {
-                        const ledgerYear = ledgerSnap.data().year;
-
-                        const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
-                        const accountTitlesSnap = await getDocs(accountTitlesRef);
-
-                        const accountTitlesData = [];
-                        const accountsData = [];
-
-                        for (const titleDoc of accountTitlesSnap.docs) {
-                            const titleData = { id: titleDoc.id, ...titleDoc.data() };
-
-                            const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
-                            const accountsQuery = query(
-                                accountsRef,
-                                where("date", ">=", stateStartDate),
-                                where("date", "<=", stateEndDate)
-                            );
-                            const accountsSnap = await getDocs(accountsQuery);
-
-                            if (!accountsSnap.empty) {
-                                let totalDebit2 = 0;
-                                let totalCredit2 = 0;
-
-                                const titleAccounts = accountsSnap.docs.map(accountDoc => {
-                                    const accountData = {
-                                        id: accountDoc.id,
-                                        accountTitleID: titleDoc.id,
-                                        ...accountDoc.data(),
-                                    };
-
-                                    totalDebit2 += parseFloat(accountData.debit) || 0;
-                                    totalCredit2 += parseFloat(accountData.credit) || 0;
-
-                                    return accountData;
-                                });
-
-                                titleData.difference2 = totalDebit2 - totalCredit2;
-
-                                accountTitlesData.push(titleData);
-                                accountsData.push(...titleAccounts);
-                            }
-                        }
-
-                        setAccountTitlesPeriod(accountTitlesData);
-                        setAccountsPeriod(accountsData);
-                        setSelectedLedgerYear(ledgerYear);
-                    } else {
-                        console.error("Selected ledger not found.");
-                    }
+                    await getSelectedLedgerData();
                 }
+                await fetchPeriodData();
             } catch (error) {
-                console.error("Error fetching selected ledger data:", error);
+                console.error("Error initializing data:", error);
             }
         };
 
-        getSelectedLedgerData();
-    }, [selectedLedger, stateStartDate, stateEndDate]); // Triggered by selectedLedger, stateStartDate, and stateEndDate
-    // --------------------------------------- CALCULATION FOR ADDING PERIOD ---------------------------------------
+        initializeData();
+    }, [selectedLedger]);
 
-    // useEffect(() => {
-    //     if (!showRightClickModal) {
-    //         // Fetch data when incomeStatementIDor selectedLedger changes
-    //         getIncomeStatementDescription();
-    //         getLedgerList();
-    //         getSelectedLedgerData();
-    //     }
+    useEffect(() => {
+        fetchPeriodData();
+    }, []);
 
-    //     // Display success message if loading is complete and there's a success message in location.state
-    //     if (!loading && location.state?.successMessage) {
-    //         setSuccessMessage(location.state.successMessage);
-    //         setIsSuccess(true);
+    // Your existing functions (fetchPeriodData, getSelectedLedgerData, etc.) remain unchanged
 
-    //         const timer = setTimeout(() => {
-    //             setIsSuccess(false);
-    //         }, 2000);
-
-    //         // Clear timeout when the effect cleans up
-    //         return () => clearTimeout(timer);
-    //     }
-    // }, [incomeStatementID, selectedLedger, loading, location.state, showRightClickModal]);
-
-    // useEffect(() => {
-    //     getIncomeStatementDescription();
-    //     getLedgerList();
-    //     getSelectedLedgerData();
-    // }, [incomeStatementID, selectedLedger]);
 
     useEffect(() => {
         if (!loading && location.state?.successMessage) {
@@ -432,61 +567,22 @@ export default function IncomeStatement() {
         return <p>{error}</p>;
     }
 
-    const totalRevenues = accountTitles
-        .filter(accountTitle =>
-            accountTitle.accountType === "Revenue")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount; // Sum the amounts
-        }, 0);
-
-    // Calculate total Expenses
-    const totalExpenses = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Expenses")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount;
-        }, 0);
-
-    const totalSubsidy = accountTitles
-        .filter(accountTitle => accountTitle.accountType === "Subsidy")
-        .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference;
-            return total + amount;
-        }, 0);
-
-    let totalNetSurplusDeficit = totalRevenues - totalExpenses;
-
-    const updateTotalSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
-        try {
-            const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
-            await updateDoc(incomeStatementRef, {
-                totalSurplusDeficit: totalNetSurplusDeficit // Push the totalSubsidy value to Firestore
-            });
-            console.log("Total net Revenues successfully updated in Firestore.");
-        } catch (err) {
-            console.error("Error updating total Subsidy:", err);
-        }
-    };
-    updateTotalSurplusDeficitInFirestore(incomeStatementID, totalNetSurplusDeficit);
-
-    //--------------------------------------- T O T A L S  F O R  P E R I O D --------------------------------------- 
-    const totalRevenues2 = currentAccountTitlesPeriod
+    // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
+    const totalRevenues2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Revenue")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.difference2;
             return total + amount;
         }, 0);
-
     // Calculate total amount for Expenses
-    const totalExpenses2 = currentAccountTitlesPeriod
+    const totalExpenses2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Expenses")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.difference2;
             return total + amount;
         }, 0);
 
-    // Calculate base equity as Revenues - Expenses
+    // Calculate base subsidy as Revenue - Expenses
     let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
     let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
 
@@ -496,12 +592,10 @@ export default function IncomeStatement() {
             const amount = accountTitle.difference2;
             return total + amount;
         }, 0);
+    // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
 
-
-    //--------------------------------------- T O T A L S  F O R  P E R I O D ---------------------------------------
-
-    // ------------------------------------- REVENUE  A C C O U N T  T I T L E S -------------------------------------
-    const assetsAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
+    const revenueAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
             let subcategoryAccountTitles = [];
@@ -539,10 +633,10 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // ------------------------------------- REVENUE  A C C O U N T  T I T L E S -------------------------------------
+    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
 
-    // -------------------------------- E X P E N S E S  A C C O U N T  T I T L E S --------------------------------
-    const liabilitiesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
+    const ExpensesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
             let subcategoryAccountTitles = [];
@@ -580,10 +674,10 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // -------------------------------- E X P E N S E S  A C C O U N T  T I T L E S --------------------------------
+    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
 
-    // ------------------------------------- SUBSIDY A C C O U N T  T I T L E S -------------------------------------
-    const equityAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
+    // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
+    const subsidyAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
             let subcategoryAccountTitles = [];
@@ -624,26 +718,9 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // ------------------------------------- SUBSIDY A C C O U N T  T I T L E S -------------------------------------
+    // ------------------------------------ E Q U I T Y  A C C O U N T  T I T L E S ------------------------------------
 
-    // Recursive function to get nested subcategories
-    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
-        return subcategories
-            .filter(sub => sub.parentCategory === parentName)
-            .map(sub => ({
-                name: sub.subcategoryName,
-                children: [
-                    // Get account titles specific to this subcategory
-                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
-
-                    // Recursively add nested subcategories
-                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
-                ]
-            }));
-    };
-
-    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
-    // Updated `subcategoriesAccountTitles` to use `parentCategory`
+    //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
     const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         const subcategoryAccountNames = subcategories
             .flatMap(sub => sub.accountTitles || [])
@@ -669,7 +746,7 @@ export default function IncomeStatement() {
                         amount: accountTitle.difference,
                         amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
                     };
-                } else if (accountTitle.accountType === "Revenue" || accountTitle.accountType === "Contra Assets") {
+                } else if (accountTitle.accountType === "Revenue") {
                     return {
                         name: accountTitle.accountTitle,
                         amount: accountTitle.difference,
@@ -678,8 +755,33 @@ export default function IncomeStatement() {
                 }
             });
     };
+    //------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S ------------------------------
 
+    // Recursive function to get ------------------------ N E S T E D  S U B C A T E G O R I E S -------------------------
+    const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
+        return subcategories
+            .filter(sub => sub.parentCategory === parentName)
+            .map(sub => ({
+                name: sub.subcategoryName,
+                children: [
+                    // Get account titles specific to this subcategory
+                    ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
+
+                    // Recursively add nested subcategories
+                    ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
+                ]
+            }));
+    };
+    // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
+
+    //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
     const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
+        // Prevent deletion of the main categories
+        if (["Revenue", "Expenses", "Subsidy"].includes(subcategoryName)) {
+            console.warn(`Deletion of Main Category "${subcategoryName}" is not allowed.`);
+            return { removedSubcategoryNames: [], removedAccountTitles: [] };
+        }
+
         let removedSubcategoryNames = [subcategoryName]; // Start with the main subcategory
         let removedAccountTitles = [];
 
@@ -710,15 +812,15 @@ export default function IncomeStatement() {
         // Return both removed subcategory names and account titles
         return { removedSubcategoryNames, removedAccountTitles };
     };
-    //---------------------------------------------- SUBCATEGORIES FUNCTIONS ---------------------------------------------
+    //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
 
-    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
+    // --------------------------------------- DATA STRUCTURE FOR income statement ------------------------------------------ 
     const incomeStatementDetailsData = [
         {
             name: "Revenue",
             children: [
-                ...getNestedSubcategories(subcategories, "Revenue", accountTitles, currentAccountTitlesPeriod),
-                ...assetsAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories)
+                ...getNestedSubcategories(subcategories, "Revenue", accountTitles, fireAccountTitlesPeriod),
+                ...revenueAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
 
             ],
             amount: totalRevenues,
@@ -727,25 +829,24 @@ export default function IncomeStatement() {
         {
             name: "Expenses",
             children: [
-                ...liabilitiesAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
-                ...getNestedSubcategories(subcategories, "Expenses", accountTitles, currentAccountTitlesPeriod)
+                ...getNestedSubcategories(subcategories, "Expenses", accountTitles, fireAccountTitlesPeriod),
+                ...ExpensesAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
             ],
             amount: totalExpenses,
             amount2: totalExpenses2 !== 0 ? totalExpenses2 : null
         },
         {
-            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCsP",
+            name: "Subsidy",
             children: [
-                ...equityAccountTitles(accountTitles, currentAccountTitlesPeriod, subcategories),
-                ...getNestedSubcategories(subcategories, "Subsidy", accountTitles, currentAccountTitlesPeriod)
+                ...getNestedSubcategories(subcategories, "Subsidy", accountTitles, fireAccountTitlesPeriod),
+                ...subsidyAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
             ],
             amount: totalSubsidy,
             amount2: totalSubsidy2 !== 0 ? totalSubsidy2 : null
         }
     ];
-    // --------------------------------------- DATA STRUCTURE FOR BALANCE SHEET ------------------------------------------ 
+    // --------------------------------------- DATA STRUCTURE FOR income statement ------------------------------------------ 
 
-    // Group data for the cards
     const groupData = [
         {
             //GROUP 1
@@ -794,7 +895,7 @@ export default function IncomeStatement() {
         </div>
     );
 
-    // Recursive component to render rows
+    // Recursive component to render rows --------------------------- R E C U R S I V E  R O W ---------------------------
     const Row = ({ item, depth = 0, handleRightClick }) => {
         const [isOpen, setIsOpen] = useState(false); // State to handle collapse/expand
 
@@ -878,150 +979,167 @@ export default function IncomeStatement() {
             </>
         );
     };
+    //--------------------------------------------- R E C U R S I V E  R O W ---------------------------------------------
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
 
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Financial Performance');
-    
+
         // Recursive function to add rows for each parent and their children
         const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
             const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
             const parentRow = worksheet.addRow([
                 `${indent}${parent.name}`,
-                "",
                 parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
+                "",
                 parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
             ]);
-    
-            // Style parent row
-            parentRow.eachCell(cell => {
-                cell.font = {
-                    name: 'Arial Narrow',
-                    size: 11,
-                    bold: depth === 0, // Bold only for top-level rows
-                };
+
+            // Style rows based on depth
+            parentRow.eachCell((cell, colNumber) => {
+                const isNumericColumn = colNumber === 2 || colNumber === 4;
+
+                // Style for parent rows (top-level)
+                if (depth === 0) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
+                    if (isNumericColumn) {
+                        cell.border = {
+                            top: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                        };
+                    }
+                }
+
+                // Style for subcategory rows (depth 1)
+                if (depth === 1) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
+                }
+
+                // Style for deeper rows (children of subcategories)
+                if (depth > 1) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: false };
+                }
+
+                // Numeric formatting for amount columns
+                if (isNumericColumn) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '#,##0.00'; // Format numbers with commas and decimals
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
             });
-    
-            // Add underline for totals of top-level parents
-            if (depth === 0) {
-                parentRow.getCell(3).border = { bottom: { style: 'thin' } }; // Single underline for amount
-                parentRow.getCell(4).border = { bottom: { style: 'thin' } }; // Single underline for amount2
-            }
-    
+
             // Recursively process children
             if (parent.children && parent.children.length > 0) {
                 parent.children.forEach(child => addParentAndChildrenRows(child, worksheet, depth + 1));
             }
         };
-    
-        // Header Data
+
+        // Ensure end date is fetched
+        if (!stateEndDate) {
+            alert("End date is not available. Please ensure data is loaded before exporting.");
+            return;
+        }
+
+        // Format the end date for the header
+        const end = new Date(stateEndDate);
+        const months = [
+            "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+        ];
+        const monthName = months[end.getMonth()];
+        const day = end.getDate();
+        const year = end.getFullYear();
+
+        // Generate the worksheet data
         const worksheetData = [
             ["DETAILED STATEMENT OF FINANCIAL PERFORMANCE"],
             ["REGULAR AGENCY FUND"],
-            [`FOR THE QUARTER ENDED DECEMBER 31, ${incomeStatement.ledgerYear}`],
-            ["", "", "", ""],
-            ["ACCOUNT DESCRIPTION", "", `${incomeStatement.ledgerYear}`, `${currentSelectedLedgerYear}`],
-            ["", "", "", ""],
+            [`AS OF ${monthName} ${day}, ${year}`],
+            ["", "", ""],
+            ["ACCOUNT DESCRIPTION", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
             ["", "", "", ""],
         ];
-    
+
+
         // Append Header Rows
         worksheetData.forEach(row => worksheet.addRow(row));
-    
+
         // Append Parent and Children Rows
         incomeStatementDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
-    
+
         // Footer Rows
-        worksheet.addRow(["", "", "", ""]);
+        worksheet.addRow(["", "", "", "", ""]);
         const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", "", totalSubsidy, totalSubsidy2]);
-        worksheet.addRow(["", "", "", ""]);
+        worksheet.addRow(["", "", "", "", ""]);
         const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", "", totalNetSurplusDeficit, totalNetSurplusDeficit2]);
-    
+
         // Adjust Column Widths
         worksheet.columns = [
-            { width: 50 }, // Account Description
-            { width: 20 }, // Empty Column for Spacing
-            { width: 20 }, // Period (e.g., 20xx)
-            { width: 20 }, // Period (e.g., 20x1)
+            { width: 50 },
+            { width: 20 },
+            { width: 3.7 },
+            { width: 20 },
+            { width: 13 },
         ];
-    
+
         // Merge Header Cells
-        worksheet.mergeCells('A1:D1');
-        worksheet.mergeCells('A2:D2');
-        worksheet.mergeCells('A3:D3');
-        worksheet.mergeCells('A5:A7'); // ACCOUNT DESCRIPTION
-        worksheet.mergeCells('B5:B7'); // EMPTY FOR SPACING
-        worksheet.mergeCells('C5:C7'); // PERIOD CURRENT
-        worksheet.mergeCells('D5:D7'); // ADDED PERIOD
-    
+        worksheet.mergeCells('A1:E1');
+        worksheet.mergeCells('A2:E2');
+        worksheet.mergeCells('A3:E3');
+        worksheet.mergeCells('A5:A7');
+        worksheet.mergeCells('B5:B7');
+        worksheet.mergeCells('D5:D7');
+
         // Header Styles
         const headerStyle = {
             font: { bold: true, size: 14, name: 'Arial Narrow' },
             alignment: { horizontal: 'center', vertical: 'middle' },
         };
-    
+
         const subHeaderStyle = {
             font: { bold: true, size: 12, name: 'Arial Narrow' },
             alignment: { horizontal: 'center', vertical: 'middle' },
         };
-    
+
         // Apply styles to header cells
         ['A1', 'A2', 'A3'].forEach(cell => {
             worksheet.getCell(cell).style = headerStyle;
         });
-    
+
         worksheet.getRow(5).eachCell(cell => {
             cell.style = subHeaderStyle;
         });
-    
+
         // Underline for header years
-        worksheet.getCell('C5').font = { underline: true, ...subHeaderStyle.font };
+        worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
         worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
-    
+
         // Underline for footer rows
-        financialSubsidyRow.getCell(3).border = { bottom: { style: 'thin' } }; // Single underline for subsidy
-        financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } }; // Single underline for subsidy2
-        netSurplusRow.getCell(3).border = { bottom: { style: 'double' } }; // Double underline for surplus/deficit
-        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } }; // Double underline for surplus/deficit2
-    
-        // Format Data Rows
-        worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber > 5) {
-                const isParentRow = row.values[1] && typeof row.values[1] === 'string' && !row.values[1].startsWith('   '); // Not indented
-                row.eachCell((cell, colNumber) => {
-                    const isNumericColumn = colNumber === 3 || colNumber === 4;
-                    cell.style = {
-                        font: {
-                            name: 'Arial Narrow',
-                            size: 11,
-                            bold: isParentRow,
-                        },
-                        alignment: {
-                            horizontal: isNumericColumn ? 'right' : 'left',
-                            vertical: 'middle',
-                        },
-                    };
-                    if (isNumericColumn) {
-                        cell.numFmt = '#,##0.00'; // Format numbers with commas and decimals
-                    }
-                });
-            }
-        });
-    
+        financialSubsidyRow.getCell(3).border = { bottom: { style: 'thin' } };
+        financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } };
+        netSurplusRow.getCell(3).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
+
         // Export the workbook to a file
         try {
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'IncomeStatement.xlsx';
+            link.download = `Income Statement for${monthName}.xlsx`;
             link.click();
         } catch (error) {
             console.error("Error exporting Excel file:", error);
             alert("Failed to export Excel file. Please try again.");
         }
     };
-    
+
+
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N --------------------------------------------- 
 
     return (
         <Fragment>
@@ -1040,8 +1158,8 @@ export default function IncomeStatement() {
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li className="inline-flex classNameitems-center">
                         <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                            <RiFileAddFill className="mr-2"></RiFileAddFill>
-                            Income Statement
+                            <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
+                            income statement
                         </button>
                     </li>
                     <li aria-current="page">
@@ -1092,13 +1210,15 @@ export default function IncomeStatement() {
             {/* TABLE */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${incomeStatement?.ledgerYear || "N/A"}`}</th>
-                            {currentShowPeriodColumn && (
+                            {!currentShowPeriodColumn ? (
+                                <th scope="col" className="px-6 py-3"></th>
+                            ) : (
                                 <th scope="col" className="px-6 py-3 text-right">
-                                    {currentSelectedLedgerYear ? `Period - ${currentSelectedLedgerYear}` : "Period - ××××"}
+                                    {fireLedgerYear ? `Period - ${fireLedgerYear}` : "Period - ××××"}
                                 </th>
                             )}
                             <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
@@ -1120,12 +1240,12 @@ export default function IncomeStatement() {
             </div>
 
             {/* Modal 1 */}
-            {showModal && currentModal === 1 && (
+            {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select Ledger Period</h1>
-                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setIsClicked(false); }}>×</button>
+                            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => { setShowModal(false); setSelectedLedger(""); }}>×</button>
                         </div>
 
                         <hr className="border-t border-[#7694D4] my-3" />
@@ -1150,12 +1270,12 @@ export default function IncomeStatement() {
                             <button
                                 className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
-                                    if (selectedLedger) {
-                                        // Only update state and let useEffect handle the data fetching
-                                        setShowPeriodColumn(true);  // Show the period column
-                                        setCurrentModal(2);         // Move to the next modal step
-                                        setIsClicked(false);
-                                    }
+                                    setShowPeriodColumn(true);  // Show the period column
+                                    setShowModal(false);
+                                    setSelectedLedger("");
+                                    // if (selectedLedger) {
+
+                                    // }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
                             >
@@ -1199,6 +1319,7 @@ export default function IncomeStatement() {
                                 onClick={() => {
                                     setSubcategory('');        // Reset subcategory input
                                     setCurrentSelection('');    // Reset select dropdown
+                                    setSubcategoryType('');
                                     setFirstSubcategoryModal(false); // Close modal
                                 }}>
                                 ×
@@ -1256,8 +1377,11 @@ export default function IncomeStatement() {
                                         ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={subcategory.length === 0 || currentSelection === ''}
                                 onClick={() => {
-                                    setFirstSubcategoryModal(false)
-                                    setSecondSubcategoryModal(true)
+                                    const subcategoryType = determineSubcategoryType(currentSelection);
+                                    setSubcategoryType(subcategoryType);
+                                    console.log("subcategoryType of subcategory: ", subcategoryType);
+                                    setFirstSubcategoryModal(false);
+                                    setSecondSubcategoryModal(true);
                                 }}
                             >
                                 NEXT
@@ -1281,6 +1405,7 @@ export default function IncomeStatement() {
                                     setSecondSubcategoryModal(false);
                                     setSubcategory('');
                                     setCurrentSelection('');
+                                    setSubcategoryType('');
                                 }}
                             >
                                 ×
@@ -1317,7 +1442,8 @@ export default function IncomeStatement() {
                                         console.log("No button clicked with:", selectParentCategory);
                                         setSubcategory('');
                                         setCurrentSelection('');
-                                        addSubcategory(subcategory, currentSelection, []);
+                                        setSubcategoryType('');
+                                        addSubcategory(subcategory, currentSelection, subcategoryType, []);
                                     }}
                                 >
                                     NO
@@ -1343,6 +1469,7 @@ export default function IncomeStatement() {
                                     setThirdSubcategoryModal(false);
                                     setSubcategory('');
                                     setCurrentSelection('');
+                                    setSubcategoryType('');
                                 }}
                             >
                                 ×
@@ -1390,12 +1517,12 @@ export default function IncomeStatement() {
                                         className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
                                         aria-labelledby="dropdownSearchButton"
                                     >
-                                        {getFilteredAccounts().length === 0 ? (
+                                        {getFilteredAccounts(subcategoryType).length === 0 ? (
                                             <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
                                                 No Available Accounts
                                             </li>
                                         ) : (
-                                            getFilteredAccounts().map((account) => (
+                                            getFilteredAccounts(subcategoryType).map((account) => (
                                                 <li key={account.id}>
                                                     <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
                                                         <input
@@ -1421,9 +1548,9 @@ export default function IncomeStatement() {
                             </div>
                         </div>
 
-                        {/* Footer with Confirm Button */}
+                        {/* Footer with Confirm and Cancel Button */}
                         <div className="flex justify-end mt-4 p-4">
-                            {getFilteredAccounts().length === 0 ? (
+                            {getFilteredAccounts(subcategoryType).length === 0 ? (
                                 <button
                                     type="button"
                                     className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
@@ -1433,6 +1560,7 @@ export default function IncomeStatement() {
                                         // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
                                         setSubcategory('');
                                         setCurrentSelection('');;
+                                        setSubcategoryType('');
 
                                     }}
                                 >
@@ -1447,10 +1575,11 @@ export default function IncomeStatement() {
                                         setIsDropdownOpen(false);
                                         setThirdSubcategoryModal(false);
                                         setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
-                                        addSubcategory(subcategory, currentSelection, checkedAccounts);
+                                        addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
                                         handleConfirm(); // Clear checked accounts after adding
                                         setSubcategory('');
                                         setCurrentSelection('');
+                                        setSubcategoryType('');
                                     }}
                                 >
                                     Confirm

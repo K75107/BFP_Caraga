@@ -260,53 +260,23 @@ export default function CollectionsPerStation() {
     // Function to filter the grouped collections based on search query
     const filterGroupedCollections = (groupedCollections, searchQuery) => {
         const filteredGroups = {};
-
+      
         Object.keys(groupedCollections).forEach((groupKey) => {
-            const collections = groupedCollections[groupKey];
-
-            // Filter collections based on the selected category and deposit status
-            const filteredRows = collections.filter((collection) => {
-                const matchesSearchQuery = (collection) => {
-                    if (selectedCategory === 'year' || selectedCategory === 'month' || selectedCategory === 'day') {
-                        const date = collection.date_submitted?.toDate();
-                        if (!date) return false; // Skip if date_submitted is missing
-
-                        let formattedDate;
-
-                        // Format the date based on the selected category
-                        if (selectedCategory === 'year') {
-                            formattedDate = date.toLocaleDateString('en-US', { year: 'numeric' });
-                        } else if (selectedCategory === 'month') {
-                            formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                        } else if (selectedCategory === 'day') {
-                            formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                        }
-
-                        return formattedDate && formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
-                    } else {
-                        // If selectedCategory is 'natureOfCollection', search by natureOfCollection
-                        return collection.natureOfCollection?.toLowerCase().includes(searchQuery.toLowerCase());
-                    }
-                };
-
-                // Filter based on the selected deposit filter
-                const matchesDepositFilter = () => {
-                    if (selectedDepositFilter === 'all') return true; // Show all entries
-                    if (selectedDepositFilter === 'deposited') return collection.depositStatus; // Adjust according to your data
-                    if (selectedDepositFilter === 'undeposited') return !collection.depositStatus; // Adjust according to your data
-                    return false; // Default case (should not occur)
-                };
-
-                return matchesSearchQuery(collection) && matchesDepositFilter();
-            });
-
-            if (filteredRows.length > 0) {
-                filteredGroups[groupKey] = filteredRows;
-            }
+          const collections = groupedCollections[groupKey];
+      
+          // Filter collections based on the `nameOfPayor` search query
+          const filteredRows = collections.filter((collection) => {
+            const payorName = collection.nameOfPayor?.toLowerCase() || '';
+            return payorName.includes(searchQuery.toLowerCase());
+          });
+      
+          if (filteredRows.length > 0) {
+            filteredGroups[groupKey] = filteredRows;
+          }
         });
-
+      
         return filteredGroups;
-    };
+      };
 
     // Update filteredGroupedCollections when searchQuery or groupedCollections change
     useEffect(() => {
@@ -411,7 +381,7 @@ export default function CollectionsPerStation() {
 
             <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
                 <SearchBar
-                    placeholder="Search..."
+                    placeholder="Search Payor Name"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)} />
 
@@ -527,7 +497,10 @@ export default function CollectionsPerStation() {
 
 
             {/* TABLE */}
-            <div className="relative overflow-y-scroll shadow-md sm:rounded-lg h-[500px]">
+            <div className="flex flex-row">
+                <div className="grow bg-white">
+                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
                 <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
                         <tr className="text-[12px] h-10">
@@ -633,7 +606,10 @@ export default function CollectionsPerStation() {
                             );
                         })}
                     </tbody>
-                </table>
+                    </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Fragment >
     );

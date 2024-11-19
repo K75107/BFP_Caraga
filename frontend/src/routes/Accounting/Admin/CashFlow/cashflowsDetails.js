@@ -11,7 +11,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import { current } from "@reduxjs/toolkit";
-
+import ExportButton from "../../../../components/exportButton";
 
 
 export default function CashflowsDetails() {
@@ -37,6 +37,10 @@ export default function CashflowsDetails() {
     const [periodDataCategories, setPeriodDataCategories] = useState([]);
     const [periodId, setPeriodId] = useState(null);
 
+    //Merge Data
+
+    const [cashflowMergeData, setCashflowMergeData] = useState([]);
+
     useEffect(() => {
         const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
 
@@ -54,26 +58,40 @@ export default function CashflowsDetails() {
                     const batch = writeBatch(cashflowsCollectionRef.firestore);
                     let position = 1;
 
+                    // Create a stable id for main categories
+                    const createCategoryId = (name) => {
+                        return name.toLowerCase().replace(/\s+/g, "_"); // Example: "Operating Activities" -> "operating_activities"
+                    };
+
                     // Function to add a main category
                     const addMainCategory = (name) => {
-                        const ref = doc(cashflowsCollectionRef);
+                        const categoryId = createCategoryId(name);
+                        const ref = doc(cashflowsCollectionRef, categoryId);  // Use categoryId as the document ID
                         batch.set(ref, {
                             categoryName: name,
                             parentID: null,
                             created_at: new Date(),
                             position: position++,
+                            amount: 0,
                         });
-                        return ref.id;
+                        return categoryId;
+                    };
+
+                    // Create a stable id for subcategories (Cash Inflows and Cash Outflows)
+                    const createSubcategoryId = (name, parentId) => {
+                        return `${name.toLowerCase().replace(/\s+/g, "_")}_${parentId}`;
                     };
 
                     // Function to add inflows/outflows with blank rows
                     const addSubcategoryWithBlanks = (name, parentId) => {
-                        const ref = doc(cashflowsCollectionRef);
+                        const subcategoryId = createSubcategoryId(name, parentId);  // Generate stable id for subcategory
+                        const ref = doc(cashflowsCollectionRef, subcategoryId); // Use subcategoryId as document ID
                         batch.set(ref, {
                             categoryName: name,
                             parentID: parentId,
                             created_at: new Date(),
                             position: position++,
+                            amount: 0
                         });
 
                         // Add two blank rows
@@ -82,12 +100,14 @@ export default function CashflowsDetails() {
                             parentID: ref.id,
                             created_at: new Date(),
                             position: position++,
+                            amount: 0
                         });
                         batch.set(doc(cashflowsCollectionRef), {
                             categoryName: '',
                             parentID: ref.id,
                             created_at: new Date(),
                             position: position++,
+                            amount: 0
                         });
                     };
 
@@ -121,6 +141,7 @@ export default function CashflowsDetails() {
 
         fetchAndInitializeCategories();
     }, [cashflowId]);
+
 
     // Fetch categories data only once initially to reduce continuous reads
     useEffect(() => {
@@ -188,7 +209,7 @@ export default function CashflowsDetails() {
     //Period Data
     useEffect(() => {
         if (periodId) {
-           
+
             const cashflowsCollectionsDAtaRef = collection(db, "cashflow", periodId, "categories");
             const unsubscribe = onSnapshot(cashflowsCollectionsDAtaRef, async (querySnapshot) => {
                 try {
@@ -196,9 +217,8 @@ export default function CashflowsDetails() {
                         id: doc.id,
                         ...doc.data(),
                     }));
-                    setPeriodDataCategories(sortCategoriesRecursively(data));
 
-                    const sortedPeriodData = sortCategoriesRecursively(data);
+                    setPeriodDataCategories(sortCategoriesRecursively(data));
 
                 } catch (error) {
                     console.error("Error fetching and sorting categories:", error);
@@ -209,8 +229,79 @@ export default function CashflowsDetails() {
         }
     }, [periodId]);
 
+    useEffect(() => {
+        const mergeAndSyncData = async () => {
+            if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
+                try {
+                    const mergedMap = new Map();
+                    const batch = writeBatch(db); // Initialize Firestore batch
 
-    
+                    // Helper function to generate a unique key for each item
+                    const getUniqueKey = (item) => `${item.parentID || 'root'}_${item.categoryName || 'no_name'}`;
+
+                    // Add current category data to the map
+                    cashflowCategoriesData.forEach((item) => {
+                        const uniqueKey = getUniqueKey(item);
+                        mergedMap.set(uniqueKey, {
+                            ...item,
+                            periodAmount: 0, // Initialize periodAmount for current data
+                        });
+                    });
+
+                    // Merge or add period data if it exists
+                    if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
+                        periodDataCategories.forEach((item) => {
+                            const uniqueKey = getUniqueKey(item);
+                            if (mergedMap.has(uniqueKey)) {
+                                // If match found, add periodAmount
+                                const existingItem = mergedMap.get(uniqueKey);
+                                mergedMap.set(uniqueKey, {
+                                    ...existingItem,
+                                    periodAmount: item.amount, // Add period data to periodAmount
+                                });
+                            } else {
+                                // Add unmatched data to Firestore
+                                const newDocRef = doc(collection(db, "cashflow", cashflowId, "categories"));
+                                batch.set(newDocRef, {
+                                    ...item,
+                                    id: newDocRef.id, // Explicitly set the Firestore ID
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                    created_at: new Date(),
+                                });
+
+                                // Add unmatched data to the map with the same ID
+                                mergedMap.set(uniqueKey, {
+                                    ...item,
+                                    id: newDocRef.id, // Use the same Firestore ID
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                });
+
+                            }
+                        });
+                    }
+
+                    // Commit batch to Firestore
+                    await batch.commit();
+
+                    // Convert the merged map back to an array
+                    const mergedData = Array.from(mergedMap.values());
+                    console.log("merged Data", mergedData)
+                    // Update state or handle the merged data
+                    setCashflowMergeData(sortCategoriesRecursively(mergedData));
+                } catch (error) {
+                    console.error("Error during merge: ", error);
+                }
+            }
+        };
+
+        mergeAndSyncData();
+    }, [cashflowCategoriesData, periodDataCategories]);
+
+
+
+
 
 
 
@@ -264,7 +355,7 @@ export default function CashflowsDetails() {
 
     // Function to get visible categories based on the expanded state
     const getVisibleCategories = () => {
-        return cashflowCategoriesData.filter((category) => {
+        return cashflowMergeData.filter((category) => {
             // Check if the category is a main category or if it is expanded
             if (category.parentID === null) return true;
 
@@ -274,7 +365,7 @@ export default function CashflowsDetails() {
                 if (!expandedCategories[currentCategory.parentID]) {
                     return false; // Parent is not expanded
                 }
-                currentCategory = cashflowCategoriesData.find(cat => cat.id === currentCategory.parentID);
+                currentCategory = cashflowMergeData.find(cat => cat.id === currentCategory.parentID);
             }
             return true; // This category and its parents are expanded
         });
@@ -490,23 +581,27 @@ export default function CashflowsDetails() {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
 
-        // Initialize the total amount
+        // Initialize the total amounts
         let totalAmount = 0;
+        let totalPeriodAmount = 0;
 
         subcategories.forEach(subCat => {
             // Check if the subcategory has any further subcategories
             const hasChildren = data.some(cat => cat.parentID === subCat.id);
 
             if (!hasChildren) {
-                // If no children, add its amount to the total
+                // If no children, add its amounts to the totals
                 totalAmount += subCat.amount || 0;
+                totalPeriodAmount += subCat.periodAmount || 0;
             } else {
-                // If it has children, recursively calculate the total for those children
-                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
+                // If it has children, recursively calculate the totals for those children
+                const childTotals = getLeafCategoryAmountTotal(subCat.id, data);
+                totalAmount += childTotals.totalAmount;
+                totalPeriodAmount += childTotals.totalPeriodAmount;
             }
         });
 
-        return totalAmount;
+        return { totalAmount, totalPeriodAmount };
     }
 
     const [inputWidth, setInputWidth] = useState('auto');
@@ -527,8 +622,10 @@ export default function CashflowsDetails() {
             transform: CSS.Transform.toString(transform),
         };
 
-        const hasSubcategories = category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id);
-        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cashflowCategoriesData);
+        const hasSubcategories = category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id);
+        const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
+
+
 
 
 
@@ -591,7 +688,7 @@ export default function CashflowsDetails() {
 
 
                     {/* Toggle Button at the end */}
-                    {(category.level >= 0 && cashflowCategoriesData.some(subCat => subCat.parentID === category.id)) && (
+                    {(category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
                             className="mr-2 text-blue-500 px-5"
@@ -604,7 +701,7 @@ export default function CashflowsDetails() {
 
                 <td className="px-2 py-2 w-56 h-6 ">
                     {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
+                        <span className="font-bold">{formatNumber(totalAmount) || ''}</span>
                     ) : (
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
@@ -623,14 +720,22 @@ export default function CashflowsDetails() {
                                 }}
                                 className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
                             >
-                                {formatNumber(category.amount) || '-'}
+                                {formatNumber(category.amount) || ''}
                             </span>
                         )
                     )}
                 </td>
                 <td className="px-2 py-3 text-center">
-                    {/* Display matching data or fallback */}
-
+                    {hasSubcategories ? (
+                        <span className="font-bold">{formatNumber(totalPeriodAmount) || ''}</span>
+                    ) : (
+                        <span
+                            className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                        >
+                            {formatNumber(category.periodAmount) || ''}
+                        </span>
+                    )
+                    }
                 </td>
             </tr>
         );
@@ -1028,17 +1133,20 @@ export default function CashflowsDetails() {
                         <li className="ml-auto">
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
                             >
                                 + ADD CATEGORY
                             </button>
                             <button
                                 onClick={() => setShowModalPeriod(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
                             >
                                 + ADD PERIOD
                             </button>
                         </li>
+                        <ExportButton
+                            label="EXPORT"
+                        />
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
