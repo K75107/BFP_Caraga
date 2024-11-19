@@ -264,8 +264,11 @@ const handleAddUser = async () => {
         <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
         {/* TABLE */}
-        <div className="relative overflow-x-auto shadow-lg sm:rounded-lg ">
-          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+        <div className="flex flex-row">
+                <div className="grow bg-white">
+                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
+                            <table className="w-full text-left text-black-700 ">
             <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white ">
               <tr>
                 <th scope="col" className="px-6 py-4 ">USER</th>
@@ -336,10 +339,12 @@ const handleAddUser = async () => {
     ))}
 </tbody>
 
-          </table>
-        </div>
-      </div>
-
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
       {/* MODAL */}
       <Modal isVisible={showModal}>
         <div className="bg-white w-[450px] h-auto rounded py-4 px-6">
