@@ -527,7 +527,10 @@ export default function CollectionsPerStation() {
 
 
             {/* TABLE */}
-            <div className="relative overflow-y-scroll shadow-md sm:rounded-lg h-[500px]">
+            <div className="flex flex-row">
+                <div className="grow bg-white">
+                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
                 <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
                         <tr className="text-[12px] h-10">
@@ -633,7 +636,10 @@ export default function CollectionsPerStation() {
                             );
                         })}
                     </tbody>
-                </table>
+                    </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Fragment >
     );
