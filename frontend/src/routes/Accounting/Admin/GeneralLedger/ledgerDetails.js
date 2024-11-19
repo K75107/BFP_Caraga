@@ -159,30 +159,35 @@ export default function LedgerDetails() {
   }, [ledgerId]);
 
 
-  // Filter account titles based on searchQuery
-  useEffect(() => {
-    const filteredTitles = accountTitles.filter((title) => {
+// Filter account titles based on searchQuery and date range
+useEffect(() => {
+  const filteredTitles = accountTitles.filter((title) => {
       const matchesSearch = title.accountTitle.toLowerCase().includes(searchQuery.toLowerCase());
 
+      // Ensure accountsData has data for this accountTitle
       const transactions = accountsData[title.id] || [];
       const matchesDate = transactions.some((transaction) => {
-        if (!transaction.date) return false;
+          // If no date filter is applied, include all transactions
+          if (!startDate && !endDate) return true;
 
-        const transactionDate = new Date(transaction.date);
-        const isAfterStartDate = startDate ? transactionDate >= new Date(startDate) : true;
+          if (!transaction.date) return false; // Exclude transactions without a date
 
-        // Adjust the end date to include the entire day
-        const adjustedEndDate = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-        const isBeforeEndDate = adjustedEndDate ? transactionDate <= adjustedEndDate : true;
+          const transactionDate = new Date(transaction.date);
+          const isAfterStartDate = startDate ? transactionDate >= new Date(startDate) : true;
 
-        return isAfterStartDate && isBeforeEndDate;
+          // Adjust the end date to include the entire day
+          const adjustedEndDate = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+          const isBeforeEndDate = adjustedEndDate ? transactionDate <= adjustedEndDate : true;
+
+          return isAfterStartDate && isBeforeEndDate;
       });
 
-      return matchesSearch && matchesDate;
-    });
+      // Only include account titles that match search and date filters
+      return matchesSearch && (matchesDate || !transactions.length);
+  });
 
-    setFilteredAccountTitles(filteredTitles);
-  }, [searchQuery, accountTitles, accountsData, startDate, endDate]);
+  setFilteredAccountTitles(filteredTitles);
+}, [searchQuery, accountTitles, accountsData, startDate, endDate]);
 
 
 
