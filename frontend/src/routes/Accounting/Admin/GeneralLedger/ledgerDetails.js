@@ -695,8 +695,27 @@ useEffect(() => {
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('General Ledger');
+    
+  // Get the current date if no end date is provided
+  const effectiveEndDate = endExportDate ? new Date(endExportDate).setHours(23, 59, 59, 999) : new Date().setHours(23, 59, 59, 999);
 
-    accountTitles.forEach((accountTitle, index) => {
+
+    // Filter account titles and transactions based on start and end dates
+    const filteredAccountTitles = accountTitles.filter((accountTitle) => {
+      const transactions = accountsData[accountTitle.id] || [];
+      if (!startExportDate && !endExportDate) {
+          return true; // Include all account titles if no date filters are set
+      }
+      return transactions.some((transaction) => {
+          const transactionDate = new Date(transaction.date);
+          return (
+              (!startExportDate || transactionDate >= new Date(startExportDate)) &&
+              transactionDate <= new Date(effectiveEndDate)
+          );
+      });
+  });
+
+    filteredAccountTitles.forEach((accountTitle, index) => {
       // Starting row for each account title's section with spacing
       const startRow = worksheet.lastRow ? worksheet.lastRow.number + 5 : 1;
 
