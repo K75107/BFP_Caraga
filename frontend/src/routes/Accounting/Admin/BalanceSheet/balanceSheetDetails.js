@@ -1008,160 +1008,163 @@ export default function BalanceSheet() {
     //--------------------------------------------- R E C U R S I V E  R O W ---------------------------------------------
 
 
-        //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+    const exportToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Financial Position');
 
-        const exportToExcel = async () => {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Financial Position');
-    
-            // Recursive function to add rows for each parent and their children
-            const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
-                const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
-                const parentRow = worksheet.addRow([
-                    `${indent}${parent.name || "N/A"}`,
-                    parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
-                    "",
-                    parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
-                ]);
-    
-                // Style rows based on depth
-                parentRow.eachCell((cell, colNumber) => {
-                    const isNumericColumn = colNumber === 2 || colNumber === 4; // Now column B and C are numeric
-    
-                    // Style for parent rows (top-level)
-                    if (depth === 0) {
-                        cell.font = { name: 'Arial Narrow', size: 11, bold: true };
-                        if (isNumericColumn) {
-                            cell.border = {
-                                top: { style: 'thin' },
-                                bottom: { style: 'thin' },
-                            };
-                        }
-                    }
-    
-                    // Style for subcategory rows (depth 1)
-                    if (depth === 1) {
-                        cell.font = { name: 'Arial Narrow', size: 11, bold: true };
-                    }
-    
-                    // Style for deeper rows (children of subcategories)
-                    if (depth > 1) {
-                        cell.font = { name: 'Arial Narrow', size: 11, bold: false };
-                    }
-    
-                    // Numeric formatting for amount columns
+        // Recursive function to add rows for each parent and their children
+        const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
+            const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
+            const parentRow = worksheet.addRow([
+                `${indent}${parent.name}`,
+                parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
+                "",
+                parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
+            ]);
+
+            // Style rows based on depth
+            parentRow.eachCell((cell, colNumber) => {
+                const isNumericColumn = colNumber === 2 || colNumber === 4;
+
+                // Style for parent rows (top-level)
+                if (depth === 0) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
                     if (isNumericColumn) {
-                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                        cell.numFmt = '#,##0.00'; // Format numbers with commas and decimals
-                    } else {
-                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                        cell.border = {
+                            top: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                        };
                     }
-                });
-    
-                // Recursively process children
-                if (parent.children && parent.children.length > 0) {
-                    parent.children.forEach(child => addParentAndChildrenRows(child, worksheet, depth + 1));
                 }
-            };
-    
-            // Ensure start date is fetched
-            if (!stateStartDate) {
-                alert("Start Date is not available. Please ensure data is loaded before exporting.");
-                return;
-            }
-    
-            // Format the start date for the header
-            const start = new Date(stateStartDate);
-            const months = [
-                "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-                "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
-            ];
-            const monthName = months[start.getMonth()];
-            const day = start.getDate();
-            const year = start.getFullYear();
-    
-            // Generate the worksheet data
-            const worksheetData = [
-                ["DETAILED STATEMENT OF FINANCIAL POSITION"],
-                ["REGULAR AGENCY FUND"],
-                [`AS OF ${monthName} ${day}, ${year}`],
-                ["", "", ""],
-                ["ACCOUNT DESCRIPTION", `${balanceSheet.ledgerYear}`, "", `${fireLedgerYear}`],
-                ["", "", "", "", ""],
-            ];
-    
-            // Append Header Rows
-            worksheetData.forEach(row => worksheet.addRow(row));
-    
-            // Append Parent and Children Rows
-            balanceSheetDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
-    
-            // Footer Rows
-            worksheet.addRow(["", "", "", "", ""]);
-            const netSurplusRow = worksheet.addRow(["Total Net Assets/Equity", totalEquity, "", totalEquity2]);
-    
-            // Adjust Column Widths
-            worksheet.columns = [
-                { width: 50 },
-                { width: 20 },
-                { width: 3.7 },
-                { width: 20 },
-                { width: 13 },
-            ];
-    
-            // Merge Header Cells
-            worksheet.mergeCells('A1:E1');
-            worksheet.mergeCells('A2:E2');
-            worksheet.mergeCells('A3:E3');
-            worksheet.mergeCells('A5:A7');
-            worksheet.mergeCells('B5:B7');
-            worksheet.mergeCells('D5:D7');
-    
-    
-    
-            // Header Styles    
-            const headerStyle = {
-                font: { bold: true, size: 14, name: 'Arial Narrow' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
-    
-            const subHeaderStyle = {
-                font: { bold: true, size: 12, name: 'Arial Narrow' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
-    
-            // Apply styles to header cells
-            ['A1', 'A2', 'A3'].forEach(cell => {
-                worksheet.getCell(cell).style = headerStyle;
+
+                // Style for subcategory rows (depth 1)
+                if (depth === 1) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
+                }
+
+                // Style for deeper rows (children of subcategories)
+                if (depth > 1) {
+                    cell.font = { name: 'Arial Narrow', size: 11, bold: false };
+                }
+
+                // Numeric formatting for amount columns
+                if (isNumericColumn) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '#,##0.00'; // Format numbers with commas and decimals
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
             });
-    
-            worksheet.getRow(5).eachCell(cell => {
-                cell.style = subHeaderStyle;
-            });
-    
-            // Underline for header years
-            worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
-            worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
-    
-            // Underline for footer rows
-            netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
-            netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
-    
-            // Export the workbook to a file
-            try {
-                const buffer = await workbook.xlsx.writeBuffer();
-                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `BalanceSheet for ${monthName}.xlsx`;
-                link.click();
-            } catch (error) {
-                console.error("Error exporting Excel file:", error);
-                alert("Failed to export Excel file. Please try again.");
+
+            // Recursively process children
+            if (parent.children && parent.children.length > 0) {
+                parent.children.forEach(child => addParentAndChildrenRows(child, worksheet, depth + 1));
             }
         };
-    
-        //--------------------------------------------- E X P O R T I N G F U N C T I O N --------------------------------------------- 
+
+        // Ensure end date is fetched
+        if (!stateEndDate) {
+            alert("End date is not available. Please ensure data is loaded before exporting.");
+            return;
+        }
+
+        // Format the end date for the header
+        const end = new Date(stateEndDate);
+        const months = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December",
+        ];
+        const monthName = months[end.getMonth()];
+        const day = end.getDate();
+        const year = end.getFullYear();
+
+        // Generate the worksheet data
+        const worksheetData = [
+            ["DETAILED STATEMENT OF FINANCIAL POSITION"],
+            ["REGULAR AGENCY FUND"],
+            [`AS OF ${monthName} ${day}, ${year}`],
+            ["", "", "", ""],
+            ["ACCOUNT DESCRIPTION", `${balanceSheet.ledgerYear}`, "", `${fireLedgerYear}`],
+            ["", "", "", ""],
+            ["", "", "", ""],
+        ];
+
+        // Append Header Rows
+        worksheetData.forEach(row => worksheet.addRow(row));
+
+        // Append Parent and Children Rows
+        balanceSheetDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
+
+        // Footer Rows
+        worksheet.addRow(["", "", "", ""]);
+        const netSurplusRow = worksheet.addRow(["Total Net Assets/Equity", totalEquity,"", totalEquity2]);
+
+        // Adjust Column Widths
+        worksheet.columns = [
+            { width: 50 },
+            { width: 20 },
+            { width: 3.7 },
+            { width: 20 },
+            { width: 13 },
+        ];
+
+        // Merge Header Cells
+        worksheet.mergeCells('A1:D1');
+        worksheet.mergeCells('A2:D2');
+        worksheet.mergeCells('A3:D3');
+        worksheet.mergeCells('A5:A7');
+        worksheet.mergeCells('B5:B7');
+        worksheet.mergeCells('C5:C7');
+        worksheet.mergeCells('D5:D7');
+
+        // Header Styles
+        const headerStyle = {
+            font: { bold: true, size: 14, name: 'Arial Narrow' },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+
+        const subHeaderStyle = {
+            font: { bold: true, size: 12, name: 'Arial Narrow' },
+            alignment: { horizontal: 'center', vertical: 'middle' },
+        };
+
+        // Apply styles to header cells
+        ['A1', 'A2', 'A3'].forEach(cell => {
+            worksheet.getCell(cell).style = headerStyle;
+        });
+
+        worksheet.getRow(5).eachCell(cell => {
+            cell.style = subHeaderStyle;
+        });
+
+        // Underline for header years
+        worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
+        worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
+
+        // Underline for footer rows
+        netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
+
+        // Export the workbook to a file
+        try {
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Balance Sheet for ${monthName}.xlsx`
+            link.click();
+        } catch (error) {
+            console.error("Error exporting Excel file:", error);
+            alert("Failed to export Excel file. Please try again.");
+        }
+    };
+
+
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N --------------------------------------------- 
+
+
 
     return (
         <Fragment>

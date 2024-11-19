@@ -1046,8 +1046,8 @@ export default function IncomeStatement() {
         // Format the end date for the header
         const end = new Date(stateEndDate);
         const months = [
-            "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December",
         ];
         const monthName = months[end.getMonth()];
         const day = end.getDate();
@@ -1057,12 +1057,12 @@ export default function IncomeStatement() {
         const worksheetData = [
             ["DETAILED STATEMENT OF FINANCIAL PERFORMANCE"],
             ["REGULAR AGENCY FUND"],
-            [`AS OF ${monthName} ${day}, ${year}`],
-            ["", "", ""],
+            [`FOR THE PERIOD ENDED ${monthName} ${day}, ${year}`],
+            ["", "", "", ""],
             ["ACCOUNT DESCRIPTION", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
             ["", "", "", ""],
+            ["", "", "", ""],
         ];
-
 
         // Append Header Rows
         worksheetData.forEach(row => worksheet.addRow(row));
@@ -1071,10 +1071,10 @@ export default function IncomeStatement() {
         incomeStatementDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
 
         // Footer Rows
-        worksheet.addRow(["", "", "", "", ""]);
-        const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", "", totalSubsidy, totalSubsidy2]);
-        worksheet.addRow(["", "", "", "", ""]);
-        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", "", totalNetSurplusDeficit, totalNetSurplusDeficit2]);
+        worksheet.addRow(["", "", "", ""]);
+        const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", totalSubsidy, "", totalSubsidy2]);
+        worksheet.addRow(["", "", "", ""]);
+        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", totalNetSurplusDeficit,"", totalNetSurplusDeficit2]);
 
         // Adjust Column Widths
         worksheet.columns = [
@@ -1086,11 +1086,12 @@ export default function IncomeStatement() {
         ];
 
         // Merge Header Cells
-        worksheet.mergeCells('A1:E1');
-        worksheet.mergeCells('A2:E2');
-        worksheet.mergeCells('A3:E3');
+        worksheet.mergeCells('A1:D1');
+        worksheet.mergeCells('A2:D2');
+        worksheet.mergeCells('A3:D3');
         worksheet.mergeCells('A5:A7');
         worksheet.mergeCells('B5:B7');
+        worksheet.mergeCells('C5:C7');
         worksheet.mergeCells('D5:D7');
 
         // Header Styles
@@ -1118,9 +1119,9 @@ export default function IncomeStatement() {
         worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
 
         // Underline for footer rows
-        financialSubsidyRow.getCell(3).border = { bottom: { style: 'thin' } };
+        financialSubsidyRow.getCell(2).border = { bottom: { style: 'thin' } };
         financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } };
-        netSurplusRow.getCell(3).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
         netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
 
         // Export the workbook to a file
@@ -1129,7 +1130,7 @@ export default function IncomeStatement() {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `Income Statement for${monthName}.xlsx`;
+            link.download = `Income Statement for ${monthName}.xlsx`
             link.click();
         } catch (error) {
             console.error("Error exporting Excel file:", error);
