@@ -10,6 +10,7 @@ import ExcelHeader from '../../../../assets/ExcelHeader.png';
 import ExportButton from "../../../../components/exportButton";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import { UseLedgerData } from './incomeStatementContext';
+import AddButton from "../../../../components/addButton";
 import { IncomeStatementPeriodProvider } from './incomeStatementContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
@@ -992,14 +993,14 @@ export default function IncomeStatement() {
             const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
             const parentRow = worksheet.addRow([
                 `${indent}${parent.name}`,
-                "",
                 parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
+                "",
                 parent.amount2 === 0 || parent.amount2 === "" ? "" : parent.amount2,
             ]);
 
             // Style rows based on depth
             parentRow.eachCell((cell, colNumber) => {
-                const isNumericColumn = colNumber === 3 || colNumber === 4;
+                const isNumericColumn = colNumber === 2 || colNumber === 4;
 
                 // Style for parent rows (top-level)
                 if (depth === 0) {
@@ -1059,7 +1060,7 @@ export default function IncomeStatement() {
             ["REGULAR AGENCY FUND"],
             [`FOR THE PERIOD ENDED ${monthName} ${day}, ${year}`],
             ["", "", "", ""],
-            ["ACCOUNT DESCRIPTION", "", `${incomeStatement.ledgerYear}`, `${fireLedgerYear}`],
+            ["ACCOUNT DESCRIPTION", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
             ["", "", "", ""],
             ["", "", "", ""],
         ];
@@ -1072,16 +1073,17 @@ export default function IncomeStatement() {
 
         // Footer Rows
         worksheet.addRow(["", "", "", ""]);
-        const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", "", totalSubsidy, totalSubsidy2]);
+        const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", totalSubsidy, "", totalSubsidy2]);
         worksheet.addRow(["", "", "", ""]);
-        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", "", totalNetSurplusDeficit, totalNetSurplusDeficit2]);
+        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", totalNetSurplusDeficit, "", totalNetSurplusDeficit2]);
 
         // Adjust Column Widths
         worksheet.columns = [
             { width: 50 },
             { width: 20 },
+            { width: 3.7 },
             { width: 20 },
-            { width: 20 },
+            { width: 13 },
         ];
 
         // Merge Header Cells
@@ -1114,13 +1116,13 @@ export default function IncomeStatement() {
         });
 
         // Underline for header years
-        worksheet.getCell('C5').font = { underline: true, ...subHeaderStyle.font };
+        worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
         worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
 
         // Underline for footer rows
-        financialSubsidyRow.getCell(3).border = { bottom: { style: 'thin' } };
+        financialSubsidyRow.getCell(2).border = { bottom: { style: 'thin' } };
         financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } };
-        netSurplusRow.getCell(3).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
         netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
 
         // Export the workbook to a file
@@ -1129,7 +1131,7 @@ export default function IncomeStatement() {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'IncomeStatement.xlsx';
+            link.download = `Income Statement for ${monthName}.xlsx`
             link.click();
         } catch (error) {
             console.error("Error exporting Excel file:", error);
@@ -1179,24 +1181,18 @@ export default function IncomeStatement() {
                     {incomeStatement.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
+                    <AddButton
                         onClick={() => setFirstSubcategoryModal(true)}
-                    >
-                        ADD SUBCATEGORY
-                    </button>
-                    <button
-                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium ${isClicked
-                            ? 'bg-[#2196F3] text-white' //'border border-gray-400 bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
-                            : 'bg-[#2196F3] text-white' //'border border-gray-400 bg-white text-black hover:bg-color-lighter-gray'
-                            }`}
+                        label="ADD SUBCATEGORY"
+                    />
+                    <AddButton
                         onClick={() => {
                             setIsClicked(true);
                             setCurrentModal(1);
                             setShowModal(true);
                         }}
-                    >
-                        ADD PERIOD
-                    </button>
+                        label="ADD PERIOD"
+                    />
                     {/* Button to export to Excel */}
                     <ExportButton
                         onClick={exportToExcel}
@@ -1204,7 +1200,6 @@ export default function IncomeStatement() {
                     />
                 </div>
             </div>
-
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
@@ -1239,7 +1234,7 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-            {/* Modal 1 */}
+             {/* `Modal 1` */}
             {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
