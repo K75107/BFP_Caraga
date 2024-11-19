@@ -10,6 +10,8 @@ import { UseLedgerData } from './balanceSheetContext';
 import { BalanceSheetPeriodProvider } from './balanceSheetContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
+import AddButton from "../../../../components/addButton";
+import ExportButton from "../../../../components/exportButton";
 
 
 export default function BalanceSheet() {
@@ -40,7 +42,6 @@ export default function BalanceSheet() {
     const [totalEquity, setTotalEquity] = useState(0);
 
     const [fireAccountTitlesPeriod, setFireAccountTitlesPeriod] = useState([]);
-    const [dataShow, setDataShow] = useState(false);
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
@@ -68,10 +69,10 @@ export default function BalanceSheet() {
 
     // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
     // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
-    console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
-    console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
-    console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
-    console.log("Data of fireLedgerYear: ", fireLedgerYear);
+    // console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
+    // console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
+    // console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
+    // console.log("Data of fireLedgerYear: ", fireLedgerYear);
 
     const [isClicked, setIsClicked] = useState(false);
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
@@ -156,6 +157,7 @@ export default function BalanceSheet() {
             }
         ]);
     };
+
     console.log("Data of subcategories: ", subcategories)
 
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
@@ -1043,36 +1045,30 @@ export default function BalanceSheet() {
                     {balanceSheet.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
+                    <AddButton
                         onClick={() => setFirstSubcategoryModal(true)}
-                    >
-                        ADD SUBCATEGORY
-                    </button>
-                    <button
-                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium ${isClicked
-                            ? 'bg-[#2196F3] text-white' //'border border-gray-400 bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
-                            : 'bg-[#2196F3] text-white' //'border border-gray-400 bg-white text-black hover:bg-color-lighter-gray'
-                            }`}
+                        label="ADD SUBCATEGORY"
+                    />
+                    <AddButton
                         onClick={() => {
                             setIsClicked(true);
                             setCurrentModal(1);
                             setShowModal(true);
                         }}
-                    >
-                        ADD PERIOD
-                    </button>
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
-                    </button>
+                        label="ADD PERIOD"
+                    />
+                    <ExportButton
+                        label="EXPORT"
+                    />
                 </div>
             </div>
 
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
-            <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
+            <div className="max-h-[calc(96vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${balanceSheet?.ledgerYear || "N/A"}`}</th>
@@ -1135,9 +1131,6 @@ export default function BalanceSheet() {
                                     setShowPeriodColumn(true);  // Show the period column
                                     setShowModal(false);
                                     setSelectedLedger("");
-                                    // if (selectedLedger) {
-
-                                    // }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
                             >
@@ -1332,6 +1325,7 @@ export default function BalanceSheet() {
                                     setSubcategory('');
                                     setCurrentSelection('');
                                     setSubcategoryType('');
+                                    setSearchTerm('');
                                 }}
                             >
                                 ×
@@ -1369,7 +1363,7 @@ export default function BalanceSheet() {
                                                 type="text"
                                                 id="input-group-search"
                                                 value={searchTerm}
-                                                onChange={handleSearchChange}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
                                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                                 placeholder="Search Account"
                                             />
@@ -1423,6 +1417,7 @@ export default function BalanceSheet() {
                                         setSubcategory('');
                                         setCurrentSelection('');;
                                         setSubcategoryType('');
+                                        setSearchTerm('');
 
                                     }}
                                 >
@@ -1442,6 +1437,7 @@ export default function BalanceSheet() {
                                         setSubcategory('');
                                         setCurrentSelection('');
                                         setSubcategoryType('');
+                                        setSearchTerm('');
                                     }}
                                 >
                                     Confirm
