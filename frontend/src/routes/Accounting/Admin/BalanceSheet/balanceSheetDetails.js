@@ -795,17 +795,28 @@ export default function BalanceSheet() {
     const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
         return subcategories
             .filter(sub => sub.parentCategory === parentName)
-            .map(sub => ({
-                name: sub.subcategoryName,
-                children: [
+            .map(sub => {
+                const children = [
                     // Get account titles specific to this subcategory
                     ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
 
                     // Recursively add nested subcategories
                     ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
-                ]
-            }));
+                ];
+
+                // Calculate the total amounts for the subcategory based on its children
+                const amount = children.reduce((sum, child) => sum + (child.amount || 0), 0);
+                const amount2 = children.reduce((sum, child) => sum + (child.amount2 || 0), 0);
+
+                return {
+                    name: sub.subcategoryName,
+                    children,
+                    amount, // Total amount based on accountTitle.difference/differenceContra
+                    amount2, // Total amount based on accountTitle.difference2/differenceContra2
+                };
+            });
     };
+
     // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
 
     //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
@@ -976,7 +987,7 @@ export default function BalanceSheet() {
 
                     {/* Amount in the second column */}
                     <td
-                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory || subcategories.some(sub => sub.subcategoryName === item.name) ? "text-black" : getTextColor(item.amount)
                             }`}
                     >
                         {item.amount ? formatAmount(item.amount) : ""}
@@ -985,11 +996,14 @@ export default function BalanceSheet() {
                     {/* Render amount2 if it exists */}
                     {item.amount2 !== undefined && (
                         <td
-                            className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount2)}`}
+                            className={`px-6 py-4 text-right font-semibold ${isMainCategory || subcategories.some(sub => sub.subcategoryName === item.name) ? "text-black" : getTextColor(item.amount2)
+                                }`}
                         >
                             {item.amount2 !== null ? formatAmount(item.amount2) : ""}
                         </td>
                     )}
+
+
 
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
@@ -1202,7 +1216,7 @@ export default function BalanceSheet() {
                     {balanceSheet.description}
                 </h1>
                 <div className="flex space-x-4">
-                <AddButton
+                    <AddButton
                         onClick={() => setFirstSubcategoryModal(true)}
                         label="ADD SUBCATEGORY"
                     />
@@ -1225,7 +1239,7 @@ export default function BalanceSheet() {
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
-            <div className="max-h-[calc(96vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
+            <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                     <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                         <tr>
