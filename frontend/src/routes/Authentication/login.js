@@ -44,22 +44,36 @@ export default function Login() {
           case "admin":
             navigate("/main/dashboard");
             break;
-          case "regional accountant":
-            navigate("/main/generalLedger");
+          case "regional-accountant":
+            navigate("/main/dashboard");
+            break;
+          case "chief-fmd":
+            navigate("/main/dashboard");
+            break;
+          case "disbursement-processor":
+            navigate("/main/dashboard");
             break;
           case "bookkeeper":
             navigate("/main/bookkeeper/dashboard");
             break;
-            case "fire-stations":
-              navigate("/main/firestation/dashboard");
-              break;
+          case "fire-stations":
+            navigate("/main/firestation/dashboard");
+             break;
+          case "firecode-monitoring":
+            navigate("/main/firecodemonitoring/dashboard");
+            break;
+          case "firecode-revenue":
+            navigate("/main/firecoderevenue/dashboard");
+            break;
           default:
             setError("User data not found. Please contact the administrator.");
             break;
         }
       } else {
-
-      }
+        setError("User data not found. Please contact the administrator.");
+        return; // Ensure no further processing
+    }
+    
     } catch (error) {
       console.error("Error logging in:", error.message);
       setError("User data not found. Please contact the administrator.");

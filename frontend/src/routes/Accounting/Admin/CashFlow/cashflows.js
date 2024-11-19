@@ -5,7 +5,6 @@ import { collection, getDocs, addDoc, getDoc, deleteDoc, doc } from "firebase/fi
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../../components/addButton";
-import ExportButton from "../../../../components/exportButton";
 
 export default function Cashflows() {
     const navigate = useNavigate();
@@ -132,9 +131,6 @@ export default function Cashflows() {
                         <AddButton
                             onClick={() => setShowModal(true)}
                             label="GENERATE CASHFLOW"
-                        />
-                        <ExportButton
-                            label="EXPORT"
                         />
                     </div>
 

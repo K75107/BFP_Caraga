@@ -11,7 +11,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import { current } from "@reduxjs/toolkit";
-
+import ExportButton from "../../../../components/exportButton";
 
 
 export default function CashflowsDetails() {
@@ -1133,17 +1133,20 @@ export default function CashflowsDetails() {
                         <li className="ml-auto">
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
                             >
                                 + ADD CATEGORY
                             </button>
                             <button
                                 onClick={() => setShowModalPeriod(true)}
-                                className="mb-2 bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium"
+                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
                             >
                                 + ADD PERIOD
                             </button>
                         </li>
+                        <ExportButton
+                            label="EXPORT"
+                        />
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>

@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import { PiListChecks, PiListChecksFill } from "react-icons/pi";
 import AddButton from "../../../../components/addButton";
-import ExportButton from "../../../../components/exportButton";
 
 export default function TrialBalanceList() {
     const navigate = useNavigate();
@@ -145,9 +144,6 @@ export default function TrialBalanceList() {
                             setShowModal(true);
                         }}
                         label="GENERATE TRIAL BALANCE"
-                    />
-                    <ExportButton
-                        label="EXPORT"
                     />
                 </div>
             </div>

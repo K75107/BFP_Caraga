@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import { UseLedgerData } from './balanceSheetContext';
+import ExportButton from "../../../../components/exportButton";
 import { BalanceSheetPeriodProvider } from './balanceSheetContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
@@ -1061,9 +1062,10 @@ export default function BalanceSheet() {
                     >
                         ADD PERIOD
                     </button>
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium">
-                        EXPORT TO EXCEL
-                    </button>
+                    {/* Button to export to Excel */}
+                    <ExportButton
+                        label="EXPORT AS SPREADSHEET"
+                    />
                 </div>
             </div>
 

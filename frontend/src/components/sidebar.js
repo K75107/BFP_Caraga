@@ -93,6 +93,65 @@ const Sidebar = () => {
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
 
     ],
+    
+    "regional-accountant":[
+      { path: '/main/dashboard', icon: isActive('/main/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
+      { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { section: 'Financial Statements' },
+      { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },
+      { path: '/main/balanceSheet', icon: isActive('/main/balanceSheet') ? <PiBookOpenTextFill size={18} /> : <PiBookOpenText size={18} />, label: 'Balance Sheet' },
+      { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
+      { path: '/main/changesInEquityMain', icon: isActive('/main/changesInEquityMain') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+        // Subcategories
+        // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
+        // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
+
+    ],
+
+    "chief-fmd":[
+      { path: '/main/dashboard', icon: isActive('/main/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
+      { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { section: 'Financial Statements' },
+      { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },
+      { path: '/main/balanceSheet', icon: isActive('/main/balanceSheet') ? <PiBookOpenTextFill size={18} /> : <PiBookOpenText size={18} />, label: 'Balance Sheet' },
+      { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
+      { path: '/main/changesInEquityMain', icon: isActive('/main/changesInEquityMain') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+        // Subcategories
+        // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
+        // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
+
+    ],
+
+    "disbursement-processor":[
+      { path: '/main/dashboard', icon: isActive('/main/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
+      { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { section: 'Financial Statements' },
+      { path: '/main/incomeStatement', icon: isActive('/main/incomeStatement') ? <RiFileAddFill size={18} /> : <RiFileAddLine size={18} />, label: 'Income Statement' },
+      { path: '/main/balanceSheet', icon: isActive('/main/balanceSheet') ? <PiBookOpenTextFill size={18} /> : <PiBookOpenText size={18} />, label: 'Balance Sheet' },
+      { path: '/main/cashflowStatement', icon: isActive('/main/cashflowStatement') ? <PiMoneyWavyFill size={18} /> : <PiMoneyWavy size={18} />, label: 'Cashflow Statement' },
+      { path: '/main/changesInEquityMain', icon: isActive('/main/changesInEquityMain') ? <PiEqualizerFill size={18} /> : <PiEqualizer size={18} />, label: 'Changes In Equity' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+        // Subcategories
+        // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
+        // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
+
+    ],
+
+
     "fire-stations": [
       { path: '/main/firestation/dashboard', icon: isActive('/main/firestation/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
       { section: 'Reports' },
@@ -106,6 +165,19 @@ const Sidebar = () => {
       { section: 'Ledger' },
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
       { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+    ],
+    "firecode-monitoring":[
+      { path: '/main/firecodemonitoring/dashboard', icon: isActive('/main/firecodemonitoring/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+    ],
+    "firecode-revenue":[
+      { path: '/main/firecoderevenue/dashboard', icon: isActive('/main/firecoderevenue/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
+      { section: 'Ledger' },
+      { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
+      { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { section: 'Reports' },
+      { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
     ],
   };
 
