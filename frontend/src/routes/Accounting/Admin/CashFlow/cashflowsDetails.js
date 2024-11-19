@@ -230,53 +230,73 @@ export default function CashflowsDetails() {
     }, [periodId]);
 
     useEffect(() => {
-        if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
-            try {
-                const mergedMap = new Map();
+        const mergeAndSyncData = async () => {
+            if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
+                try {
+                    const mergedMap = new Map();
+                    const batch = writeBatch(db); // Initialize Firestore batch
 
-                // Helper function to generate a unique key for each item
-                const getUniqueKey = (item) => `${item.parentID || 'root'}_${item.categoryName || 'no_name'}`;
+                    // Helper function to generate a unique key for each item
+                    const getUniqueKey = (item) => `${item.parentID || 'root'}_${item.categoryName || 'no_name'}`;
 
-                // Add current category data to the map
-                cashflowCategoriesData.forEach((item) => {
-                    const uniqueKey = getUniqueKey(item);
-                    mergedMap.set(uniqueKey, {
-                        ...item,
-                        periodAmount: 0, // Initialize periodAmount for current data
-                    });
-                });
-
-                // Merge or add period data if it exists
-                if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
-                    periodDataCategories.forEach((item) => {
+                    // Add current category data to the map
+                    cashflowCategoriesData.forEach((item) => {
                         const uniqueKey = getUniqueKey(item);
-                        if (mergedMap.has(uniqueKey)) {
-                            // If match found, add periodAmount
-                            const existingItem = mergedMap.get(uniqueKey);
-                            mergedMap.set(uniqueKey, {
-                                ...existingItem,
-                                periodAmount: item.amount, // Add period data to periodAmount
-                            });
-                        } else {
-                            // If no match, add item with periodAmount
-                            mergedMap.set(uniqueKey, {
-                                ...item,
-                                amount: 0, // No current amount
-                                periodAmount: item.amount, // Assign period amount
-                            });
-                        }
+                        mergedMap.set(uniqueKey, {
+                            ...item,
+                            periodAmount: 0, // Initialize periodAmount for current data
+                        });
                     });
-                }
 
-                // Convert the merged map back to an array
-                const mergedData = Array.from(mergedMap.values());
-                console.log("merged Data", mergedData)
-                // Update state or handle the merged data
-                setCashflowMergeData(sortCategoriesRecursively(mergedData));
-            } catch (error) {
-                console.error("Error during merge: ", error);
+                    // Merge or add period data if it exists
+                    if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
+                        periodDataCategories.forEach((item) => {
+                            const uniqueKey = getUniqueKey(item);
+                            if (mergedMap.has(uniqueKey)) {
+                                // If match found, add periodAmount
+                                const existingItem = mergedMap.get(uniqueKey);
+                                mergedMap.set(uniqueKey, {
+                                    ...existingItem,
+                                    periodAmount: item.amount, // Add period data to periodAmount
+                                });
+                            } else {
+                                // Add unmatched data to Firestore
+                                const newDocRef = doc(collection(db, "cashflow", cashflowId, "categories"));
+                                batch.set(newDocRef, {
+                                    ...item,
+                                    id: newDocRef.id, // Explicitly set the Firestore ID
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                    created_at: new Date(),
+                                });
+
+                                // Add unmatched data to the map with the same ID
+                                mergedMap.set(uniqueKey, {
+                                    ...item,
+                                    id: newDocRef.id, // Use the same Firestore ID
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                });
+
+                            }
+                        });
+                    }
+
+                    // Commit batch to Firestore
+                    await batch.commit();
+
+                    // Convert the merged map back to an array
+                    const mergedData = Array.from(mergedMap.values());
+                    console.log("merged Data", mergedData)
+                    // Update state or handle the merged data
+                    setCashflowMergeData(sortCategoriesRecursively(mergedData));
+                } catch (error) {
+                    console.error("Error during merge: ", error);
+                }
             }
-        }
+        };
+
+        mergeAndSyncData();
     }, [cashflowCategoriesData, periodDataCategories]);
 
 
@@ -604,8 +624,7 @@ export default function CashflowsDetails() {
 
         const hasSubcategories = category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id);
         const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
-        console.log("Total Amount:", totalAmount); // Outputs the sum of all leaf amounts under id: 1
-        console.log("Total Period Amount:", totalPeriodAmount); // Outputs the sum of all leaf periodAmounts under id: 1
+
 
 
 
@@ -707,7 +726,16 @@ export default function CashflowsDetails() {
                     )}
                 </td>
                 <td className="px-2 py-3 text-center">
-                    <span className="font-bold">{formatNumber(totalPeriodAmount) || ''}</span>
+                    {hasSubcategories ? (
+                        <span className="font-bold">{formatNumber(totalPeriodAmount) || ''}</span>
+                    ) : (
+                        <span
+                            className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                        >
+                            {formatNumber(category.periodAmount) || ''}
+                        </span>
+                    )
+                    }
                 </td>
             </tr>
         );
