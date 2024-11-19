@@ -10,6 +10,7 @@ import ExcelHeader from '../../../../assets/ExcelHeader.png';
 import ExportButton from "../../../../components/exportButton";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import { UseLedgerData } from './incomeStatementContext';
+import AddButton from "../../../../components/addButton";
 import { IncomeStatementPeriodProvider } from './incomeStatementContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
@@ -1074,7 +1075,7 @@ export default function IncomeStatement() {
         worksheet.addRow(["", "", "", ""]);
         const financialSubsidyRow = worksheet.addRow(["Net Financial Assistance/Subsidy", totalSubsidy, "", totalSubsidy2]);
         worksheet.addRow(["", "", "", ""]);
-        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", totalNetSurplusDeficit,"", totalNetSurplusDeficit2]);
+        const netSurplusRow = worksheet.addRow(["Net Surplus (Deficit) for the Period", totalNetSurplusDeficit, "", totalNetSurplusDeficit2]);
 
         // Adjust Column Widths
         worksheet.columns = [
@@ -1180,24 +1181,18 @@ export default function IncomeStatement() {
                     {incomeStatement.description}
                 </h1>
                 <div className="flex space-x-4">
-                    <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-8 text-[12px] font-medium"
+                    <AddButton
                         onClick={() => setFirstSubcategoryModal(true)}
-                    >
-                        ADD SUBCATEGORY
-                    </button>
-                    <button
-                        className={`rounded-lg py-2 px-8 text-[12px] font-poppins font-medium ${isClicked
-                            ? 'bg-[#2196F3] text-white' //'border border-gray-400 bg-gradient-to-r from-red-700 to-orange-400 text-white font-semibold'
-                            : 'bg-[#2196F3] text-white' //'border border-gray-400 bg-white text-black hover:bg-color-lighter-gray'
-                            }`}
+                        label="ADD SUBCATEGORY"
+                    />
+                    <AddButton
                         onClick={() => {
                             setIsClicked(true);
                             setCurrentModal(1);
                             setShowModal(true);
                         }}
-                    >
-                        ADD PERIOD
-                    </button>
+                        label="ADD PERIOD"
+                    />
                     {/* Button to export to Excel */}
                     <ExportButton
                         onClick={exportToExcel}
@@ -1205,7 +1200,6 @@ export default function IncomeStatement() {
                     />
                 </div>
             </div>
-
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
@@ -1240,7 +1234,7 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-            {/* Modal 1 */}
+             {/* `Modal 1` */}
             {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
