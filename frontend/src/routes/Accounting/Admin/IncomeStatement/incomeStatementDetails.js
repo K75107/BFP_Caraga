@@ -762,16 +762,26 @@ export default function IncomeStatement() {
     const getNestedSubcategories = (subcategories, parentName, accountTitles, currentAccountTitlesPeriod) => {
         return subcategories
             .filter(sub => sub.parentCategory === parentName)
-            .map(sub => ({
-                name: sub.subcategoryName,
-                children: [
+            .map(sub => {
+                const children = [
                     // Get account titles specific to this subcategory
                     ...subcategoriesAccountTitles(accountTitles, currentAccountTitlesPeriod, [sub]),
 
                     // Recursively add nested subcategories
                     ...getNestedSubcategories(subcategories, sub.subcategoryName, accountTitles, currentAccountTitlesPeriod),
-                ]
-            }));
+                ];
+
+                // Calculate the total amounts for the subcategory based on its children
+                const amount = children.reduce((sum, child) => sum + (child.amount || 0), 0);
+                const amount2 = children.reduce((sum, child) => sum + (child.amount2 || 0), 0);
+
+                return {
+                    name: sub.subcategoryName,
+                    children,
+                    amount, // Total amount based on accountTitle.difference
+                    amount2, // Total amount based on accountTitle.difference2
+                };
+            });
     };
     // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
 
@@ -1234,7 +1244,7 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-             {/* `Modal 1` */}
+            {/* `Modal 1` */}
             {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
