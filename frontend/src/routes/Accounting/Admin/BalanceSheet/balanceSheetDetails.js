@@ -73,7 +73,7 @@ export default function BalanceSheet() {
     // console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
     // console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
     // console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
-    // console.log("Data of fireLedgerYear: ", fireLedgerYear);
+    console.log("Data of stateStartDate: ", stateStartDate);
 
     const [isClicked, setIsClicked] = useState(false);
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
@@ -385,7 +385,18 @@ export default function BalanceSheet() {
 
                 if (ledgerSnap.exists()) {
                     const ledgerYear = ledgerSnap.data().year;
+                    console.log("Data of ledgerYear: ", ledgerYear);
 
+                    // Adjust stateStartDate and stateEndDate to use ledgerYear
+                    const adjustYear = (dateStr, newYear) => {
+                        const date = new Date(dateStr);
+                        date.setFullYear(newYear);
+                        return date.toISOString().split("T")[0];
+                    };
+
+                    const adjustedStartDate = adjustYear(stateStartDate, ledgerYear);
+                    const adjustedEndDate = adjustYear(stateEndDate, ledgerYear);
+                    
                     const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
                     const accountTitlesSnap = await getDocs(accountTitlesRef);
 
@@ -398,8 +409,8 @@ export default function BalanceSheet() {
                         const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
                         const accountsQuery = query(
                             accountsRef,
-                            where("date", ">=", stateStartDate),
-                            where("date", "<=", stateEndDate)
+                            where("date", ">=", adjustedStartDate),
+                            where("date", "<=", adjustedEndDate)
                         );
                         const accountsSnap = await getDocs(accountsQuery);
 
