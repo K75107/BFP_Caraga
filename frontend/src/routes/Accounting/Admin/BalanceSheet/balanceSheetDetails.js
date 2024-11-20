@@ -83,11 +83,7 @@ export default function BalanceSheet() {
     const [subcategory, setSubcategory] = useState([]);
     const [currentSelection, setCurrentSelection] = useState("");
 
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
     const [searchTerm, setSearchTerm] = useState("");
-    const handleSearchChange = (e) => setSearchTerm(e.target.value);
 
     const [checkedAccounts, setCheckedAccounts] = useState(new Set());
     const handleCheckboxChange = (accountTitle) => {
@@ -131,6 +127,7 @@ export default function BalanceSheet() {
                 if (subcategoryType === "Assets") {
                     return ["Assets", "Contra Assets"].includes(account.accountType);
                 } else if (subcategoryType === "Liabilities") {
+                    //return ["Assets", "Contra Assets", "Liabilities"].includes(account.accountType);
                     return account.accountType === "Liabilities";
                 } else if (subcategoryType === "Equity") {
                     return account.accountType === "Equity";
@@ -1302,7 +1299,7 @@ export default function BalanceSheet() {
 
                         <div className="flex justify-end py-3 px-4">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                                className={`bg-blue-500 mt-10 -mr-4 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
                                     setShowPeriodColumn(true);  // Show the period column
                                     setShowModal(false);
@@ -1404,7 +1401,7 @@ export default function BalanceSheet() {
 
                         <div className="flex justify-end py-3 px-4 flex-row">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 
+                                className={`bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none 
                                         ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={subcategory.length === 0 || currentSelection === ''}
                                 onClick={() => {
@@ -1456,7 +1453,7 @@ export default function BalanceSheet() {
                             <div className="flex justify-center space-x-10">
                                 <button
                                     type="button"
-                                    className="bg-[#2196F3] hover:bg-[#1976D2] transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
+                                    className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
                                     onClick={() => {
                                         setThirdSubcategoryModal(true)
                                         setSecondSubcategoryModal(false)
@@ -1488,14 +1485,13 @@ export default function BalanceSheet() {
             {/* 3rd Modal For Add Subcategory */}
             {thirdSubcategoryModal && (
                 <Modal isVisible={thirdSubcategoryModal}>
-                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl flex flex-col justify-between">
+                    <div className="bg-white w-[600px] h-[360px] rounded-lg py-2 px-4 shadow-xl flex flex-col">
                         {/* Header */}
                         <div className="flex justify-between items-center mb-4">
                             <h1 className="font-poppins font-bold text-xl text-gray-700">Select Accounts to Add</h1>
                             <button
                                 className="text-2xl font-semibold text-gray-500 focus:outline-none"
                                 onClick={() => {
-                                    setIsDropdownOpen(false);
                                     setCheckedAccounts(new Set());
                                     setThirdSubcategoryModal(false);
                                     setSubcategory('');
@@ -1510,119 +1506,119 @@ export default function BalanceSheet() {
                         <hr className="border-t border-[#7694D4] -my-1" />
 
                         {/* Content */}
-                        <div className="p-8 pt-16 text-center flex justify-center">
-                            <div className="relative">
-                                <button
-                                    id="dropdownSearchButton"
-                                    onClick={toggleDropdown}
-                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                                    type="button"
-                                >
-                                    Available Accounts
-                                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1l4 4 4-4" />
-                                    </svg>
-                                </button>
-
-                                {/* Dropdown menu */}
-                                <div
-                                    id="dropdownSearch"
-                                    className={`z-10 ${isDropdownOpen ? '' : 'hidden'} absolute top-full -left-8 mt-2 bg-white rounded-lg shadow w-60 dark:bg-gray-700`}
-                                >
-                                    <div className="p-3">
-                                        <label htmlFor="input-group-search" className="sr-only">Search</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                                                <IoIosSearch className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                id="input-group-search"
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                                placeholder="Search Account"
-                                            />
-                                        </div>
-                                    </div>
-                                    <ul
-                                        className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
-                                        aria-labelledby="dropdownSearchButton"
-                                    >
-                                        {getFilteredAccounts(subcategoryType).length === 0 ? (
-                                            <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
-                                                No Available Accounts
-                                            </li>
-                                        ) : (
-                                            getFilteredAccounts(subcategoryType).map((account) => (
-                                                <li key={account.id}>
-                                                    <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
-                                                        <input
-                                                            id={`checkbox-item-${account.accountTitle}`}
-                                                            type="checkbox"
-                                                            value={account.accountTitle}
-                                                            checked={checkedAccounts.has(account.accountTitle)}
-                                                            onChange={() => handleCheckboxChange(account.accountTitle)}
-                                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-                                                        />
-                                                        <label
-                                                            htmlFor={`checkbox-item-${account.id}`}
-                                                            className="w-full ms-2 text-sm font-medium text-gray-900 rounded dark:text-gray-300"
-                                                        >
-                                                            {account.accountTitle}
-                                                        </label>
-                                                    </div>
-                                                </li>
-                                            ))
-                                        )}
-                                    </ul>
+                        <div className="p-4 pt-6 flex flex-col items-center flex-grow">
+                            {/* Search Bar */}
+                            <div className="w-full max-w-[500px] mb-4">
+                                <div className="relative">
+                                    <IoIosSearch className="absolute w-5 h-5 text-gray-500 left-3 top-2.5" />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 p-2 text-sm border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Search Accounts"
+                                    />
                                 </div>
                             </div>
+
+                            {/* Dropdown content with reduced height */}
+                            <ul
+                                className="w-full max-w-[500px] h-40 px-3 pb-3 overflow-y-auto text-sm text-gray-700 border rounded-lg"
+                            >
+                                {getFilteredAccounts(subcategoryType).length === 0 ? (
+                                    <li className="mt-14 text-center text-gray-500">No Available Accounts</li>
+                                ) : (
+                                    getFilteredAccounts(subcategoryType).map((account) => (
+                                        <li
+                                            key={account.id}
+                                            className="flex items-center p-2 hover:bg-gray-200 active:bg-gray-300 cursor-pointer"
+                                            onClick={() => handleCheckboxChange(account.accountTitle)}
+                                        >
+                                            {/* Full row clickable */}
+                                            <label
+                                                htmlFor={`checkbox-item-${account.id}`}
+                                                className="flex items-center w-full cursor-pointer"
+                                            >
+                                                <span className="flex-grow text-sm text-gray-900">{account.accountTitle}</span>
+                                                <input
+                                                    id={`checkbox-item-${account.accountTitle}`}
+                                                    type="checkbox"
+                                                    value={account.accountTitle}
+                                                    checked={checkedAccounts.has(account.accountTitle)}
+                                                    onChange={() => handleCheckboxChange(account.accountTitle)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    onClick={(e) => e.stopPropagation()} // Prevent parent click event
+                                                />
+                                            </label>
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
                         </div>
 
-                        {/* Footer with Confirm and Cancel Button */}
-                        <div className="flex justify-end mt-4 p-4">
+                        {/* Footer */}
+                        <div className="mb-2 flex justify-center">
                             {getFilteredAccounts(subcategoryType).length === 0 ? (
+                                // Cancel Button (when no accounts are available)
                                 <button
                                     type="button"
-                                    className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
+                                    className="w-full max-w-[500px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg"
                                     onClick={() => {
-                                        setIsDropdownOpen(false);
+                                        //setIsDropdownOpen(false);
                                         setThirdSubcategoryModal(false);
-                                        // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
-                                        setSubcategory('');
-                                        setCurrentSelection('');;
-                                        setSubcategoryType('');
-                                        setSearchTerm('');
-
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    className={`text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4 ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={checkedAccounts.size === 0}
-                                    onClick={() => {
-                                        setIsDropdownOpen(false);
-                                        setThirdSubcategoryModal(false);
-                                        setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
-                                        addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
-                                        handleConfirm(); // Clear checked accounts after adding
                                         setSubcategory('');
                                         setCurrentSelection('');
                                         setSubcategoryType('');
                                         setSearchTerm('');
                                     }}
                                 >
-                                    Confirm
+                                    Cancel
                                 </button>
+                            ) : (
+                                <>
+                                    {/* Cancel Button */}
+                                    <button
+                                        type="button"
+                                        className="w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg mr-2"
+                                        onClick={() => {
+                                            //setIsDropdownOpen(false);
+                                            setThirdSubcategoryModal(false);
+                                            setSubcategory('');
+                                            setCurrentSelection('');
+                                            setSubcategoryType('');
+                                            setSearchTerm('');
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    {/* Confirm Button */}
+                                    <button
+                                        type="button"
+                                        className={`w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                                            }`}
+                                        disabled={checkedAccounts.size === 0}
+                                        onClick={() => {
+                                            //setIsDropdownOpen(false);
+                                            setThirdSubcategoryModal(false);
+                                            setSelectParentCategory((prevSelected) => [...prevSelected, subcategory]);
+                                            addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
+                                            handleConfirm(); // Clear checked accounts after adding
+                                            setSubcategory('');
+                                            setCurrentSelection('');
+                                            setSubcategoryType('');
+                                            setSearchTerm('');
+                                        }}
+                                    >
+                                        Confirm
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
                 </Modal>
             )}
+
         </Fragment>
     );
 
