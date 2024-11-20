@@ -24,6 +24,8 @@ export default function Users() {
   const [isError, setIsError] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  const [showUserEditModal, setShowUserEditModal] = useState(false);
+
   const navigate = useNavigate();
   const [usersList, setUserList] = useState([]);
 
@@ -59,40 +61,45 @@ export default function Users() {
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
   const [selectedCityMunicipality, setSelectedCityMunicipality] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+
+    useEffect(() => {
+    if (selectedUser) {
+      setEmail(selectedUser.email || '');
+      setUsername(selectedUser.username || '');
+      setUsertype(selectedUser.usertype || '');
+      setSelectedRegion(selectedUser.region || '');
+      setSelectedProvince(selectedUser.province || '');
+      setSelectedCityMunicipality(selectedUser.municipalityCity || '');
+      }
+    }, [selectedUser]);
 
       // Function to delete a user
       const deleteUser = async () => {
         try {
-            // Delete from Firestore
-            await deleteDoc(doc(db, "users", deleteUserID));
-    
-            const auth = getAuth();
-            const currentUser = auth.currentUser;
-    
-            if (currentUser && currentUser.uid === deleteUserID) {
-                // Delete the currently logged-in user from Authentication
-                await deleteAuthUser(currentUser);
-                console.log("User deleted from Authentication");
-            } else {
-                console.error("User not logged in or doesn't match.");
-            }
-    
-            // Update UI
-            setUserList((prevUsersList) =>
-                prevUsersList.filter((user) => user.id !== deleteUserID)
-            );
-    
-            // Success alert
-            setIsSuccess(true);
-            const timer = setTimeout(() => setIsSuccess(false), 2000);
-            return () => clearTimeout(timer);
+          // Delete user from Firestore
+          await deleteDoc(doc(db, "users", deleteUserID));
+      
+          // Delete user from Firebase Authentication
+          const user = await auth.getUser(deleteUserID); // Ensure the user exists
+          if (user) {
+            await deleteAuthUser(auth, user);
+            console.log("User deleted from Firebase Authentication");
+          }
+      
+          // Update UI
+          setUserList((prevUsersList) =>
+            prevUsersList.filter((user) => user.id !== deleteUserID)
+          );
+      
+          setIsSuccess(true);
+          setTimeout(() => setIsSuccess(false), 2000);
         } catch (err) {
-            console.error("Error deleting user:", err);
-            setIsError(true);
-            const timer = setTimeout(() => setIsError(false), 2000);
-            return () => clearTimeout(timer);
+          console.error("Error deleting user:", err);
+          setIsError(true);
+          setTimeout(() => setIsError(false), 2000);
         }
-    };
+      };
     
 
   useEffect(() => {
@@ -285,8 +292,15 @@ const handleAddUser = async () => {
     .map((user, index) => (
       <tr
         key={index}
-        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-      >
+        className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${
+          user.usertype === 'admin' ? 'cursor-default' : 'cursor-pointer'
+        }`}
+      onClick={() => {
+        if (user.usertype === "admin") return; // Prevent editing admin
+        setSelectedUser(user);
+        setShowUserEditModal(true);
+      }}
+    >
         <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
           <div
             className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
@@ -322,18 +336,19 @@ const handleAddUser = async () => {
           ></span>
         </td>
         <td className="table-cell px-6 py-3 w-72 text-center">
-          {user.usertype !== 'admin' && ( // Hide for admins
-            <span
-              className="font-medium text-red-600 dark:text-blue-500 hover:underline"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent row click event
-                setDeleteUserID(user.id); // Call delete function
-                setShowDeleteModal(true);
-              }}
-            >
-              Remove
-            </span>
-          )}
+        {user.usertype !== 'admin' && (
+          <span
+            className="font-medium text-red-600 hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteUserID(user.id);
+              setShowDeleteModal(true);
+            }}
+          >
+            Remove
+          </span>
+        )}
+
         </td>
       </tr>
     ))}
@@ -505,6 +520,170 @@ const handleAddUser = async () => {
           </div>
         </div>
       </Modal>
+
+
+      {/* EDIT USER MODAL */}
+      <Modal isVisible={showUserEditModal}>
+        <div className="bg-white w-[450px] h-auto rounded py-4 px-6">
+          <div className="flex justify-between items-center">
+            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Edit User</h1>
+            <button className="text-[27px] text-[#1E1E1E] bg-transparent border-none" onClick={() => setShowUserEditModal(false)}>×</button>
+          </div>
+
+          <hr className="border-t border-[#7694D4] my-3" />
+
+          <div className="space-y-4">
+            {/* *Location-------------------------------------------------------------------------------------------------------------------------------------------------------- */}
+            {/**Region */}
+            <div className="relative">
+              <select
+                id="region"
+                className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                value={selectedRegion}
+                onChange={(e) => {
+                  const selectedValue = e.target.value;
+                  setSelectedRegion(selectedValue); // Save the selected region's code
+                  const region = regions.find((region) => region.long === selectedValue); // Find the selected region by its code
+                  setSelectedRegionCode(region ? region.key : ''); // Save the region's key (or code) if found
+                }}
+              >
+                <option value="">Select region</option>
+                {regions
+                  .filter(regions => regions.key === 'XIII')
+                  .map((regions) => (
+                    <option key={regions.key} value={regions.code}>
+                      {regions.long}
+                    </option>
+
+                  ))}
+
+              </select>
+              <label htmlFor="region" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Region</label>
+            </div>
+            {/**Province */}
+            <div className="relative">
+              <select
+                id="province"
+                className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                value={selectedProvince}
+                onChange={(e) => {
+                  const selectedValue = e.target.value;
+                  setSelectedProvince(selectedValue); // Save the selected region's code
+                  const province = provinces.find((provinces) => provinces.name === selectedValue); // Find the selected region by its code
+                  setSelectedProvinceCode(province ? province.key : ''); // Save the region's key (or code) if found
+                }}
+              >
+                <option value="">Select province</option>
+                {provinces
+                  .filter(province => province.region === selectedRegionCode)
+                  .map(province => (
+                    <option key={province.code} value={province.code}>
+                      {province.name}
+                    </option>
+                  ))
+                }
+
+              </select>
+              <label htmlFor="province" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Province</label>
+            </div>
+
+            {/**Municipality/City */}
+            <div className="relative">
+              <select
+                id="municipalityOrCity"
+                className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                value={selectedCityMunicipality}
+                onChange={(e) => {
+                  setSelectedCityMunicipality(e.target.value)
+                }}
+              >
+                <option value="">Select city/municipality</option>
+
+                {cities
+                  .filter(cities => cities.province === selectedProvinceCode)
+                  .map(cities => (
+                    <option key={cities.code} value={cities.code}>
+                      {cities.name}
+                    </option>
+                  ))
+                }
+
+              </select>
+              <label htmlFor="municipalityOrCity" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Province</label>
+            </div>
+            {/**Location-------------------------------------------------------------------------------------------------------------------------------------------------------- */}
+
+            {/**Email-------------------------------------------------------------------- */}
+            <div className="relative">
+              <input
+                type="email"
+                id="email"
+                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                placeholder=" "
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <label htmlFor="email" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Email</label>
+            </div>
+            {/**Email-------------------------------------------------------------------- */}
+
+            {/* Username */}
+            <div className="relative mt-4">
+              <input
+                type="text"
+                id="username"
+                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                placeholder=" "
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <label htmlFor="username" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Display Name</label>
+            </div>
+
+            <div className="relative">
+              <input
+                type="password"
+                id="password"
+                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                placeholder=" "
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <label htmlFor="password" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">Password</label>
+            </div>
+
+            <div className="relative">
+              <select
+                id="usertype"
+                className="block w-full px-3 pt-3 pb-3 py-2 text-sm text-gray-900 bg-transparent border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0 focus:border-blue-600"
+                value={usertype}
+                onChange={(e) => setUsertype(e.target.value)}
+              >
+                <option value="">Select user type</option>
+                <option value="regional-accountant">Regional Accountant</option>
+                <option value="bookkeeper">Bookkeeper</option>
+                <option value="chief-fmd">Chief FMD</option>
+                <option value="disbursement-processor">Disbursement Processor Staff</option>
+                <option value="firecode-monitoring">Firecode Monitoring Staff</option>
+                <option value="fire-stations">Fire Stations</option>
+                <option value="firecode-revenue">Firecode Revenue and Reconciliation Staff</option>
+              </select>
+              <label htmlFor="usertype" className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 origin-[0] bg-white px-2">User Type</label>
+            </div>
+
+          </div>
+
+          <div className="flex justify-end py-2 mt-2 ">
+          <SubmitButton
+            // onClick={saveEditedUser}
+            label="Save"
+          />
+          </div>
+        </div>
+      </Modal>
+
+
+
             {/*DELETE MODAL*/}
             <Modal isVisible={showDeleteModal}>
                 <div class="relative p-4 w-full max-w-md max-h-full">
