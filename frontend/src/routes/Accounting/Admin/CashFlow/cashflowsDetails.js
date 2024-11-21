@@ -12,7 +12,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import AddButton from "../../../../components/addButton";
 import ExportButton from "../../../../components/exportButton";
-
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdKeyboardArrowDown } from "react-icons/md";
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
     const [showModalPeriod, setShowModalPeriod] = useState(false);
@@ -664,7 +665,7 @@ export default function CashflowsDetails() {
                 ref={setNodeRef}
                 {...attributes}
                 style={style}
-                className={`border-b px-6 grid grid-cols-5 gap-1 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
+                className={`border-b mx-6 grid grid-cols-5 gap-1 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
@@ -742,9 +743,9 @@ export default function CashflowsDetails() {
                     {(category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
-                            className="mr-2 text-blue-500 px-5"
+                            className="mr-2  px-5"
                         >
-                            {expandedCategories[category.id] ? "▾" : "▸"}
+                             {expandedCategories[category.id] ?  <MdKeyboardArrowDown size={18} style={{ display: "inline" }} /> :  <MdKeyboardArrowRight size={18} style={{ display: "inline" }} />}
                         </button>
                     )}
 
