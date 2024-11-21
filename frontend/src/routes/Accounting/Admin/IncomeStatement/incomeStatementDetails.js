@@ -6,20 +6,18 @@ import Modal from "../../../../components/Modal";
 import { useLocation } from "react-router-dom";
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import ExcelJS from 'exceljs';
-import ExcelHeader from '../../../../assets/ExcelHeader.png';
 import ExportButton from "../../../../components/exportButton";
-import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
+import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import { UseLedgerData } from './incomeStatementContext';
 import AddButton from "../../../../components/addButton";
 import { IncomeStatementPeriodProvider } from './incomeStatementContext';
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
 
-
 export default function IncomeStatement() {
     const navigate = useNavigate();
     const { incomeStatementID } = useParams(); // Get the ID from the URL
-    const [incomeStatement, setincomeStatement] = useState(null);
+    const [incomeStatement, setIncomeStatement] = useState(null);
     const [accountTitles, setAccountTitles] = useState([]); // Store account titles
     const [accounts, setAccounts] = useState([]); // Separate state for accounts
     const [loading, setLoading] = useState(true);
@@ -29,7 +27,7 @@ export default function IncomeStatement() {
     const [showModal, setShowModal] = useState(false);
 
     const [selectedLedger, setSelectedLedger] = useState("");
-    const [incomeStatementLedgerList, setincomeStatementLedgerList] = useState([]);
+    const [incomeStatementLedgerList, setIncomeStatementLedgerList] = useState([]);
 
     const location = useLocation();
     const [isSuccess, setIsSuccess] = useState(false);
@@ -40,11 +38,10 @@ export default function IncomeStatement() {
 
     const [totalRevenues, setTotalRevenues] = useState(0);
     const [totalExpenses, setTotalExpenses] = useState(0);
-    const [totalSubsidy, setTotalSubsidy] = useState(0);
     const [totalNetSurplusDeficit, setTotalNetSurplusDeficit] = useState(0);
+    const [totalSubsidy, setTotalSubsidy] = useState(0);
 
     const [fireAccountTitlesPeriod, setFireAccountTitlesPeriod] = useState([]);
-    const [dataShow, setDataShow] = useState(false);
     // const [selectedLedgerYear, setSelectedLedgerYear] = useState([]);
     // const [accountTitlesPeriod, setAccountTitlesPeriod] = useState([]); // Store account titles
     // const [accountsPeriod, setAccountsPeriod] = useState([]); // Separate state for accounts
@@ -72,10 +69,10 @@ export default function IncomeStatement() {
 
     // Now use `currentAccountTitles`, `currentAccounts`, `currentLedgerYear`, etc. for rendering data
     // Use `setCurrentAccountTitles`, `setCurrentAccounts`, etc. for updating data
-    console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
-    console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
-    console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
-    console.log("Data of fireLedgerYear: ", fireLedgerYear);
+    // console.log("Data of currentAccountTitlesPeriod: ", currentAccountTitlesPeriod);
+    // console.log("Data of currentAccountsPeriod: ", currentAccountsPeriod);
+    // console.log("Data of fireAccountTitlesPeriod: ", fireAccountTitlesPeriod);
+    console.log("Data of stateStartDate: ", stateStartDate);
 
     const [isClicked, setIsClicked] = useState(false);
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
@@ -85,11 +82,7 @@ export default function IncomeStatement() {
     const [subcategory, setSubcategory] = useState([]);
     const [currentSelection, setCurrentSelection] = useState("");
 
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
     const [searchTerm, setSearchTerm] = useState("");
-    const handleSearchChange = (e) => setSearchTerm(e.target.value);
 
     const [checkedAccounts, setCheckedAccounts] = useState(new Set());
     const handleCheckboxChange = (accountTitle) => {
@@ -131,8 +124,9 @@ export default function IncomeStatement() {
         return accountTitles
             .filter(account => {
                 if (subcategoryType === "Revenue") {
-                    return ["Revenue"].includes(account.accountType);
+                    return ["Revenue", "Contra revenue"].includes(account.accountType);
                 } else if (subcategoryType === "Expenses") {
+                    //return ["Revenue", "Contra revenue", "Expenses"].includes(account.accountType);
                     return account.accountType === "Expenses";
                 } else if (subcategoryType === "Subsidy") {
                     return account.accountType === "Subsidy";
@@ -160,6 +154,7 @@ export default function IncomeStatement() {
             }
         ]);
     };
+
     console.log("Data of subcategories: ", subcategories)
 
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
@@ -232,7 +227,7 @@ export default function IncomeStatement() {
                     ...doc.data(),
                     id: doc.id,
                 }));
-                setincomeStatementLedgerList(filteredData);
+                setIncomeStatementLedgerList(filteredData);
             } catch (err) {
                 console.error("Error fetching ledger data:", err);
             }
@@ -242,7 +237,7 @@ export default function IncomeStatement() {
     }, []); // No dependencies for getLedgerList, so it only runs once on mount
     // ----------------------------------------- F E T C H  L E D G E R  L I S T -----------------------------------------
 
-    // -------------------------- Function to update totalNetSurplusDeficit in the incomeStatement collection --------------------------
+    // -------------------------- Function to update totalSubsidy in the incomeStatement collection --------------------------
     const updateTotalNetSurplusDeficitInFirestore = async (incomeStatementID, totalNetSurplusDeficit) => {
         try {
             const incomeStatementRef = doc(db, "incomestatement", incomeStatementID);
@@ -254,9 +249,9 @@ export default function IncomeStatement() {
             console.error("Error updating total subsidy:", err);
         }
     };
-    // -------------------------- Function to update totalNetSurplusDeficit in the incomeStatement collection --------------------------
+    // -------------------------- Function to update totalSubsidy in the incomeStatement collection --------------------------
 
-    // --------------------------- FETCH income statement DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
+    // --------------------------- FETCH BALANCE SHEET DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
     useEffect(() => {
         const getIncomeStatementDescription = async () => {
             try {
@@ -320,7 +315,6 @@ export default function IncomeStatement() {
                                     });
 
                                     titleData.difference = totalDebit - totalCredit;
-                                    titleData.difference = totalCredit - totalDebit;
 
                                     accountTitlesData.push(titleData);
                                     accountsData.push(...titleAccounts);
@@ -359,7 +353,7 @@ export default function IncomeStatement() {
                         }
                     }
 
-                    setincomeStatement(incomeStatementData);
+                    setIncomeStatement(incomeStatementData);
                 } else {
                     setError("No income statement found.");
                 }
@@ -373,8 +367,6 @@ export default function IncomeStatement() {
 
         getIncomeStatementDescription();
     }, []);
-
-
     // --------------------- FETCH SELECTED LEDGER DATA FOR ADDING PERIOD ALSO INCLUDE CALCULATIONS ----------------------
     const getSelectedLedgerData = async () => {
         try {
@@ -384,6 +376,17 @@ export default function IncomeStatement() {
 
                 if (ledgerSnap.exists()) {
                     const ledgerYear = ledgerSnap.data().year;
+                    console.log("Data of ledgerYear: ", ledgerYear);
+
+                    // Adjust stateStartDate and stateEndDate to use ledgerYear
+                    const adjustYear = (dateStr, newYear) => {
+                        const date = new Date(dateStr);
+                        date.setFullYear(newYear);
+                        return date.toISOString().split("T")[0];
+                    };
+
+                    const adjustedStartDate = adjustYear(stateStartDate, ledgerYear);
+                    const adjustedEndDate = adjustYear(stateEndDate, ledgerYear);
 
                     const accountTitlesRef = collection(db, "ledger", selectedLedger, "accounttitles");
                     const accountTitlesSnap = await getDocs(accountTitlesRef);
@@ -397,8 +400,8 @@ export default function IncomeStatement() {
                         const accountsRef = collection(db, "ledger", selectedLedger, "accounttitles", titleDoc.id, "accounts");
                         const accountsQuery = query(
                             accountsRef,
-                            where("date", ">=", stateStartDate),
-                            where("date", "<=", stateEndDate)
+                            where("date", ">=", adjustedStartDate),
+                            where("date", "<=", adjustedEndDate)
                         );
                         const accountsSnap = await getDocs(accountsQuery);
 
@@ -420,7 +423,6 @@ export default function IncomeStatement() {
                             });
 
                             titleData.difference2 = totalDebit2 - totalCredit2;
-                            titleData.difference2 = totalCredit2 - totalDebit2;
 
                             accountTitlesData.push(titleData);
                             accountsData.push(...titleAccounts);
@@ -583,11 +585,11 @@ export default function IncomeStatement() {
             return total + amount;
         }, 0);
 
-    // Calculate base subsidy as Revenue - Expenses
+    // Calculate surplus/deficit as Revenue - Expenses
     let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
     let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
 
-    const totalSubsidy2 = currentAccountTitlesPeriod
+    const totalSubsidy2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Subsidy")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.difference2;
@@ -595,7 +597,7 @@ export default function IncomeStatement() {
         }, 0);
     // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
 
-    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
+    // ------------------------------------- R E V E N U E A C C O U N T  T I T L E S -------------------------------------
     const revenueAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
@@ -634,9 +636,9 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // ------------------------------------- A S S E T S  A C C O U N T  T I T L E S -------------------------------------
+    // ------------------------------------- R E V E N U E A C C O U N T  T I T L E S -------------------------------------
 
-    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
+    // -------------------------------- E X P E N S E S A C C O U N T  T I T L E S --------------------------------
     const ExpensesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
@@ -675,9 +677,9 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // -------------------------------- L I A B I L I T I E S  A C C O U N T  T I T L E S --------------------------------
+    // -------------------------------- E X P E N S E S A C C O U N T  T I T L E S --------------------------------
 
-    // ------------------------------------- E Q U I T Y  A C C O U N T  T I T L E S -------------------------------------
+    // ------------------------------------- S U B S I D Y  A C C O U N T  T I T L E S -------------------------------------
     const subsidyAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
         // Gather all account titles from subcategories recursively
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
@@ -719,7 +721,7 @@ export default function IncomeStatement() {
                 };
             });
     };
-    // ------------------------------------ E Q U I T Y  A C C O U N T  T I T L E S ------------------------------------
+    // ------------------------------------ S U B S I D Y  A C C O U N T  T I T L E S ------------------------------------
 
     //-------------------------------- S U B C A T E G O R I E S  A C C O U N T  T I T L E S -------------------------------
     const subcategoriesAccountTitles = (accountTitles, currentAccountTitlesPeriod, subcategories) => {
@@ -778,11 +780,12 @@ export default function IncomeStatement() {
                 return {
                     name: sub.subcategoryName,
                     children,
-                    amount, // Total amount based on accountTitle.difference
-                    amount2, // Total amount based on accountTitle.difference2
+                    amount, // Total amount based on accountTitle.difference/differenceContra
+                    amount2, // Total amount based on accountTitle.difference2/differenceContra2
                 };
             });
     };
+
     // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
 
     //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
@@ -825,7 +828,7 @@ export default function IncomeStatement() {
     };
     //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
 
-    // --------------------------------------- DATA STRUCTURE FOR income statement ------------------------------------------ 
+    // --------------------------------------- DATA STRUCTURE FOR INCOME STATEMENT ------------------------------------------ 
     const incomeStatementDetailsData = [
         {
             name: "Revenue",
@@ -856,8 +859,7 @@ export default function IncomeStatement() {
             amount2: totalSubsidy2 !== 0 ? totalSubsidy2 : null
         }
     ];
-    // --------------------------------------- DATA STRUCTURE FOR income statement ------------------------------------------ 
-
+    // --------------------------------------- DATA STRUCTURE FOR INCOME STATEMENT ------------------------------------------ 
     const groupData = [
         {
             //GROUP 1
@@ -960,7 +962,7 @@ export default function IncomeStatement() {
 
                     {/* Amount in the second column */}
                     <td
-                        className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount)
+                        className={`px-6 py-4 text-right font-semibold ${isMainCategory || subcategories.some(sub => sub.subcategoryName === item.name) ? "text-black" : getTextColor(item.amount)
                             }`}
                     >
                         {item.amount ? formatAmount(item.amount) : ""}
@@ -969,11 +971,14 @@ export default function IncomeStatement() {
                     {/* Render amount2 if it exists */}
                     {item.amount2 !== undefined && (
                         <td
-                            className={`px-6 py-4 text-right font-semibold ${isMainCategory ? "text-black" : getTextColor(item.amount2)}`}
+                            className={`px-6 py-4 text-right font-semibold ${isMainCategory || subcategories.some(sub => sub.subcategoryName === item.name) ? "text-black" : getTextColor(item.amount2)
+                                }`}
                         >
                             {item.amount2 !== null ? formatAmount(item.amount2) : ""}
                         </td>
                     )}
+
+
 
                     {/* Empty column for the "View" or other action */}
                     <td className="px-6 py-4 text-right font-semibold"></td>
@@ -1000,7 +1005,11 @@ export default function IncomeStatement() {
 
         // Recursive function to add rows for each parent and their children
         const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
-            const indent = " ".repeat(depth * 3); // 3 spaces per level for hierarchy
+            if (depth === 0) {
+                worksheet.addRow(["", "", "", ""]); // Add an empty row for spacing
+            }
+
+            const indent = "  ".repeat(depth * 3); // 3 spaces per level for hierarchy
             const parentRow = worksheet.addRow([
                 `${indent}${parent.name}`,
                 parent.amount === 0 || parent.amount === "" ? "" : parent.amount,
@@ -1014,7 +1023,7 @@ export default function IncomeStatement() {
 
                 // Style for parent rows (top-level)
                 if (depth === 0) {
-                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
+                    cell.font = { name: 'Times New Roman', size: 12, bold: true };
                     if (isNumericColumn) {
                         cell.border = {
                             top: { style: 'thin' },
@@ -1025,12 +1034,12 @@ export default function IncomeStatement() {
 
                 // Style for subcategory rows (depth 1)
                 if (depth === 1) {
-                    cell.font = { name: 'Arial Narrow', size: 11, bold: true };
+                    cell.font = { name: 'Times New Roman', size: 12, bold: true };
                 }
 
                 // Style for deeper rows (children of subcategories)
                 if (depth > 1) {
-                    cell.font = { name: 'Arial Narrow', size: 11, bold: false };
+                    cell.font = { name: 'Times New Roman', size: 12, bold: false };
                 }
 
                 // Numeric formatting for amount columns
@@ -1042,10 +1051,48 @@ export default function IncomeStatement() {
                 }
             });
 
+            // Track totals for the main category
+            let categoryTotal1 = 0;
+            let categoryTotal2 = 0;
+
             // Recursively process children
             if (parent.children && parent.children.length > 0) {
-                parent.children.forEach(child => addParentAndChildrenRows(child, worksheet, depth + 1));
+                parent.children.forEach(child => {
+                    const { total1, total2 } = addParentAndChildrenRows(child, worksheet, depth + 1);
+                    categoryTotal1 += total1;
+                    categoryTotal2 += total2;
+                });
+            } else {
+                // If it's a leaf node, use its amounts
+                categoryTotal1 = parseFloat(parent.amount || 0);
+                categoryTotal2 = parseFloat(parent.amount2 || 0);
             }
+
+            // Add a totals row for each main category (depth 0)
+            if (depth === 0) {
+                worksheet.addRow(["", "", "", ""]); 
+                const totalRow = worksheet.addRow([
+                    `   Total ${parent.name}`, // Indented to match hierarchy
+                    categoryTotal1 !== 0 ? categoryTotal1.toFixed(2) : "",
+                    "",
+                    categoryTotal2 !== 0 ? categoryTotal2.toFixed(2) : "",
+                ]);
+
+                // Style for the totals row
+                totalRow.eachCell((cell, colNumber) => {
+                    const isNumericColumn = colNumber === 2 || colNumber === 4;
+                    cell.font = { name: 'Times New Roman', size: 12, bold: true };
+                    if (isNumericColumn) {
+                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                        cell.numFmt = '#,##0.00';
+                        cell.border = { bottom: { style: 'thin' } }; // Thin border on top
+                    } else {
+                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                    }
+                });
+            }
+
+            return { total1: categoryTotal1, total2: categoryTotal2 };
         };
 
         // Ensure end date is fetched
@@ -1068,15 +1115,34 @@ export default function IncomeStatement() {
         const worksheetData = [
             ["DETAILED STATEMENT OF FINANCIAL PERFORMANCE"],
             ["REGULAR AGENCY FUND"],
-            [`FOR THE PERIOD ENDED ${monthName} ${day}, ${year}`],
+            [`FOR THE QUARTER ENDED ${monthName} ${day}, ${year}`],
             ["", "", "", ""],
-            ["ACCOUNT DESCRIPTION", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
+            ["", `${incomeStatement.ledgerYear}`, "", `${fireLedgerYear}`],
             ["", "", "", ""],
             ["", "", "", ""],
         ];
 
         // Append Header Rows
         worksheetData.forEach(row => worksheet.addRow(row));
+
+        worksheet.pageSetup.margins = {
+            top: 1.3,      // No space at the top margin
+            left: 0.5,   // Default left margin
+            right: 0.5,  // Default right margin
+            bottom: 0.8, // Default bottom margin
+            header: 0.8,    // No extra margin for headers
+            footer: 0.8, // Default footer margin
+        };
+
+        // Adjust header row heights
+        worksheet.getRow(1).height = 15.75; // Adjust height for the first header row
+        worksheet.getRow(2).height = 15.75; // Adjust height for the second header row
+        worksheet.getRow(3).height = 15.75; // Adjust height for the third header row
+
+        // Set print headers and page setup
+        worksheet.pageSetup = {
+            printTitlesRow: '1:3', // Ensures rows 1 to 3 are set as header rows for printing
+        };
 
         // Append Parent and Children Rows
         incomeStatementDetailsData.forEach(parent => addParentAndChildrenRows(parent, worksheet));
@@ -1089,11 +1155,10 @@ export default function IncomeStatement() {
 
         // Adjust Column Widths
         worksheet.columns = [
-            { width: 50 },
+            { width: 45 },
             { width: 20 },
-            { width: 3.7 },
+            { width: 5 },
             { width: 20 },
-            { width: 13 },
         ];
 
         // Merge Header Cells
@@ -1107,12 +1172,12 @@ export default function IncomeStatement() {
 
         // Header Styles
         const headerStyle = {
-            font: { bold: true, size: 14, name: 'Arial Narrow' },
+            font: { bold: true, size: 14, name: 'Times New Roman' },
             alignment: { horizontal: 'center', vertical: 'middle' },
         };
 
         const subHeaderStyle = {
-            font: { bold: true, size: 12, name: 'Arial Narrow' },
+            font: { bold: true, size: 12, name: 'Times New Roman' },
             alignment: { horizontal: 'center', vertical: 'middle' },
         };
 
@@ -1125,15 +1190,27 @@ export default function IncomeStatement() {
             cell.style = subHeaderStyle;
         });
 
+        worksheet.pageSetup.horizontalPageBreaks = [{ column: 4 }];
+
         // Underline for header years
         worksheet.getCell('B5').font = { underline: true, ...subHeaderStyle.font };
         worksheet.getCell('D5').font = { underline: true, ...subHeaderStyle.font };
 
         // Underline for footer rows
-        financialSubsidyRow.getCell(2).border = { bottom: { style: 'thin' } };
-        financialSubsidyRow.getCell(4).border = { bottom: { style: 'thin' } };
+        // Bold text for footer rows without underline
+        financialSubsidyRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(2).border = { bottom: { style: 'double' } };
+        financialSubsidyRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(4).border = { bottom: { style: 'double' } };
+        
+        netSurplusRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        netSurplusRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
         netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
-        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        netSurplusRow.getCell(4).border = { bottom: { style: 'double' } }
+
+
 
         // Export the workbook to a file
         try {
@@ -1141,7 +1218,7 @@ export default function IncomeStatement() {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `Income Statement for ${monthName}.xlsx`
+            link.download = `Income Statement for ${monthName} ${year}.xlsx`
             link.click();
         } catch (error) {
             console.error("Error exporting Excel file:", error);
@@ -1149,9 +1226,9 @@ export default function IncomeStatement() {
         }
     };
 
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
 
 
-    //--------------------------------------------- E X P O R T I N G F U N C T I O N --------------------------------------------- 
 
     return (
         <Fragment>
@@ -1170,8 +1247,8 @@ export default function IncomeStatement() {
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li className="inline-flex classNameitems-center">
                         <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                            <PiBookOpenTextFill className="mr-2"></PiBookOpenTextFill>
-                            income statement
+                            <RiFileAddFill className="mr-2"></RiFileAddFill>
+                            Income Statement
                         </button>
                     </li>
                     <li aria-current="page">
@@ -1210,12 +1287,13 @@ export default function IncomeStatement() {
                     />
                 </div>
             </div>
+
             <hr className="border-t border-[#7694D4] my-4" />
 
             {/* TABLE */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                         <tr>
                             <th scope="col" className="px-6 py-3">Account Description</th>
                             <th scope="col" className="px-6 py-3 text-right">{`Period - ${incomeStatement?.ledgerYear || "N/A"}`}</th>
@@ -1244,7 +1322,7 @@ export default function IncomeStatement() {
                 ))}
             </div>
 
-            {/* `Modal 1` */}
+            {/* Modal 1 */}
             {showModal && (
                 <Modal isVisible={showModal}>
                     <div className="bg-white w-[400px] h-60 rounded py-2 px-4">
@@ -1273,14 +1351,11 @@ export default function IncomeStatement() {
 
                         <div className="flex justify-end py-3 px-4">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                                className={`bg-blue-500 mt-10 -mr-4 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
                                 onClick={() => {
                                     setShowPeriodColumn(true);  // Show the period column
                                     setShowModal(false);
                                     setSelectedLedger("");
-                                    // if (selectedLedger) {
-
-                                    // }
                                 }}
                                 disabled={!selectedLedger} // Disable when no ledger is selected
                             >
@@ -1378,7 +1453,7 @@ export default function IncomeStatement() {
 
                         <div className="flex justify-end py-3 px-4 flex-row">
                             <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 
+                                className={`bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none 
                                         ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={subcategory.length === 0 || currentSelection === ''}
                                 onClick={() => {
@@ -1430,7 +1505,7 @@ export default function IncomeStatement() {
                             <div className="flex justify-center space-x-10">
                                 <button
                                     type="button"
-                                    className="bg-[#2196F3] hover:bg-[#1976D2] transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
+                                    className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none"
                                     onClick={() => {
                                         setThirdSubcategoryModal(true)
                                         setSecondSubcategoryModal(false)
@@ -1462,19 +1537,19 @@ export default function IncomeStatement() {
             {/* 3rd Modal For Add Subcategory */}
             {thirdSubcategoryModal && (
                 <Modal isVisible={thirdSubcategoryModal}>
-                    <div className="bg-white w-[600px] h-[295px] rounded-lg py-2 px-4 shadow-xl flex flex-col justify-between">
+                    <div className="bg-white w-[600px] h-[360px] rounded-lg py-2 px-4 shadow-xl flex flex-col">
                         {/* Header */}
                         <div className="flex justify-between items-center mb-4">
                             <h1 className="font-poppins font-bold text-xl text-gray-700">Select Accounts to Add</h1>
                             <button
                                 className="text-2xl font-semibold text-gray-500 focus:outline-none"
                                 onClick={() => {
-                                    setIsDropdownOpen(false);
                                     setCheckedAccounts(new Set());
                                     setThirdSubcategoryModal(false);
                                     setSubcategory('');
                                     setCurrentSelection('');
                                     setSubcategoryType('');
+                                    setSearchTerm('');
                                 }}
                             >
                                 ×
@@ -1483,117 +1558,119 @@ export default function IncomeStatement() {
                         <hr className="border-t border-[#7694D4] -my-1" />
 
                         {/* Content */}
-                        <div className="p-8 pt-16 text-center flex justify-center">
-                            <div className="relative">
-                                <button
-                                    id="dropdownSearchButton"
-                                    onClick={toggleDropdown}
-                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                                    type="button"
-                                >
-                                    Available Accounts
-                                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1l4 4 4-4" />
-                                    </svg>
-                                </button>
-
-                                {/* Dropdown menu */}
-                                <div
-                                    id="dropdownSearch"
-                                    className={`z-10 ${isDropdownOpen ? '' : 'hidden'} absolute top-full -left-8 mt-2 bg-white rounded-lg shadow w-60 dark:bg-gray-700`}
-                                >
-                                    <div className="p-3">
-                                        <label htmlFor="input-group-search" className="sr-only">Search</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                                                <IoIosSearch className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                id="input-group-search"
-                                                value={searchTerm}
-                                                onChange={handleSearchChange}
-                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                                placeholder="Search Account"
-                                            />
-                                        </div>
-                                    </div>
-                                    <ul
-                                        className="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
-                                        aria-labelledby="dropdownSearchButton"
-                                    >
-                                        {getFilteredAccounts(subcategoryType).length === 0 ? (
-                                            <li className="absolute inset-x-0 bottom-24 text-center text-gray-500 dark:text-gray-400">
-                                                No Available Accounts
-                                            </li>
-                                        ) : (
-                                            getFilteredAccounts(subcategoryType).map((account) => (
-                                                <li key={account.id}>
-                                                    <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
-                                                        <input
-                                                            id={`checkbox-item-${account.accountTitle}`}
-                                                            type="checkbox"
-                                                            value={account.accountTitle}
-                                                            checked={checkedAccounts.has(account.accountTitle)}
-                                                            onChange={() => handleCheckboxChange(account.accountTitle)}
-                                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-                                                        />
-                                                        <label
-                                                            htmlFor={`checkbox-item-${account.id}`}
-                                                            className="w-full ms-2 text-sm font-medium text-gray-900 rounded dark:text-gray-300"
-                                                        >
-                                                            {account.accountTitle}
-                                                        </label>
-                                                    </div>
-                                                </li>
-                                            ))
-                                        )}
-                                    </ul>
+                        <div className="p-4 pt-6 flex flex-col items-center flex-grow">
+                            {/* Search Bar */}
+                            <div className="w-full max-w-[500px] mb-4">
+                                <div className="relative">
+                                    <IoIosSearch className="absolute w-5 h-5 text-gray-500 left-3 top-2.5" />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 p-2 text-sm border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Search Accounts"
+                                    />
                                 </div>
                             </div>
+
+                            {/* Dropdown content with reduced height */}
+                            <ul
+                                className="w-full max-w-[500px] h-40 px-3 pb-3 overflow-y-auto text-sm text-gray-700 border rounded-lg"
+                            >
+                                {getFilteredAccounts(subcategoryType).length === 0 ? (
+                                    <li className="mt-14 text-center text-gray-500">No Available Accounts</li>
+                                ) : (
+                                    getFilteredAccounts(subcategoryType).map((account) => (
+                                        <li
+                                            key={account.id}
+                                            className="flex items-center p-2 hover:bg-gray-200 active:bg-gray-300 cursor-pointer"
+                                            onClick={() => handleCheckboxChange(account.accountTitle)}
+                                        >
+                                            {/* Full row clickable */}
+                                            <label
+                                                htmlFor={`checkbox-item-${account.id}`}
+                                                className="flex items-center w-full cursor-pointer"
+                                            >
+                                                <span className="flex-grow text-sm text-gray-900">{account.accountTitle}</span>
+                                                <input
+                                                    id={`checkbox-item-${account.accountTitle}`}
+                                                    type="checkbox"
+                                                    value={account.accountTitle}
+                                                    checked={checkedAccounts.has(account.accountTitle)}
+                                                    onChange={() => handleCheckboxChange(account.accountTitle)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    onClick={(e) => e.stopPropagation()} // Prevent parent click event
+                                                />
+                                            </label>
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
                         </div>
 
-                        {/* Footer with Confirm and Cancel Button */}
-                        <div className="flex justify-end mt-4 p-4">
+                        {/* Footer */}
+                        <div className="mb-2 flex justify-center">
                             {getFilteredAccounts(subcategoryType).length === 0 ? (
+                                // Cancel Button (when no accounts are available)
                                 <button
                                     type="button"
-                                    className="text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4"
+                                    className="w-full max-w-[500px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg"
                                     onClick={() => {
-                                        setIsDropdownOpen(false);
+                                        //setIsDropdownOpen(false);
                                         setThirdSubcategoryModal(false);
-                                        // setSelectParentCategory(prevSelected => [...prevSelected, ...[subcategory]]);
                                         setSubcategory('');
-                                        setCurrentSelection('');;
+                                        setCurrentSelection('');
                                         setSubcategoryType('');
-
+                                        setSearchTerm('');
                                     }}
                                 >
                                     Cancel
                                 </button>
                             ) : (
-                                <button
-                                    type="button"
-                                    className={`text-white bg-[#2196F3] font-poppins text-xs rounded font-medium py-2 px-4 ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={checkedAccounts.size === 0}
-                                    onClick={() => {
-                                        setIsDropdownOpen(false);
-                                        setThirdSubcategoryModal(false);
-                                        setSelectParentCategory(prevSelected => [...prevSelected, subcategory]);
-                                        addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
-                                        handleConfirm(); // Clear checked accounts after adding
-                                        setSubcategory('');
-                                        setCurrentSelection('');
-                                        setSubcategoryType('');
-                                    }}
-                                >
-                                    Confirm
-                                </button>
+                                <>
+                                    {/* Cancel Button */}
+                                    <button
+                                        type="button"
+                                        className="w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg mr-2"
+                                        onClick={() => {
+                                            //setIsDropdownOpen(false);
+                                            setThirdSubcategoryModal(false);
+                                            setSubcategory('');
+                                            setCurrentSelection('');
+                                            setSubcategoryType('');
+                                            setSearchTerm('');
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    {/* Confirm Button */}
+                                    <button
+                                        type="button"
+                                        className={`w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg ${checkedAccounts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                                            }`}
+                                        disabled={checkedAccounts.size === 0}
+                                        onClick={() => {
+                                            //setIsDropdownOpen(false);
+                                            setThirdSubcategoryModal(false);
+                                            setSelectParentCategory((prevSelected) => [...prevSelected, subcategory]);
+                                            addSubcategory(subcategory, currentSelection, subcategoryType, checkedAccounts);
+                                            handleConfirm(); // Clear checked accounts after adding
+                                            setSubcategory('');
+                                            setCurrentSelection('');
+                                            setSubcategoryType('');
+                                            setSearchTerm('');
+                                        }}
+                                    >
+                                        Confirm
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
                 </Modal>
             )}
+
         </Fragment>
     );
 
