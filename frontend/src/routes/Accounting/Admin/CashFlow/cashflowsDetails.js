@@ -16,6 +16,7 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { FaLongArrowAltDown } from "react-icons/fa";
+import SubmitButton from "../../../../components/submitButton";
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -84,7 +85,19 @@ export default function CashflowsDetails() {
                         });
                         return categoryId;
                     };
-
+                    // Function to add a main category
+                    const addMainCategoryNotLock = (name) => {
+                        const categoryId = createCategoryId(name);
+                        const ref = doc(cashflowsCollectionRef, categoryId);  // Use categoryId as the document ID
+                        batch.set(ref, {
+                            categoryName: name,
+                            parentID: null,
+                            created_at: new Date(),
+                            position: position++,
+                            amount: 0,
+                        });
+                        return categoryId;
+                    };
                     // Cash Inflows and Cash Outflows
                     const createSubcategoryId = (name, parentId) => {
                         return `${name.toLowerCase().replace(/\s+/g, "_")}_${parentId}`;
@@ -135,9 +148,9 @@ export default function CashflowsDetails() {
 
                     // Additional standalone categories
                     addMainCategory('Net Increase(Decrease) in Cash and Cash Equivalents');
-                    addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
-                    addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
-                    addMainCategory('Cash and Cash Equivalents at the End of the Period');
+                    addMainCategoryNotLock('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
+                    addMainCategoryNotLock('Cash and Cash Equivalents at the Beginning of the Period');
+                    addMainCategoryNotLock('Cash and Cash Equivalents at the End of the Period');
 
                     // Commit batch
                     await batch.commit();
@@ -682,7 +695,40 @@ export default function CashflowsDetails() {
         return netTotals;
     };
 
-  
+
+    const getNetCashChange = (cashflowMergeData, db, cashflowId) => {
+        // Initialize total inflows and outflows for both amounts
+        let totalInflows = 0;
+        let totalPeriodInflows = 0;
+        let totalOutflows = 0;
+        let totalPeriodOutflows = 0;
+
+        // Iterate through all data to calculate inflows and outflows
+        cashflowMergeData.forEach(category => {
+            if (category.categoryName === 'Cash Inflows') {
+                const totals = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
+                totalInflows += totals.totalAmount;
+                totalPeriodInflows += totals.totalPeriodAmount;
+            } else if (category.categoryName === 'Cash Outflows') {
+                const totals = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
+                totalOutflows += totals.totalAmount;
+                totalPeriodOutflows += totals.totalPeriodAmount;
+            }
+        });
+
+        // Calculate net changes
+        const netChange = totalInflows - totalOutflows;
+        const netPeriodChange = totalPeriodInflows - totalPeriodOutflows;
+
+
+        // Return both results
+        return {
+            netChange,
+            netPeriodChange,
+        };
+    };
+
+
     const [inputWidth, setInputWidth] = useState('auto');
     const spanRef = useRef(null);
 
@@ -706,6 +752,7 @@ export default function CashflowsDetails() {
 
         const netTotals = getNetTotalByMainCategory(cashflowMergeData);
 
+        const { netChange, netPeriodChange } = getNetCashChange(cashflowMergeData);
         return (
             <tr
                 ref={setNodeRef}
@@ -773,7 +820,11 @@ export default function CashflowsDetails() {
                                 onClick={() => {
                                     if (
                                         category.categoryName !== 'Cash Inflows' &&
-                                        category.categoryName !== 'Cash Outflows'
+                                        category.categoryName !== 'Cash Outflows' &&
+                                        category.categoryName !== 'Operating Activities' &&
+                                        category.categoryName !== 'Investing Activities' &&
+                                        category.categoryName !== 'Financing Activities' &&
+                                        category.categoryName !== 'Net Increase(Decrease) in Cash and Cash Equivalents'
                                     ) {
                                         // Make only other categories clickable
                                         setEditingCell(category.id);
@@ -807,21 +858,74 @@ export default function CashflowsDetails() {
                 </td>
 
                 <td className="px-2 py-2 w-56 h-6 ">
-                    {category.level === 0 && hasSubcategories? (
+                    {category.level === 0 && hasSubcategories ? (
                         // Main category: Display net total for the category
                         <span className="font-bold text-black">
                             {formatNumber(netTotals[category.categoryName]?.netTotalAmount) || ''}
                         </span>
                     ) : (
                         // Non-main categories: Keep the original logic
-                        category.isFromPeriod ? (
-                            <span>{formatNumber(totalAmount) || ''}</span>
-                        ) : (
-                            hasSubcategories ? (
+                        category.categoryName === 'Net Increase(Decrease) in Cash and Cash Equivalents' ?
+                            <span className="font-bold"> {formatNumber(netChange)}</span> :
+                            category.isFromPeriod ? (
+                                <span>{formatNumber(totalAmount) || ''}</span>
+                            ) : (
+                                hasSubcategories ? (
+                                    <span
+                                        className={`font-bold flex items-center gap-1 ${category.categoryName === 'Cash Inflows' ? 'text-green-600' :
+                                            category.categoryName === 'Cash Outflows' ? 'text-red-600' : ''}`}>
+                                        {formatNumber(totalAmount) || ''}
+                                        {category.categoryName === 'Cash Inflows' && (
+                                            <FaLongArrowAltUp />
+                                        )}
+                                        {category.categoryName === 'Cash Outflows' && (
+                                            <FaLongArrowAltDown />
+                                        )}
+
+                                    </span>
+
+                                ) : (
+                                    editingCell === category.id && editValue.field === 'amount' ? (
+                                        <input
+                                            type="number"
+                                            className="border focus:outline-none w-11/12 h-8 px-2 py-1 text-start"
+                                            value={editValue.value}
+                                            onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
+                                            onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <span
+                                            onClick={() => {
+                                                setEditingCell(category.id);
+                                                setEditValue({ field: 'amount', value: category.amount || '' });
+                                            }}
+                                            className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                        >
+                                            {formatNumber(category.amount) || ''}
+                                        </span>
+                                    )
+                                )
+                            )
+                    )}
+                </td>
+
+                <td className="px-2 py-2 w-56 h-6 ">
+                    {category.level === 0 & hasSubcategories ? (
+                        // Main category: Display net total for the category
+                        <span className="font-bold text-black">
+                            {formatNumber(netTotals[category.categoryName]?.netTotalPeriodAmount) || ''}
+                        </span>
+                    ) : (
+                        category.categoryName === 'Net Increase(Decrease) in Cash and Cash Equivalents' ?
+                            <span className="font-bold"> {formatNumber(netPeriodChange)}</span> :
+                            category.isFromPeriod ? (
+                                <span>{formatNumber(category.periodAmount) || ''}</span>
+                            ) : hasSubcategories ?
                                 <span
                                     className={`font-bold flex items-center gap-1 ${category.categoryName === 'Cash Inflows' ? 'text-green-600' :
                                         category.categoryName === 'Cash Outflows' ? 'text-red-600' : ''}`}>
-                                    {formatNumber(totalAmount) || ''}
+                                    {formatNumber(totalPeriodAmount) || ''}
                                     {category.categoryName === 'Cash Inflows' && (
                                         <FaLongArrowAltUp />
                                     )}
@@ -831,17 +935,7 @@ export default function CashflowsDetails() {
 
                                 </span>
 
-                            ) : (
-                                editingCell === category.id && editValue.field === 'amount' ? (
-                                    <input
-                                        type="number"
-                                        className="border focus:outline-none w-11/12 h-8 px-2 py-1 text-start"
-                                        value={editValue.value}
-                                        onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
-                                        onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
-                                        autoFocus
-                                    />
-                                ) : (
+                                : (
                                     <span
                                         onClick={() => {
                                             setEditingCell(category.id);
@@ -849,49 +943,9 @@ export default function CashflowsDetails() {
                                         }}
                                         className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
                                     >
-                                        {formatNumber(category.amount) || ''}
+                                        {formatNumber(category.periodAmount) || ''}
                                     </span>
                                 )
-                            )
-                        )
-                    )}
-                </td>
-
-                <td className="px-2 py-2 w-56 h-6 ">
-                    {category.level === 0 ? (
-                        // Main category: Display net total for the category
-                        <span className="font-bold text-black">
-                            {formatNumber(netTotals[category.categoryName]?.netTotalPeriodAmount) || ''}
-                        </span>
-                    ) : (
-                        // Non-main categories: Keep the original logic
-                        category.isFromPeriod ? (
-                            <span>{formatNumber(totalAmount) || ''}</span>
-                        ) : hasSubcategories ?
-                            <span
-                                className={`font-bold flex items-center gap-1 ${category.categoryName === 'Cash Inflows' ? 'text-green-600' :
-                                    category.categoryName === 'Cash Outflows' ? 'text-red-600' : ''}`}>
-                                {formatNumber(totalPeriodAmount) || ''}
-                                {category.categoryName === 'Cash Inflows' && (
-                                    <FaLongArrowAltUp />
-                                )}
-                                {category.categoryName === 'Cash Outflows' && (
-                                    <FaLongArrowAltDown />
-                                )}
-
-                            </span>
-
-                            : (
-                                <span
-                                    onClick={() => {
-                                        setEditingCell(category.id);
-                                        setEditValue({ field: 'amount', value: category.amount || '' });
-                                    }}
-                                    className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
-                                >
-                                    {formatNumber(category.periodAmount) || ''}
-                                </span>
-                            )
                     )}
                 </td>
 
@@ -1202,7 +1256,7 @@ export default function CashflowsDetails() {
 
             // Update the specific field of the category in Firestore
             await updateDoc(categoryDocRef, { [field]: newValue });
-            console.log('Category field updated in Firestore successfully.');
+            // console.log('Category field updated in Firestore successfully.');
 
         } catch (error) {
             console.error('Error updating category field in Firestore:', error);
@@ -1211,7 +1265,7 @@ export default function CashflowsDetails() {
 
 
     const handleDeleteRow = async () => {
-        if (!selectedRowData) return;
+        if (!selectedRowData || selectedRowData.isLocked) return;
 
         try {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
@@ -1335,7 +1389,7 @@ export default function CashflowsDetails() {
 
 
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                <div className="bg-white w-[360px] h-60 rounded py-2 px-4">
                     <div className="flex justify-between">
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Add New Category</h1>
                         <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
@@ -1356,13 +1410,16 @@ export default function CashflowsDetails() {
                         >
                             Category Name
                         </label>
-                        <button onClick={(event) => {
-                            event.stopPropagation();
-                            addNewCategory();
-                        }}
-                            className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium ml-2">
-                            + ADD CATEGORY
-                        </button>
+
+                    </div>
+                    <div className="">
+                        <SubmitButton
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                addNewCategory();
+                            }}
+                            label={"ADD"}
+                        />
                     </div>
                 </div>
             </Modal>
