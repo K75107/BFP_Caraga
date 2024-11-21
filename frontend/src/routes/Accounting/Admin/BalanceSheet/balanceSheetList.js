@@ -152,7 +152,7 @@ export default function BalanceSheet() {
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
             {/**Breadcrumbs */}
-            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav className="flex absolute top-[20px] ml-8" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div className="flex items-center">
@@ -164,68 +164,72 @@ export default function BalanceSheet() {
                     </li>
                 </ol>
             </nav>
-            {/**Breadcrumbs */}
-            <div className="flex justify-between w-full">
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
-                <div class="flex space-x-4">
-                    <AddButton
-                        onClick={() => setShowModal(true)}
-                        label="GENERATE BALANCE SHEET"
-                    />
+            
+            <div className="px-6">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
+                        <div class="flex space-x-4">
+                            <AddButton
+                                onClick={() => setShowModal(true)}
+                                label="GENERATE BALANCE SHEET"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
-            {/* TABLE */}
-            <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-                        <tr>
-                            <th scope="col" className="px-6 py-4">DESCRIPTION</th>
-                            <th scope="col" className="px-6 py-4">Start Date</th>
-                            <th scope="col" className="px-6 py-4">End Date</th>
-                            <th scope="col" className="px-6 py-4">TOTAL NET ASSETS/EQUITY</th>
-                            <th scope="col" className="px-6 py-4 text-left">ACTIONS</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {balanceSheetList.map((balanceSheet) => (
-                            <tr
-                                key={balanceSheet.id}
-                                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                onClick={() => navigate(`/main/balanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
-                            >
-                                <th scope="row" className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
-                                    {balanceSheet.description || "N/A"}
-                                </th>
-                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
-                                    {balanceSheet.start_date ? balanceSheet.start_date.toDate().toLocaleDateString() : "N/A"}
-                                </td>
-                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
-                                    {balanceSheet.end_date ? balanceSheet.end_date.toDate().toLocaleDateString() : "N/A"}
-                                </td>
-                                <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
-                                    {balanceSheet.totalNetAssets !== undefined && balanceSheet.totalNetAssets !== null
-                                        ? balanceSheet.totalNetAssets.toLocaleString()
-                                        : ""}
-                                </td>
-                                <td className="px-6 py-4 text-left">
-                                    <span
-                                        className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent row click event
-                                            setDeleteBalanceSheetID(balanceSheet.id);
-                                            setShowDeleteModal(true);
-                                        }}
-                                    >
-                                        Remove
-                                    </span>
-                                </td>
+            <div className="px-6 py-8">
+                <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                            <tr>
+                                <th scope="col" className="px-6 py-4">DESCRIPTION</th>
+                                <th scope="col" className="px-6 py-4">Start Date</th>
+                                <th scope="col" className="px-6 py-4">End Date</th>
+                                <th scope="col" className="px-6 py-4">TOTAL NET ASSETS/EQUITY</th>
+                                <th scope="col" className="px-6 py-4 text-left">ACTIONS</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {balanceSheetList.map((balanceSheet) => (
+                                <tr
+                                    key={balanceSheet.id}
+                                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                    onClick={() => navigate(`/main/balanceSheet/balanceSheetDetails/${balanceSheet.id}`)}
+                                >
+                                    <th scope="row" className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
+                                        {balanceSheet.description || "N/A"}
+                                    </th>
+                                    <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
+                                        {balanceSheet.start_date ? balanceSheet.start_date.toDate().toLocaleDateString() : "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
+                                        {balanceSheet.end_date ? balanceSheet.end_date.toDate().toLocaleDateString() : "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4 font-normal text-gray-900 whitespace-nowrap dark:text-white">
+                                        {balanceSheet.totalNetAssets !== undefined && balanceSheet.totalNetAssets !== null
+                                            ? balanceSheet.totalNetAssets.toLocaleString()
+                                            : ""}
+                                    </td>
+                                    <td className="px-6 py-4 text-left">
+                                        <span
+                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent row click event
+                                                setDeleteBalanceSheetID(balanceSheet.id);
+                                                setShowDeleteModal(true);
+                                            }}
+                                        >
+                                            Remove
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* MODALS */}

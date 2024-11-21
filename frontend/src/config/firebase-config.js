@@ -31,8 +31,5 @@ if (process.env.NODE_ENV === "development") {
   // Authentication Emulator
   connectAuthEmulator(auth, "http://127.0.0.1:8000");
 
-  // Realtime Database Emulator
-  connectDatabaseEmulator(realtimeDb, "localhost", 9000);
-
   console.log("Connected to Firebase emulators.");
 }

@@ -14,6 +14,9 @@ import AddButton from "../../../../components/addButton";
 import ExportButton from "../../../../components/exportButton";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
+import { FaLongArrowAltUp } from "react-icons/fa";
+import { FaLongArrowAltDown } from "react-icons/fa";
+
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
     const [showModalPeriod, setShowModalPeriod] = useState(false);
@@ -598,6 +601,9 @@ export default function CashflowsDetails() {
 
 
     const handleRightClick = (event, category) => {
+
+        if (category.isFromPeriod) return;
+
         event.preventDefault();
         setSelectedRowData(category);
         setModalPosition({ x: event.clientX, y: event.clientY - 50 });
@@ -638,6 +644,45 @@ export default function CashflowsDetails() {
         return { totalAmount, totalPeriodAmount };
     }
 
+    const getNetTotalByMainCategory = (cashflowMergeData) => {
+        // Initialize result object
+        const netTotals = {};
+
+        // Filter main categories
+        const mainCategories = cashflowMergeData.filter(category => category.level === 0);
+
+        mainCategories.forEach(mainCategory => {
+            // Calculate totals for Cash Inflows
+            const inflows = cashflowMergeData.find(subCat =>
+                subCat.parentID === mainCategory.id && subCat.categoryName === 'Cash Inflows'
+            );
+            const inflowsTotal = inflows
+                ? getLeafCategoryAmountTotal(inflows.id, cashflowMergeData)
+                : { totalAmount: 0, totalPeriodAmount: 0 };
+
+            // Calculate totals for Cash Outflows
+            const outflows = cashflowMergeData.find(subCat =>
+                subCat.parentID === mainCategory.id && subCat.categoryName === 'Cash Outflows'
+            );
+            const outflowsTotal = outflows
+                ? getLeafCategoryAmountTotal(outflows.id, cashflowMergeData)
+                : { totalAmount: 0, totalPeriodAmount: 0 };
+
+            // Calculate net total for the current main category (both for amount and periodAmount)
+            const netTotalAmount = inflowsTotal.totalAmount - outflowsTotal.totalAmount;
+            const netTotalPeriodAmount = inflowsTotal.totalPeriodAmount - outflowsTotal.totalPeriodAmount;
+
+            // Add to result object with main category name as key
+            netTotals[mainCategory.categoryName] = {
+                netTotalAmount,
+                netTotalPeriodAmount
+            };
+        });
+
+        return netTotals;
+    };
+
+  
     const [inputWidth, setInputWidth] = useState('auto');
     const spanRef = useRef(null);
 
@@ -659,34 +704,44 @@ export default function CashflowsDetails() {
         const hasSubcategories = category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id);
         const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
 
+        const netTotals = getNetTotalByMainCategory(cashflowMergeData);
 
         return (
             <tr
                 ref={setNodeRef}
                 {...attributes}
                 style={style}
-                className={`border-b mx-6 grid grid-cols-5 gap-1 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
+                className={`border-b w-full px-6 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
-                    className="col-span-3 py-1 flex items-center px-6"
+                    className="py-3 px-6 flex items-center"
                     style={{ paddingLeft: `${45 * category.level}px` }}
                 >
 
-                    {category.categoryName !== 'Cash Inflows' &&
-                        category.categoryName !== 'Cash Outflows' &&
-                        !category.isLocked &&
-                        !category.isFromPeriod && (
-                            <span {...listeners} className="cursor-grab mr-2 text-gray-500">
-                                ☰
-                            </span>
-                        )}
+                    <span
+                        className={`mr-2 text-gray-500 pl-4 ${category.categoryName !== 'Cash Inflows' &&
+                            category.categoryName !== 'Cash Outflows' &&
+                            !category.isLocked &&
+                            !category.isFromPeriod
+                            ? 'cursor-grab'
+                            : 'invisible'
+                            }`}
+                        {...(category.categoryName !== 'Cash Inflows' &&
+                            category.categoryName !== 'Cash Outflows' &&
+                            !category.isLocked &&
+                            !category.isFromPeriod
+                            ? listeners
+                            : {})}
+                    >
+                        ☰
+                    </span>
 
 
                     {/* Category Name */}
                     <span>
                         {category.isFromPeriod ? (
-                            <span className="block px-1 py-1">
+                            <span className="block px-1 py-1 px-6">
                                 {category.categoryName || '-'}
                             </span>
                         ) : editingCell === category.id && editValue.field === 'categoryName' ? (
@@ -701,7 +756,7 @@ export default function CashflowsDetails() {
                                 </span>
                                 <input
                                     type="text"
-                                    className="border w-auto text-[14px] focus:outline-none px-2 py-2"
+                                    className="border w-auto text-[14px] focus:outline-none px-1 py-1"
                                     value={editValue.value}
                                     style={{ width: inputWidth }}
                                     onChange={(e) =>
@@ -728,7 +783,7 @@ export default function CashflowsDetails() {
                                         });
                                     }
                                 }}
-                                className={`px-6 block py-1 ${category.categoryName === 'Cash Inflows' ||
+                                className={`block  py-1  ${category.categoryName === 'Cash Inflows' ||
                                     category.categoryName === 'Cash Outflows'
                                     ? ''
                                     : 'hover:bg-gray-100'
@@ -743,20 +798,39 @@ export default function CashflowsDetails() {
                     {(category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
-                            className="mr-2  px-5"
+
                         >
-                             {expandedCategories[category.id] ?  <MdKeyboardArrowDown size={18} style={{ display: "inline" }} /> :  <MdKeyboardArrowRight size={18} style={{ display: "inline" }} />}
+                            {expandedCategories[category.id] ? <MdKeyboardArrowDown size={18} style={{ display: "inline" }} /> : <MdKeyboardArrowRight size={18} style={{ display: "inline" }} />}
                         </button>
                     )}
 
                 </td>
 
-                <td className="col-span-1 py-1 flex items-center px-6">
-                    {category.isFromPeriod ?
-                        <span>{formatNumber(totalAmount) || ''}</span> :
-                        (
+                <td className="px-2 py-2 w-56 h-6 ">
+                    {category.level === 0 && hasSubcategories? (
+                        // Main category: Display net total for the category
+                        <span className="font-bold text-black">
+                            {formatNumber(netTotals[category.categoryName]?.netTotalAmount) || ''}
+                        </span>
+                    ) : (
+                        // Non-main categories: Keep the original logic
+                        category.isFromPeriod ? (
+                            <span>{formatNumber(totalAmount) || ''}</span>
+                        ) : (
                             hasSubcategories ? (
-                                <span className="font-bold">{formatNumber(totalAmount) || ''}</span>
+                                <span
+                                    className={`font-bold flex items-center gap-1 ${category.categoryName === 'Cash Inflows' ? 'text-green-600' :
+                                        category.categoryName === 'Cash Outflows' ? 'text-red-600' : ''}`}>
+                                    {formatNumber(totalAmount) || ''}
+                                    {category.categoryName === 'Cash Inflows' && (
+                                        <FaLongArrowAltUp />
+                                    )}
+                                    {category.categoryName === 'Cash Outflows' && (
+                                        <FaLongArrowAltDown />
+                                    )}
+
+                                </span>
+
                             ) : (
                                 editingCell === category.id && editValue.field === 'amount' ? (
                                     <input
@@ -778,26 +852,49 @@ export default function CashflowsDetails() {
                                         {formatNumber(category.amount) || ''}
                                     </span>
                                 )
-                            ))}
+                            )
+                        )
+                    )}
                 </td>
-                <td className="col-span-1 px-6 py-3 text-start ">
-                    {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalPeriodAmount) || ''}</span>
-                    ) :
-                        <span
-                            onClick={() => {
-                                setEditingCell(category.id);
-                                setEditValue({ field: 'amount', value: category.amount || '' });
-                            }}
-                            className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
-                        >
-                            {formatNumber(category.periodAmount) || ''}
+
+                <td className="px-2 py-2 w-56 h-6 ">
+                    {category.level === 0 ? (
+                        // Main category: Display net total for the category
+                        <span className="font-bold text-black">
+                            {formatNumber(netTotals[category.categoryName]?.netTotalPeriodAmount) || ''}
                         </span>
+                    ) : (
+                        // Non-main categories: Keep the original logic
+                        category.isFromPeriod ? (
+                            <span>{formatNumber(totalAmount) || ''}</span>
+                        ) : hasSubcategories ?
+                            <span
+                                className={`font-bold flex items-center gap-1 ${category.categoryName === 'Cash Inflows' ? 'text-green-600' :
+                                    category.categoryName === 'Cash Outflows' ? 'text-red-600' : ''}`}>
+                                {formatNumber(totalPeriodAmount) || ''}
+                                {category.categoryName === 'Cash Inflows' && (
+                                    <FaLongArrowAltUp />
+                                )}
+                                {category.categoryName === 'Cash Outflows' && (
+                                    <FaLongArrowAltDown />
+                                )}
 
-                    }
+                            </span>
 
-
+                            : (
+                                <span
+                                    onClick={() => {
+                                        setEditingCell(category.id);
+                                        setEditValue({ field: 'amount', value: category.amount || '' });
+                                    }}
+                                    className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                >
+                                    {formatNumber(category.periodAmount) || ''}
+                                </span>
+                            )
+                    )}
                 </td>
+
 
             </tr >
         );
@@ -1190,52 +1287,52 @@ export default function CashflowsDetails() {
                     <div className="flex justify-between w-full">
                         <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentCashflow?.description || ""}</h1>
                         <div class="flex space-x-4">
-                        <AddButton
-                            onClick={() => setShowModal(true)}
-                            label={"ADD CATEGORY"}
-                        />
-                    
-                        <AddButton
-                            onClick={() => setShowModalPeriod(true)}
-                            label={"ADD PERIOD"}
-                        />
+                            <AddButton
+                                onClick={() => setShowModal(true)}
+                                label={"ADD CATEGORY"}
+                            />
+
+                            <AddButton
+                                onClick={() => setShowModalPeriod(true)}
+                                label={"ADD PERIOD"}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
             <div className="px-6 py-8">
-                <div className="relative overflow-auto shadow-lg sm:rounded-lg bg-white">
-                    <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
+                <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
+                    <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
-                                <tr className="grid grid-cols-5 gap-1 px-6 mr-4">
-                                    <th scope="col" className="py-3 col-span-3 text-start">Account Description</th>
-                                    <th scope="col" className="py-3 ml-6 col-span-1 text-start">{currentCashflow?.year || ''}</th>
-                                    <th scope="col" className="py-3 ml-6 col-span-1 text-start">{selectedYear || ''}</th>
+                                <tr>
+                                    <th scope="col" className="py-4 px-6 text-start">Account Description</th>
+                                    <th scope="col" className="py-4 ml-6 w-56 text-start">{currentCashflow?.year || ''}</th>
+                                    <th scope="col" className="py-4 ml-6 w-56  text-start">{selectedYear || ''}</th>
 
                                 </tr>
                             </thead>
-
                         </table>
-                        <div className=' w-full overflow-y-scroll h-[calc(100vh-280px)]'>
-                            <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
-                                <tbody>
-                                    <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                        {visibleCategories.map((category) => (
-                                            <SortableRow
-                                                key={category.id}
-                                                category={category}
-                                                handleRightClick={handleRightClick}
-                                            />
-                                        ))}
-                                    </SortableContext>
-                                </tbody>
-                            </table>
-                        </div>
-
-                    </DndContext>
-                </div>
+                    </div>
+                    <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
+                        <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
+                            <tbody>
+                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                    {visibleCategories.map((category) => (
+                                        <SortableRow
+                                            key={category.id}
+                                            category={category}
+                                            handleRightClick={handleRightClick}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </tbody>
+                        </table>
+                    </div>
+                </DndContext>
             </div>
+
+
 
             <Modal isVisible={showModal}>
                 <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
@@ -1311,47 +1408,49 @@ export default function CashflowsDetails() {
                 </div>
             </Modal>
             {/* Right-click context modal */}
-            {showRightClickModal && (
-                <div
-                    id="user-modal-overlay"
-                    className="fixed inset-0 flex justify-center items-center"
-                    onClick={closeModalOnOutsideClick}
-                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
-                >
+            {
+                showRightClickModal && (
                     <div
-                        style={{ top: modalPosition.y, left: modalPosition.x }}
-                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                        id="user-modal-overlay"
+                        className="fixed inset-0 flex justify-center items-center z-20"
+                        onClick={closeModalOnOutsideClick}
+                        onContextMenu={(event) => closeModalOnOutsideClick(event)}
                     >
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewRow}
+                        <div
+                            style={{ top: modalPosition.y, left: modalPosition.x }}
+                            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
                         >
-                            Add Row Below
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewParentCategory}
-                        >
-                            Add Parent Category
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewSubcategory}
-                        >
-                            Add Subcategory
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewRow}
+                            >
+                                Add Row Below
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewParentCategory}
+                            >
+                                Add Parent Category
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewSubcategory}
+                            >
+                                Add Subcategory
+                            </button>
 
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={handleDeleteRow}
-                        >
-                            Delete Row
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={handleDeleteRow}
+                            >
+                                Delete Row
+                            </button>
 
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </Fragment>
+        </Fragment >
     );
 }
