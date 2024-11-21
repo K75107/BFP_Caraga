@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, getDoc, query,where } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, getDoc, query, where } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -42,6 +42,12 @@ export default function ChangesInEquityDetails() {
     const [periodTotal, setPeriodTotal] = useState(0);
 
     const [cEquityPeriod, setcEquityPeriod] = useState('');
+
+    //Merge Data
+    const [cEquityMergeData, setcEquityMergeData] = useState([]);
+
+
+
 
     // Function to recursively calculate the total for a main category and its subcategories
     const calculateCategoryTotal = (categoryId) => {
@@ -85,13 +91,13 @@ export default function ChangesInEquityDetails() {
             try {
                 const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
                 const cEquityDoc = await getDoc(cEquityDocRef);
-    
+
                 if (cEquityDoc.exists()) {
                     const data = cEquityDoc.data();
-                    
+
                     // Reference to the incomestatement document using the incomestatementID from cEquityDoc data
                     const incomestatementDocRef = doc(db, "incomestatement", data.incomestatementID);
-    
+
                     // Fetch totalSurplusDeficit from incomestatement
                     const unsubscribe = onSnapshot(incomestatementDocRef, (docSnapshot) => {
                         if (docSnapshot.exists()) {
@@ -103,7 +109,7 @@ export default function ChangesInEquityDetails() {
                             console.warn("No such incomestatement document!");
                         }
                     });
-    
+
                     return () => unsubscribe(); // Cleanup the listener on unmount
                 } else {
                     console.error("ChangesInEquity document does not exist.");
@@ -112,108 +118,11 @@ export default function ChangesInEquityDetails() {
                 console.error("Error fetching ChangesInEquity or incomestatement data:", error);
             }
         };
-    
+
         fetchChangesInEquity();
     }, [cEquityId]);
-    
-    
 
-    useEffect(() => {
-        const cEquityCollectionRef = collection(db, "ChangesInEquity", cEquityId, "categories");
 
-        const fetchAndInitializeCategories = async () => {
-            try {
-                const querySnapshot = await getDocs(cEquityCollectionRef);
-                const data = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setcEquityCategoriesData(sortCategoriesRecursively(data));
-
-                // Initialize data if empty
-                if (data.length === 0) {
-                    const batch = writeBatch(cEquityCollectionRef.firestore);
-                    let position = 1;
-
-                    // Function to add a main category
-                    const addMainCategory = (name) => {
-                        const ref = doc(cEquityCollectionRef);
-                        batch.set(ref, {
-                            categoryName: name,
-                            parentID: null,
-                            created_at: new Date(),
-                            position: position++,
-                        });
-                        return ref.id;
-                    };
-
-                    // Function to add a main category
-                    const addSurplusDeficit = (name) => {
-                        const ref = doc(cEquityCollectionRef);
-                        batch.set(ref, {
-                            amount: totalSurplusDeficit,
-                            categoryName: name,
-                            parentID: null,
-                            created_at: new Date(),
-                            position: position++,
-                        });
-                        return ref.id;
-                    };
-
-                    // Function to add inflows/outflows with blank rows
-                    const addSubcategoryWithBlanks = (name, parentId) => {
-                        const ref = doc(cEquityCollectionRef);
-                        batch.set(ref, {
-                            categoryName: name,
-                            parentID: parentId,
-                            created_at: new Date(),
-                            position: position++,
-                        });
-
-                        // Add two blank rows
-                        batch.set(doc(cEquityCollectionRef), {
-                            categoryName: '',
-                            parentID: ref.id,
-                            created_at: new Date(),
-                            position: position++,
-                        });
-                        batch.set(doc(cEquityCollectionRef), {
-                            categoryName: '',
-                            parentID: ref.id,
-                            created_at: new Date(),
-                            position: position++,
-                        });
-                    };
-
-                    // Add categories and subcategories
-                    // const operatingId = addMainCategory('Operating Activities');
-                    // addSubcategoryWithBlanks('Cash Inflows', operatingId);
-                    // addSubcategoryWithBlanks('Cash Outflows', operatingId);
-
-                    // const investingId = addMainCategory('Investing Activities');
-                    // addSubcategoryWithBlanks('Cash Inflows', investingId);
-                    // addSubcategoryWithBlanks('Cash Outflows', investingId);
-
-                    // const financingId = addMainCategory('Financing Activities');
-                    // addSubcategoryWithBlanks('Cash Inflows', financingId);
-                    // addSubcategoryWithBlanks('Cash Outflows', financingId);
-
-                    // Additional standalone categories
-                    // addMainCategory('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
-                    // addMainCategory('Cash and Cash Equivalents at the Beginning of the Period');
-                    // addMainCategory('Cash and Cash Equivalents at the End of the Period');
-
-                    // Commit batch
-                    await batch.commit();
-                }
-            } catch (error) {
-                console.error("Error fetching and sorting categories:", error);
-                setIsError(true);
-            }
-        };
-
-        fetchAndInitializeCategories();
-    }, [cEquityId]);
 
     // Fetch categories data only once initially to reduce continuous reads
     useEffect(() => {
@@ -287,9 +196,8 @@ export default function ChangesInEquityDetails() {
                         id: doc.id,
                         ...doc.data(),
                     }));
+                    setPeriodData(sortCategoriesRecursively(data));
 
-                    // setcEquityCategoriesData(sortCategoriesRecursively(data));
-                    console.log("selected period categories", data);
                 } catch (error) {
                     console.error("Error fetching and sorting categories:", error);
                     setIsError(true);
@@ -298,6 +206,75 @@ export default function ChangesInEquityDetails() {
             return () => unsubscribe();
         }
     }, [periodId])
+
+    useEffect(() => {
+        if (Array.isArray(cEquityCategoriesData) && periodData.length > 0) {
+            try {
+                const mergedMap = new Map();
+
+                // Add current category data to the map
+                cEquityCategoriesData.forEach((item) => {
+                    mergedMap.set(item.id, {
+                        ...item,
+                        periodAmount: 0, // Initialize periodAmount for current data
+                    });
+                });
+
+                // Merge or add period data if it exists
+                if (Array.isArray(periodData) && periodData.length > 0) {
+                    periodData.forEach((item) => {
+                        if (
+                            Array.from(mergedMap.values()).some(
+                                (existingItem) =>
+                                    existingItem.parentID === item.parentID &&
+                                    existingItem.categoryName === item.categoryName
+                            )
+                        ) {
+                            // If match found, update periodAmount
+                            const matchingItem = Array.from(mergedMap.values()).find(
+                                (existingItem) =>
+                                    existingItem.parentID === item.parentID &&
+                                    existingItem.categoryName === item.categoryName
+                            );
+                            if (matchingItem) {
+                                mergedMap.set(matchingItem.id, {
+                                    ...matchingItem,
+                                    periodAmount: item.amount, // Add period data to periodAmount
+                                });
+                            }
+                        } else {
+                            if (item.categoryName) {
+                                // Calculate position for the new item
+                                const siblingPositions = Array.from(mergedMap.values())
+                                    .filter((cat) => cat.parentID === item.parentID)
+                                    .map((cat) => cat.position);
+                                const newPosition =
+                                    siblingPositions.length > 0
+                                        ? Math.max(...siblingPositions) + 1
+                                        : 1; // Default position if no siblings exist
+
+                                mergedMap.set(item.id, {
+                                    ...item,
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                    position: newPosition, // Assign calculated position
+                                    isFromPeriod: true,
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Convert the merged map back to an array
+                const mergedData = Array.from(mergedMap.values());
+                console.log(mergedData);
+                // Sort and recursively build hierarchy
+                setcEquityMergeData(sortCategoriesRecursively(mergedData));
+            } catch (error) {
+                console.error("Error during merge: ", error);
+            }
+        }
+    }, [cEquityCategoriesData, periodData]);
 
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
@@ -1031,38 +1008,38 @@ export default function ChangesInEquityDetails() {
 
     const handleDeleteRow = async () => {
         if (!selectedRowData) return;
-    
+
         try {
             const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
             const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
-    
+
             const getAllSubcategories = async (parentId) => {
                 const subcategories = [];
                 const subcategoriesQuery = query(categoriesCollectionRef, where('parentID', '==', parentId));
                 const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-    
+
                 for (const subcategoryDoc of subcategoriesSnapshot.docs) {
                     subcategories.push(subcategoryDoc);
                     const nestedSubcategories = await getAllSubcategories(subcategoryDoc.id);
                     subcategories.push(...nestedSubcategories);
                 }
-    
+
                 return subcategories;
             };
-    
+
             const subcategoriesToDelete = await getAllSubcategories(selectedRowData.id);
-    
+
             const batch = writeBatch(db);
-    
+
             const categoryDocRef = doc(categoriesCollectionRef, selectedRowData.id);
             batch.delete(categoryDocRef);
-    
+
             subcategoriesToDelete.forEach((subcategoryDoc) => {
                 batch.delete(subcategoryDoc.ref);
             });
-    
+
             await batch.commit();
-    
+
             setShowRightClickModal(false);
         } catch (error) {
             console.log("Error deleting document:", error);
@@ -1128,52 +1105,52 @@ export default function ChangesInEquityDetails() {
                     </ul>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
-                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                    <th scope="col" className="w-[20px]"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {/* Sortable rows for other categories */}
-                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                    {visibleCategories.map((category) => (
-                        <SortableRow
-                            key={category.id}
-                            category={category}
-                            handleRightClick={handleRightClick}
-                        />
-                    ))}
-                </SortableContext>
-            </tbody>
-            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
-                {/* Fixed row for Surplus/Deficit */}
-                <tr className="border-b">
-                    <td className="px-2 py-3 font-bold text-gray-700">
-                        Surplus/(Deficit) for the period
-                    </td>
-                    <td className="px-2 py-3 font-bold text-gray-700">
-                    {totalSurplusDeficit?.toLocaleString() || '-'}
-                    </td>
-                    <td></td>
-                    <td></td>
+                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
+                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
+                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
+                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
+                                    <th scope="col" className="w-[20px]"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {/* Sortable rows for other categories */}
+                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                    {visibleCategories.map((category) => (
+                                        <SortableRow
+                                            key={category.id}
+                                            category={category}
+                                            handleRightClick={handleRightClick}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </tbody>
+                            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
+                                {/* Fixed row for Surplus/Deficit */}
+                                <tr className="border-b">
+                                    <td className="px-2 py-3 font-bold text-gray-700">
+                                        Surplus/(Deficit) for the period
+                                    </td>
+                                    <td className="px-2 py-3 font-bold text-gray-700">
+                                        {totalSurplusDeficit?.toLocaleString() || '-'}
+                                    </td>
+                                    <td></td>
+                                    <td></td>
 
-                </tr>
-                        <tr>
-                            <td className="px-2 py-3">Balance</td>
-                            <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-        </table>
-    </div>
-</DndContext>
+                                </tr>
+                                <tr>
+                                    <td className="px-2 py-3">Balance</td>
+                                    <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </DndContext>
 
             </div>
 

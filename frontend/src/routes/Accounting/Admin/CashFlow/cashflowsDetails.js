@@ -292,7 +292,7 @@ export default function CashflowsDetails() {
                         id: doc.id,
                         ...doc.data(),
                     }));
-
+                    console.log("selecedte",data)
                     setPeriodDataCategories(sortCategoriesRecursively(data));
 
                 } catch (error) {
