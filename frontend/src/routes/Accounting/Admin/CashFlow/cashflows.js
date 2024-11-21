@@ -122,20 +122,21 @@ export default function Cashflows() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Cashflow Statement Deleted'} icon={'wrong'} />
                 </div>
             )}
+            <div className="px-6">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
 
-            <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
-                <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
-
-                    <div class="flex space-x-4">
-                        <AddButton
-                            onClick={() => setShowModal(true)}
-                            label="GENERATE CASHFLOW"
-                        />
+                        <div class="flex space-x-4">
+                            <AddButton
+                                onClick={() => setShowModal(true)}
+                                label="GENERATE CASHFLOW"
+                            />
+                        </div>
                     </div>
-
                 </div>
-                <hr className="border-t border-[#7694D4] my-2 mb-4" />
+            </div>
+            <div className="px-6 py-8">
                 <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                         <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
@@ -148,7 +149,7 @@ export default function Cashflows() {
                         <tbody>
                             {cashflowData.map((cashflow) => (
                                 <tr
-                                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                    className="bg-white border-b cursor-pointer"
                                     key={cashflow.id}
                                     onClick={() => navigate(`/main/cashflowStatement/cashflows/${cashflow.id}`)}
                                 >
