@@ -968,7 +968,7 @@ export default function FireStationDepositsUnsubmitted() {
 
 
             <div className="py-2 ">
-              <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
+              
 
             </div>
 

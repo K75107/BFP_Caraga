@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../../../../config/firebase-config";
-import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where, setDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, getDocs, query, where, setDoc, getDoc } from "firebase/firestore";
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
@@ -10,10 +10,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
-import { current } from "@reduxjs/toolkit";
+import AddButton from "../../../../components/addButton";
 import ExportButton from "../../../../components/exportButton";
-
-
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdKeyboardArrowDown } from "react-icons/md";
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
     const [showModalPeriod, setShowModalPeriod] = useState(false);
@@ -38,12 +38,16 @@ export default function CashflowsDetails() {
     const [periodId, setPeriodId] = useState(null);
 
     //Merge Data
-
     const [cashflowMergeData, setCashflowMergeData] = useState([]);
+
+    //Current Year
+    const [currentCashflow, setCurrentCashflow] = useState();
+
+    //Selected Year
+    const [selectedYear, setSelectedYear] = useState();
 
     useEffect(() => {
         const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
-
         const fetchAndInitializeCategories = async () => {
             try {
                 const querySnapshot = await getDocs(cashflowsCollectionRef);
@@ -60,7 +64,7 @@ export default function CashflowsDetails() {
 
                     // Create a stable id for main categories
                     const createCategoryId = (name) => {
-                        return name.toLowerCase().replace(/\s+/g, "_"); // Example: "Operating Activities" -> "operating_activities"
+                        return name.toLowerCase().replace(/\s+/g, "_");
                     };
 
                     // Function to add a main category
@@ -73,25 +77,27 @@ export default function CashflowsDetails() {
                             created_at: new Date(),
                             position: position++,
                             amount: 0,
+                            isLocked: true,
                         });
                         return categoryId;
                     };
 
-                    // Create a stable id for subcategories (Cash Inflows and Cash Outflows)
+                    // Cash Inflows and Cash Outflows
                     const createSubcategoryId = (name, parentId) => {
                         return `${name.toLowerCase().replace(/\s+/g, "_")}_${parentId}`;
                     };
 
-                    // Function to add inflows/outflows with blank rows
+                    // Blank Rows
                     const addSubcategoryWithBlanks = (name, parentId) => {
-                        const subcategoryId = createSubcategoryId(name, parentId);  // Generate stable id for subcategory
-                        const ref = doc(cashflowsCollectionRef, subcategoryId); // Use subcategoryId as document ID
+                        const subcategoryId = createSubcategoryId(name, parentId);
+                        const ref = doc(cashflowsCollectionRef, subcategoryId);
                         batch.set(ref, {
                             categoryName: name,
                             parentID: parentId,
                             created_at: new Date(),
                             position: position++,
-                            amount: 0
+                            amount: 0,
+                            isLocked: true,
                         });
 
                         // Add two blank rows
@@ -206,6 +212,59 @@ export default function CashflowsDetails() {
         };
     }, [cashflowId]);
 
+
+    //Current Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "cashflow", cashflowId);
+                const cashflowDoc = await getDoc(selectedCashflowRef);
+
+                if (cashflowDoc.exists()) {
+                    const data = cashflowDoc.data();
+                    setCurrentCashflow(data);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (cashflowId) {
+            fetchYear();
+        }
+
+    }, [cashflowId]);
+
+    //Selected Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "cashflow", periodId);
+                const cashflowDoc = await getDoc(selectedCashflowRef);
+
+                if (cashflowDoc.exists()) {
+
+                    const year = cashflowDoc.data().year;
+                    setSelectedYear(year);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (periodId) {
+            fetchYear();
+        }
+
+    }, [periodId]);
+
+
     //Period Data
     useEffect(() => {
         if (periodId) {
@@ -230,79 +289,73 @@ export default function CashflowsDetails() {
     }, [periodId]);
 
     useEffect(() => {
-        const mergeAndSyncData = async () => {
-            if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
-                try {
-                    const mergedMap = new Map();
-                    const batch = writeBatch(db); // Initialize Firestore batch
+        if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
+            try {
+                const mergedMap = new Map();
 
-                    // Helper function to generate a unique key for each item
-                    const getUniqueKey = (item) => `${item.parentID || 'root'}_${item.categoryName || 'no_name'}`;
-
-                    // Add current category data to the map
-                    cashflowCategoriesData.forEach((item) => {
-                        const uniqueKey = getUniqueKey(item);
-                        mergedMap.set(uniqueKey, {
-                            ...item,
-                            periodAmount: 0, // Initialize periodAmount for current data
-                        });
+                // Add current category data to the map
+                cashflowCategoriesData.forEach((item) => {
+                    mergedMap.set(item.id, {
+                        ...item,
+                        periodAmount: 0, // Initialize periodAmount for current data
                     });
+                });
 
-                    // Merge or add period data if it exists
-                    if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
-                        periodDataCategories.forEach((item) => {
-                            const uniqueKey = getUniqueKey(item);
-                            if (mergedMap.has(uniqueKey)) {
-                                // If match found, add periodAmount
-                                const existingItem = mergedMap.get(uniqueKey);
-                                mergedMap.set(uniqueKey, {
-                                    ...existingItem,
+                // Merge or add period data if it exists
+                if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
+                    periodDataCategories.forEach((item) => {
+                        if (
+                            Array.from(mergedMap.values()).some(
+                                (existingItem) =>
+                                    existingItem.parentID === item.parentID &&
+                                    existingItem.categoryName === item.categoryName
+                            )
+                        ) {
+                            // If match found, update periodAmount
+                            const matchingItem = Array.from(mergedMap.values()).find(
+                                (existingItem) =>
+                                    existingItem.parentID === item.parentID &&
+                                    existingItem.categoryName === item.categoryName
+                            );
+                            if (matchingItem) {
+                                mergedMap.set(matchingItem.id, {
+                                    ...matchingItem,
                                     periodAmount: item.amount, // Add period data to periodAmount
                                 });
-                            } else {
-                                // Add unmatched data to Firestore
-                                const newDocRef = doc(collection(db, "cashflow", cashflowId, "categories"));
-                                batch.set(newDocRef, {
-                                    ...item,
-                                    id: newDocRef.id, // Explicitly set the Firestore ID
-                                    amount: 0, // No current amount
-                                    periodAmount: item.amount, // Assign period amount
-                                    created_at: new Date(),
-                                });
-
-                                // Add unmatched data to the map with the same ID
-                                mergedMap.set(uniqueKey, {
-                                    ...item,
-                                    id: newDocRef.id, // Use the same Firestore ID
-                                    amount: 0, // No current amount
-                                    periodAmount: item.amount, // Assign period amount
-                                });
-
                             }
-                        });
-                    }
+                        } else {
+                            if (item.categoryName) {
+                                // Calculate position for the new item
+                                const siblingPositions = Array.from(mergedMap.values())
+                                    .filter((cat) => cat.parentID === item.parentID)
+                                    .map((cat) => cat.position);
+                                const newPosition =
+                                    siblingPositions.length > 0
+                                        ? Math.max(...siblingPositions) + 1
+                                        : 1; // Default position if no siblings exist
 
-                    // Commit batch to Firestore
-                    await batch.commit();
-
-                    // Convert the merged map back to an array
-                    const mergedData = Array.from(mergedMap.values());
-                    console.log("merged Data", mergedData)
-                    // Update state or handle the merged data
-                    setCashflowMergeData(sortCategoriesRecursively(mergedData));
-                } catch (error) {
-                    console.error("Error during merge: ", error);
+                                mergedMap.set(item.id, {
+                                    ...item,
+                                    amount: 0, // No current amount
+                                    periodAmount: item.amount, // Assign period amount
+                                    position: newPosition, // Assign calculated position
+                                    isFromPeriod: true,
+                                });
+                            }
+                        }
+                    });
                 }
+
+                // Convert the merged map back to an array
+                const mergedData = Array.from(mergedMap.values());
+                console.log(mergedData);
+                // Sort and recursively build hierarchy
+                setCashflowMergeData(sortCategoriesRecursively(mergedData));
+            } catch (error) {
+                console.error("Error during merge: ", error);
             }
-        };
-
-        mergeAndSyncData();
+        }
     }, [cashflowCategoriesData, periodDataCategories]);
-
-
-
-
-
 
 
 
@@ -316,7 +369,6 @@ export default function CashflowsDetails() {
             ...sortCategoriesRecursively(categories, category.id, level + 1),
         ]);
     };
-
 
 
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -352,7 +404,6 @@ export default function CashflowsDetails() {
     };
 
 
-
     // Function to get visible categories based on the expanded state
     const getVisibleCategories = () => {
         return cashflowMergeData.filter((category) => {
@@ -371,7 +422,6 @@ export default function CashflowsDetails() {
         });
     };
 
-    // Use getVisibleCategories in your rendering logic
     const visibleCategories = getVisibleCategories();
 
     const addNewCategory = async () => {
@@ -561,22 +611,6 @@ export default function CashflowsDetails() {
     };
 
 
-    function getTotalAmountForCategory(categoryId, data) {
-        // Start with the amount of the current category
-        const currentCategory = data.find(cat => cat.id === categoryId);
-        let totalAmount = currentCategory ? currentCategory.amount || 0 : 0;
-
-        // Find all subcategories with the parentID matching the current category's id
-        const subcategories = data.filter(subCat => subCat.parentID === categoryId);
-
-        // Recursively add up the amount for each subcategory
-        subcategories.forEach(subCat => {
-            totalAmount += getTotalAmountForCategory(subCat.id, data);
-        });
-
-        return totalAmount;
-    }
-
     function getLeafCategoryAmountTotal(categoryId, data) {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
@@ -626,32 +660,36 @@ export default function CashflowsDetails() {
         const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cashflowMergeData);
 
 
-
-
-
-
         return (
             <tr
                 ref={setNodeRef}
                 {...attributes}
                 style={style}
-                className="border-b"
+                className={`border-b mx-6 grid grid-cols-5 gap-1 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
-                    className="px-2 w-full py-3 bg-white dark:bg-gray-800 flex items-center "
+                    className="col-span-3 py-1 flex items-center px-6"
                     style={{ paddingLeft: `${45 * category.level}px` }}
                 >
-                    {/* Conditionally render Drag Icon */}
-                    {category.categoryName !== 'Cash Inflows' && category.categoryName !== 'Cash Outflows' && (
-                        <span {...listeners} className="cursor-grab mr-2 text-gray-500">
-                            ☰
-                        </span>
-                    )}
+
+                    {category.categoryName !== 'Cash Inflows' &&
+                        category.categoryName !== 'Cash Outflows' &&
+                        !category.isLocked &&
+                        !category.isFromPeriod && (
+                            <span {...listeners} className="cursor-grab mr-2 text-gray-500">
+                                ☰
+                            </span>
+                        )}
+
 
                     {/* Category Name */}
                     <span>
-                        {editingCell === category.id && editValue.field === 'categoryName' ? (
+                        {category.isFromPeriod ? (
+                            <span className="block px-1 py-1">
+                                {category.categoryName || '-'}
+                            </span>
+                        ) : editingCell === category.id && editValue.field === 'categoryName' ? (
                             <>
                                 {/* Hidden span to measure the text width */}
                                 <span
@@ -663,81 +701,105 @@ export default function CashflowsDetails() {
                                 </span>
                                 <input
                                     type="text"
-                                    className="border w-auto text-[14px] focus:outline-none px-2 py-1"
+                                    className="border w-auto text-[14px] focus:outline-none px-2 py-2"
                                     value={editValue.value}
                                     style={{ width: inputWidth }}
-                                    onChange={(e) => setEditValue({ field: 'categoryName', value: e.target.value })}
-                                    onBlur={() => handleCellChange(category.id, 'categoryName', editValue.value)}
+                                    onChange={(e) =>
+                                        setEditValue({ field: 'categoryName', value: e.target.value })
+                                    }
+                                    onBlur={() =>
+                                        handleCellChange(category.id, 'categoryName', editValue.value)
+                                    }
                                     autoFocus
                                 />
                             </>
                         ) : (
                             <span
                                 onClick={() => {
-                                    if (category.categoryName !== 'Cash Inflows' && category.categoryName !== 'Cash Outflows') {  // Make only other categories clickable
+                                    if (
+                                        category.categoryName !== 'Cash Inflows' &&
+                                        category.categoryName !== 'Cash Outflows'
+                                    ) {
+                                        // Make only other categories clickable
                                         setEditingCell(category.id);
-                                        setEditValue({ field: 'categoryName', value: category.categoryName || '' });
+                                        setEditValue({
+                                            field: 'categoryName',
+                                            value: category.categoryName || '',
+                                        });
                                     }
                                 }}
-                                className={`block px-1 py-1 ${category.categoryName === 'Cash Inflows' || category.categoryName === 'Cash Outflows' ? '' : 'hover:bg-gray-100'}`}
+                                className={`px-6 block py-1 ${category.categoryName === 'Cash Inflows' ||
+                                    category.categoryName === 'Cash Outflows'
+                                    ? ''
+                                    : 'hover:bg-gray-100'
+                                    }`}
                             >
                                 {category.categoryName || '-'}
                             </span>
                         )}
+
                     </span>
 
-
-                    {/* Toggle Button at the end */}
                     {(category.level >= 0 && cashflowMergeData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
-                            className="mr-2 text-blue-500 px-5"
+                            className="mr-2  px-5"
                         >
-                            {expandedCategories[category.id] ? "▾" : "▸"}
+                             {expandedCategories[category.id] ?  <MdKeyboardArrowDown size={18} style={{ display: "inline" }} /> :  <MdKeyboardArrowRight size={18} style={{ display: "inline" }} />}
                         </button>
                     )}
 
                 </td>
 
-                <td className="px-2 py-2 w-56 h-6 ">
-                    {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalAmount) || ''}</span>
-                    ) : (
-                        editingCell === category.id && editValue.field === 'amount' ? (
-                            <input
-                                type="number"
-                                className="border focus:outline-none w-11/12 h-8 px-2 py-1 text-start"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
-                                onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
-                                autoFocus
-                            />
-                        ) : (
-                            <span
-                                onClick={() => {
-                                    setEditingCell(category.id);
-                                    setEditValue({ field: 'amount', value: category.amount || '' });
-                                }}
-                                className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
-                            >
-                                {formatNumber(category.amount) || ''}
-                            </span>
-                        )
-                    )}
+                <td className="col-span-1 py-1 flex items-center px-6">
+                    {category.isFromPeriod ?
+                        <span>{formatNumber(totalAmount) || ''}</span> :
+                        (
+                            hasSubcategories ? (
+                                <span className="font-bold">{formatNumber(totalAmount) || ''}</span>
+                            ) : (
+                                editingCell === category.id && editValue.field === 'amount' ? (
+                                    <input
+                                        type="number"
+                                        className="border focus:outline-none w-11/12 h-8 px-2 py-1 text-start"
+                                        value={editValue.value}
+                                        onChange={(e) => setEditValue({ field: 'amount', value: e.target.value })}
+                                        onBlur={() => handleCellChange(category.id, 'amount', editValue.value)}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <span
+                                        onClick={() => {
+                                            setEditingCell(category.id);
+                                            setEditValue({ field: 'amount', value: category.amount || '' });
+                                        }}
+                                        className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                                    >
+                                        {formatNumber(category.amount) || ''}
+                                    </span>
+                                )
+                            ))}
                 </td>
-                <td className="px-2 py-3 text-center">
+                <td className="col-span-1 px-6 py-3 text-start ">
                     {hasSubcategories ? (
                         <span className="font-bold">{formatNumber(totalPeriodAmount) || ''}</span>
-                    ) : (
+                    ) :
                         <span
+                            onClick={() => {
+                                setEditingCell(category.id);
+                                setEditValue({ field: 'amount', value: category.amount || '' });
+                            }}
                             className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
                         >
                             {formatNumber(category.periodAmount) || ''}
                         </span>
-                    )
+
                     }
+
+
                 </td>
-            </tr>
+
+            </tr >
         );
     }
 
@@ -1123,58 +1185,56 @@ export default function CashflowsDetails() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Error occurred'} icon={'wrong'} />
                 </div>
             )}
-
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
-                <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
-                </div>
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
-                        <li className="ml-auto">
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
-                            >
-                                + ADD CATEGORY
-                            </button>
-                            <button
-                                onClick={() => setShowModalPeriod(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
-                            >
-                                + ADD PERIOD
-                            </button>
-                        </li>
-                        <ExportButton
-                            label="EXPORT"
+            <div className="px-6">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentCashflow?.description || ""}</h1>
+                        <div class="flex space-x-4">
+                        <AddButton
+                            onClick={() => setShowModal(true)}
+                            label={"ADD CATEGORY"}
                         />
-                    </ul>
+                    
+                        <AddButton
+                            onClick={() => setShowModalPeriod(true)}
+                            label={"ADD PERIOD"}
+                        />
+                        </div>
+                    </div>
                 </div>
-                <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+            </div>
+            <div className="px-6 py-8">
+                <div className="relative overflow-auto shadow-lg sm:rounded-lg bg-white">
+                    <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                                <tr>
-                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                                    <th scope="col" className="w-[20px]"></th>
+                            <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
+                                <tr className="grid grid-cols-5 gap-1 px-6 mr-4">
+                                    <th scope="col" className="py-3 col-span-3 text-start">Account Description</th>
+                                    <th scope="col" className="py-3 ml-6 col-span-1 text-start">{currentCashflow?.year || ''}</th>
+                                    <th scope="col" className="py-3 ml-6 col-span-1 text-start">{selectedYear || ''}</th>
+
                                 </tr>
                             </thead>
-                            <tbody>
-                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                    {visibleCategories.map((category) => (
-                                        <SortableRow
-                                            key={category.id}
-                                            category={category}
-                                            handleRightClick={handleRightClick}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </tbody>
+
                         </table>
-                    </div>
-                </DndContext>
+                        <div className=' w-full overflow-y-scroll h-[calc(100vh-280px)]'>
+                            <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
+                                <tbody>
+                                    <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                        {visibleCategories.map((category) => (
+                                            <SortableRow
+                                                key={category.id}
+                                                category={category}
+                                                handleRightClick={handleRightClick}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </DndContext>
+                </div>
             </div>
 
             <Modal isVisible={showModal}>

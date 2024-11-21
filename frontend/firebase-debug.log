@@ -1,0 +1,51 @@
+[debug] [2024-11-21T00:10:10.556Z] ----------------------------------------------------------------------
+[debug] [2024-11-21T00:10:10.559Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Kent\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start
+[debug] [2024-11-21T00:10:10.560Z] CLI Version:   13.26.0
+[debug] [2024-11-21T00:10:10.560Z] Platform:      win32
+[debug] [2024-11-21T00:10:10.560Z] Node Version:  v20.18.0
+[debug] [2024-11-21T00:10:10.560Z] Time:          Thu Nov 21 2024 08:10:10 GMT+0800 (Taipei Standard Time)
+[debug] [2024-11-21T00:10:10.560Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-11-21T00:10:10.700Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-11-21T00:10:10.701Z] > authorizing via signed-in user (divinagracia.kent123@gmail.com)
+[debug] [2024-11-21T00:10:10.884Z] java version "23.0.1" 2024-10-15
+
+[debug] [2024-11-21T00:10:10.885Z] Java(TM) SE Runtime Environment (build 23.0.1+11-39)
+Java HotSpot(TM) 64-Bit Server VM (build 23.0.1+11-39, mixed mode, sharing)
+
+[debug] [2024-11-21T00:10:10.908Z] Parsed Java major version: 23
+[info] i  emulators: Starting emulators: auth, firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: auth, firestore"}}
+[debug] [2024-11-21T00:10:10.925Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2024-11-21T00:10:10.925Z] [auth] Authentication Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2024-11-21T00:10:10.926Z] [firestore] Firestore Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2024-11-21T00:10:10.926Z] [firestore.websocket] websocket server for firestore only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2024-11-21T00:10:10.926Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"auth":[{"address":"127.0.0.1","family":"IPv4","port":8000}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8200}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[warn] !  emulators: It seems that you are running multiple instances of the emulator suite for project accountingsystem-a2485. This may result in unexpected behavior. 
+[debug] [2024-11-21T00:10:10.933Z] [hub] writing locator at C:\Users\Kent\AppData\Local\Temp\hub-accountingsystem-a2485.json
+[warn] !  firestore: Cloud Firestore Emulator does not support multiple databases yet. {"metadata":{"emulator":{"name":"firestore"},"message":"Cloud Firestore Emulator does not support multiple databases yet."}}
+[warn] !  firestore: Did not find a Cloud Firestore rules file specified in a firebase.json config file. {"metadata":{"emulator":{"name":"firestore"},"message":"Did not find a Cloud Firestore rules file specified in a firebase.json config file."}}
+[warn] !  firestore: The emulator will default to allowing all reads and writes. Learn more about this option: https://firebase.google.com/docs/emulator-suite/install_and_configure#security_rules_configuration. {"metadata":{"emulator":{"name":"firestore"},"message":"The emulator will default to allowing all reads and writes. Learn more about this option: https://firebase.google.com/docs/emulator-suite/install_and_configure#security_rules_configuration."}}
+[debug] [2024-11-21T00:10:10.946Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2024-11-21T00:10:10.946Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2024-11-21T00:10:10.947Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","C:\\Users\\Kent\\.cache\\firebase\\emulators\\cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8200,"--websocket_port",9150,"--project_id","accountingsystem-a2485","--single_project_mode",true],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8200} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"C:\\\\Users\\\\Kent\\\\.cache\\\\firebase\\\\emulators\\\\cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8200,\"--websocket_port\",9150,\"--project_id\",\"accountingsystem-a2485\",\"--single_project_mode\",true],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8200}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to \u001b[1mfirestore-debug.log\u001b[22m"}}
+[info] +  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[debug] [2024-11-21T00:10:21.718Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────────┬────────────────┬─────────────────────────────────┐
+│ Emulator       │ Host:Port      │ View in Emulator UI             │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Authentication │ 127.0.0.1:8000 │ http://127.0.0.1:4000/auth      │
+├────────────────┼────────────────┼─────────────────────────────────┤
+│ Firestore      │ 127.0.0.1:8200 │ http://127.0.0.1:4000/firestore │
+└────────────────┴────────────────┴─────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
