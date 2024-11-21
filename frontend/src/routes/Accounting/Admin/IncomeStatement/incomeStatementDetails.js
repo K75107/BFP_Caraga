@@ -585,16 +585,17 @@ export default function IncomeStatement() {
             return total + amount;
         }, 0);
 
-    // Calculate surplus/deficit as Revenue - Expenses
-    let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
-    let totalNetSurplusDeficit2 = totalRevenues2 - totalExpenses2;
-
     const totalSubsidy2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Subsidy")
         .reduce((total, accountTitle) => {
             const amount = accountTitle.difference2;
             return total + amount;
         }, 0);
+
+     // Calculate surplus/deficit as Revenue - Expenses
+     let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
+     let totalNetSurplusDeficit2 = totalNetRevenues2 + totalSubsidy2;
+ 
     // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
 
     // ------------------------------------- R E V E N U E A C C O U N T  T I T L E S -------------------------------------
@@ -850,7 +851,7 @@ export default function IncomeStatement() {
             amount2: totalExpenses2 !== 0 ? totalExpenses2 : null
         },
         {
-            name: "Subsidy",
+            name: "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs",
             children: [
                 ...getNestedSubcategories(subcategories, "Subsidy", accountTitles, fireAccountTitlesPeriod),
                 ...subsidyAccountTitles(accountTitles, fireAccountTitlesPeriod, subcategories)
@@ -1002,6 +1003,8 @@ export default function IncomeStatement() {
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Financial Performance');
+        
+        let totalCounter = 0;
 
         // Recursive function to add rows for each parent and their children
         const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
@@ -1069,13 +1072,14 @@ export default function IncomeStatement() {
             }
 
             // Add a totals row for each main category (depth 0)
-            if (depth === 0) {
-                worksheet.addRow(["", "", "", ""]); 
+            if (depth === 0 & totalCounter < 2) {
+                totalCounter++;
+                worksheet.addRow(["", "", "", ""]);
                 const totalRow = worksheet.addRow([
                     `   Total ${parent.name}`, // Indented to match hierarchy
-                    categoryTotal1 !== 0 ? categoryTotal1.toFixed(2) : "",
+                    categoryTotal1 || null, // Ensure numeric value
                     "",
-                    categoryTotal2 !== 0 ? categoryTotal2.toFixed(2) : "",
+                    categoryTotal2 || null, // Ensure numeric value
                 ]);
 
                 // Style for the totals row
@@ -1200,13 +1204,17 @@ export default function IncomeStatement() {
         // Bold text for footer rows without underline
         financialSubsidyRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
         financialSubsidyRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(2).numFmt = '#,##0.00';
         financialSubsidyRow.getCell(2).border = { bottom: { style: 'double' } };
+        financialSubsidyRow.getCell(4).numFmt = '#,##0.00';
         financialSubsidyRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
         financialSubsidyRow.getCell(4).border = { bottom: { style: 'double' } };
         
         netSurplusRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
         netSurplusRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        netSurplusRow.getCell(2).numFmt = '#,##0.00';
         netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
+        netSurplusRow.getCell(4).numFmt = '#,##0.00';
         netSurplusRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
         netSurplusRow.getCell(4).border = { bottom: { style: 'double' } }
 

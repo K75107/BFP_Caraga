@@ -1036,6 +1036,8 @@ export default function BalanceSheet() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Financial Performance');
 
+        let totalCounter = 0;
+
         // Recursive function to add rows for each parent and their children
         const addParentAndChildrenRows = (parent, worksheet, depth = 0) => {
             if (depth === 0) {
@@ -1065,7 +1067,7 @@ export default function BalanceSheet() {
                     }
                 }
 
-                // Style for subcategory rows (depth 1)
+                // Style for subcategory rowsz (depth 1)
                 if (depth === 1) {
                     cell.font = { name: 'Times New Roman', size: 12, bold: true };
                 }
@@ -1102,13 +1104,14 @@ export default function BalanceSheet() {
             }
 
             // Add a totals row for each main category (depth 0)
-            if (depth === 0) {
-                worksheet.addRow(["", "", "", ""]); 
+            if (depth === 0 & totalCounter < 2) {
+                totalCounter++;
+                worksheet.addRow(["", "", "", ""]);
                 const totalRow = worksheet.addRow([
                     `   Total ${parent.name}`, // Indented to match hierarchy
-                    categoryTotal1 !== 0 ? categoryTotal1.toFixed(2) : "",
+                    categoryTotal1 || null, // Ensure numeric value
                     "",
-                    categoryTotal2 !== 0 ? categoryTotal2.toFixed(2) : "",
+                    categoryTotal2 || null, // Ensure numeric value
                 ]);
 
                 // Style for the totals row
@@ -1235,13 +1238,17 @@ export default function BalanceSheet() {
         // Underline for footer rows
         netAssets.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true };
         netAssets.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true };
+        netAssets.getCell(2).numFmt =  '#,##0.00';
         netAssets.getCell(2).border = { bottom: { style: 'double' } };
+        netAssets.getCell(4).numFmt =  '#,##0.00';
         netAssets.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true };
         netAssets.getCell(4).border = { bottom: { style: 'double' } };
 
         netEquity.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true };
         netEquity.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true };
+        netEquity.getCell(2).numFmt =  '#,##0.00';
         netEquity.getCell(2).border = { bottom: { style: 'double' } };
+        netEquity.getCell(4).numFmt =  '#,##0.00';
         netEquity.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true };
         netEquity.getCell(4).border = { bottom: { style: 'double' } }
         // Export the workbook to a file
