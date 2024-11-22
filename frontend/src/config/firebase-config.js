@@ -23,13 +23,13 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const realtimeDb = getDatabase(app);
 
-// Connect to emulators during development
-if (process.env.NODE_ENV === "development") {
-  // Firestore Emulator
-  connectFirestoreEmulator(db, "127.0.0.1", 8200);
+// // Connect to emulators during development
+// if (process.env.NODE_ENV === "development") {
+//   // Firestore Emulator
+//   connectFirestoreEmulator(db, "127.0.0.1", 8200);
 
-  // Authentication Emulator
-  connectAuthEmulator(auth, "http://127.0.0.1:8000");
+//   // Authentication Emulator
+//   connectAuthEmulator(auth, "http://127.0.0.1:8000");
 
-  console.log("Connected to Firebase emulators.");
-}
+//   console.log("Connected to Firebase emulators.");
+// }
