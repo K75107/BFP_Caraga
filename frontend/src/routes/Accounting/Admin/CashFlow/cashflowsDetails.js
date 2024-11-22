@@ -17,6 +17,7 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { FaLongArrowAltUp } from "react-icons/fa";
 import { FaLongArrowAltDown } from "react-icons/fa";
 import SubmitButton from "../../../../components/submitButton";
+import YesNoButton from "../../../../components/yesNoButton";
 
 export default function CashflowsDetails() {
     const [showModal, setShowModal] = useState(false);
@@ -43,12 +44,26 @@ export default function CashflowsDetails() {
 
     //Merge Data
     const [cashflowMergeData, setCashflowMergeData] = useState([]);
+    const mainCategories = [
+        { name: "Operating Activities", isLocked: true },
+        { name: "Investing Activities", isLocked: true },
+        { name: "Financing Activities", isLocked: true },
+        { name: "Net Increase(Decrease) in Cash and Cash Equivalents", isLocked: true },
+        { name: "Effects of Exchange Rate Changes on Cash and Cash Equivalents", isLocked: false },
+        { name: "Cash and Cash Equivalents at the Beginning of the Period", isLocked: false },
+        { name: "Cash and Cash Equivalents at the End of the Period", isLocked: false },
+    ];
+    const [selectedCategories, setSelectedCategories] = useState([]);
+
 
     //Current Year
     const [currentCashflow, setCurrentCashflow] = useState();
 
     //Selected Year
     const [selectedYear, setSelectedYear] = useState();
+
+    //Empty 
+    const [isEmpty, setisEmpty] = useState();
 
     useEffect(() => {
         const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
@@ -63,97 +78,10 @@ export default function CashflowsDetails() {
 
                 // Initialize data if empty
                 if (data.length === 0) {
-                    const batch = writeBatch(cashflowsCollectionRef.firestore);
-                    let position = 1;
 
-                    // Create a stable id for main categories
-                    const createCategoryId = (name) => {
-                        return name.toLowerCase().replace(/\s+/g, "_");
-                    };
+                    setisEmpty(true);
 
-                    // Function to add a main category
-                    const addMainCategory = (name) => {
-                        const categoryId = createCategoryId(name);
-                        const ref = doc(cashflowsCollectionRef, categoryId);  // Use categoryId as the document ID
-                        batch.set(ref, {
-                            categoryName: name,
-                            parentID: null,
-                            created_at: new Date(),
-                            position: position++,
-                            amount: 0,
-                            isLocked: true,
-                        });
-                        return categoryId;
-                    };
-                    // Function to add a main category
-                    const addMainCategoryNotLock = (name) => {
-                        const categoryId = createCategoryId(name);
-                        const ref = doc(cashflowsCollectionRef, categoryId);  // Use categoryId as the document ID
-                        batch.set(ref, {
-                            categoryName: name,
-                            parentID: null,
-                            created_at: new Date(),
-                            position: position++,
-                            amount: 0,
-                        });
-                        return categoryId;
-                    };
-                    // Cash Inflows and Cash Outflows
-                    const createSubcategoryId = (name, parentId) => {
-                        return `${name.toLowerCase().replace(/\s+/g, "_")}_${parentId}`;
-                    };
 
-                    // Blank Rows
-                    const addSubcategoryWithBlanks = (name, parentId) => {
-                        const subcategoryId = createSubcategoryId(name, parentId);
-                        const ref = doc(cashflowsCollectionRef, subcategoryId);
-                        batch.set(ref, {
-                            categoryName: name,
-                            parentID: parentId,
-                            created_at: new Date(),
-                            position: position++,
-                            amount: 0,
-                            isLocked: true,
-                        });
-
-                        // Add two blank rows
-                        batch.set(doc(cashflowsCollectionRef), {
-                            categoryName: '',
-                            parentID: ref.id,
-                            created_at: new Date(),
-                            position: position++,
-                            amount: 0
-                        });
-                        batch.set(doc(cashflowsCollectionRef), {
-                            categoryName: '',
-                            parentID: ref.id,
-                            created_at: new Date(),
-                            position: position++,
-                            amount: 0
-                        });
-                    };
-
-                    // Add categories and subcategories
-                    const operatingId = addMainCategory('Operating Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', operatingId);
-                    addSubcategoryWithBlanks('Cash Outflows', operatingId);
-
-                    const investingId = addMainCategory('Investing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', investingId);
-                    addSubcategoryWithBlanks('Cash Outflows', investingId);
-
-                    const financingId = addMainCategory('Financing Activities');
-                    addSubcategoryWithBlanks('Cash Inflows', financingId);
-                    addSubcategoryWithBlanks('Cash Outflows', financingId);
-
-                    // Additional standalone categories
-                    addMainCategory('Net Increase(Decrease) in Cash and Cash Equivalents');
-                    addMainCategoryNotLock('Effects of Exchange Rate Changes on Cash and Cash Equivalents');
-                    addMainCategoryNotLock('Cash and Cash Equivalents at the Beginning of the Period');
-                    addMainCategoryNotLock('Cash and Cash Equivalents at the End of the Period');
-
-                    // Commit batch
-                    await batch.commit();
                 }
             } catch (error) {
                 console.error("Error fetching and sorting categories:", error);
@@ -292,7 +220,7 @@ export default function CashflowsDetails() {
                         id: doc.id,
                         ...doc.data(),
                     }));
-                    console.log("selecedte",data)
+                    console.log("selecedte", data)
                     setPeriodDataCategories(sortCategoriesRecursively(data));
 
                 } catch (error) {
@@ -373,6 +301,110 @@ export default function CashflowsDetails() {
         }
     }, [cashflowCategoriesData, periodDataCategories]);
 
+    const handleNoClick = () => {
+        setisEmpty(false); // Just set isEmpty to false
+
+    };
+
+    const handleYesClick = async () => {
+        const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
+        const batch = writeBatch(cashflowsCollectionRef.firestore);
+        let position = 1;
+
+        // Create a stable id for main categories
+        const createCategoryId = (name) => {
+            return name.toLowerCase().replace(/\s+/g, "_");
+        };
+
+        // Function to add a main category
+        const addMainCategory = (name) => {
+            const categoryId = createCategoryId(name);
+            const ref = doc(cashflowsCollectionRef, categoryId); // Use categoryId as the document ID
+            batch.set(ref, {
+                categoryName: name,
+                parentID: null,
+                created_at: new Date(),
+                position: position++,
+                amount: 0,
+                isLocked: true,
+            });
+            return categoryId;
+        };
+
+        // Function to add a main category without lock
+        const addMainCategoryNotLock = (name) => {
+            const categoryId = createCategoryId(name);
+            const ref = doc(cashflowsCollectionRef, categoryId); // Use categoryId as the document ID
+            batch.set(ref, {
+                categoryName: name,
+                parentID: null,
+                created_at: new Date(),
+                position: position++,
+                amount: 0,
+            });
+            return categoryId;
+        };
+
+        // Cash Inflows and Cash Outflows
+        const createSubcategoryId = (name, parentId) => {
+            return `${name.toLowerCase().replace(/\s+/g, "_")}_${parentId}`;
+        };
+
+        // Blank Rows
+        const addSubcategoryWithBlanks = (name, parentId) => {
+            const subcategoryId = createSubcategoryId(name, parentId);
+            const ref = doc(cashflowsCollectionRef, subcategoryId);
+            batch.set(ref, {
+                categoryName: name,
+                parentID: parentId,
+                created_at: new Date(),
+                position: position++,
+                amount: 0,
+                isLocked: true,
+            });
+
+            // Add two blank rows
+            batch.set(doc(cashflowsCollectionRef), {
+                categoryName: "",
+                parentID: ref.id,
+                created_at: new Date(),
+                position: position++,
+                amount: 0,
+            });
+            batch.set(doc(cashflowsCollectionRef), {
+                categoryName: "",
+                parentID: ref.id,
+                created_at: new Date(),
+                position: position++,
+                amount: 0,
+            });
+        };
+
+        // Add categories and subcategories
+        const operatingId = addMainCategory("Operating Activities");
+        addSubcategoryWithBlanks("Cash Inflows", operatingId);
+        addSubcategoryWithBlanks("Cash Outflows", operatingId);
+
+        const investingId = addMainCategory("Investing Activities");
+        addSubcategoryWithBlanks("Cash Inflows", investingId);
+        addSubcategoryWithBlanks("Cash Outflows", investingId);
+
+        const financingId = addMainCategory("Financing Activities");
+        addSubcategoryWithBlanks("Cash Inflows", financingId);
+        addSubcategoryWithBlanks("Cash Outflows", financingId);
+
+        // Additional standalone categories
+        addMainCategory("Net Increase(Decrease) in Cash and Cash Equivalents");
+        addMainCategoryNotLock("Effects of Exchange Rate Changes on Cash and Cash Equivalents");
+        addMainCategoryNotLock("Cash and Cash Equivalents at the Beginning of the Period");
+        addMainCategoryNotLock("Cash and Cash Equivalents at the End of the Period");
+
+        // Commit batch
+        await batch.commit();
+
+        setisEmpty(false);
+    };
+
 
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
@@ -385,6 +417,17 @@ export default function CashflowsDetails() {
             ...sortCategoriesRecursively(categories, category.id, level + 1),
         ]);
     };
+
+    const toggleCheckbox = (categoryName) => {
+        setSelectedCategories((prevSelected) => {
+            if (prevSelected.includes(categoryName)) {
+                return prevSelected.filter((name) => name !== categoryName); // Remove if already selected
+            } else {
+                return [...prevSelected, categoryName]; // Add if not already selected
+            }
+        });
+    };
+
 
 
     const [expandedCategories, setExpandedCategories] = useState({});
@@ -441,75 +484,103 @@ export default function CashflowsDetails() {
     const visibleCategories = getVisibleCategories();
 
     const addNewCategory = async () => {
+        const cashflowsCollectionRef = collection(db, "cashflow", cashflowId, "categories");
+
         try {
-            const cashflowDocRef = doc(db, 'cashflow', cashflowId);
-            const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
+            const batch = writeBatch(db);
+            const querySnapshot = await getDocs(cashflowsCollectionRef);
+            const existingCategories = querySnapshot.docs.map((doc) => doc.id);
 
-            const sortedAccounts = [...cashflowCategoriesData].filter(cat => cat.parentID === null);
-            const newRowPosition = sortedAccounts.length > 0
-                ? sortedAccounts[sortedAccounts.length - 1].position + 10
-                : 1;
+            let position = querySnapshot.docs.length + 1;
 
-            // Add the main category and get its reference
-            const mainCategoryDocRef = await addDoc(categoriesCollectionRef, {
-                categoryName: newCategory,
-                parentID: null, // No parent for main category
-                created_at: new Date(),
-                position: newRowPosition
+            // Function to generate a unique ID
+            const createCategoryId = (name) => name.toLowerCase().replace(/\s+/g, "_");
+
+            // Function to add subcategories with blank rows
+            const addSubcategoryWithBlanks = (name, parentId) => {
+                const subcategoryId = `${createCategoryId(name)}_${parentId}`;
+                const ref = doc(cashflowsCollectionRef, subcategoryId);
+
+                batch.set(ref, {
+                    categoryName: name,
+                    parentID: parentId,
+                    created_at: new Date(),
+                    position: position++,
+                    amount: 0,
+                    isLocked: true,
+                });
+
+                // Add two blank rows
+                batch.set(doc(cashflowsCollectionRef), {
+                    categoryName: "",
+                    parentID: ref.id,
+                    created_at: new Date(),
+                    position: position++,
+                    amount: 0,
+                });
+                batch.set(doc(cashflowsCollectionRef), {
+                    categoryName: "",
+                    parentID: ref.id,
+                    created_at: new Date(),
+                    position: position++,
+                    amount: 0,
+                });
+            };
+
+            // Add new custom category if provided
+            if (newCategory.trim()) {
+                const categoryId = createCategoryId(newCategory);
+                if (!existingCategories.includes(categoryId)) {
+                    const ref = doc(cashflowsCollectionRef, categoryId);
+                    batch.set(ref, {
+                        categoryName: newCategory,
+                        parentID: null,
+                        created_at: new Date(),
+                        position: position++,
+                        amount: 0,
+                        isLocked: false, // Custom categories are not locked
+                    });
+                }
+            }
+
+            // Add selected main categories
+            selectedCategories.forEach((categoryName) => {
+                const category = mainCategories.find((cat) => cat.name === categoryName);
+                const categoryId = createCategoryId(categoryName);
+
+                if (category && !existingCategories.includes(categoryId)) {
+                    const ref = doc(cashflowsCollectionRef, categoryId);
+                    batch.set(ref, {
+                        categoryName,
+                        parentID: null,
+                        created_at: new Date(),
+                        position: position++,
+                        amount: 0,
+                        isLocked: category.isLocked,
+                    });
+
+                    // Add subcategories and blank rows for specific categories
+                    if (categoryName === "Operating Activities" ||
+                        categoryName === "Investing Activities" ||
+                        categoryName === "Financing Activities") {
+                        addSubcategoryWithBlanks("Cash Inflows", categoryId);
+                        addSubcategoryWithBlanks("Cash Outflows", categoryId);
+                    }
+                }
             });
 
-            const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
+            if (!batch._mutations.length) {
+                alert("No new categories to add.");
+                return;
+            }
 
-            // Add "Cash Inflows" and "Cash Outflows" as subcategories
-            const inflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Inflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 10
-            });
-
-            const outflowsRef = await addDoc(categoriesCollectionRef, {
-                categoryName: 'Cash Outflows',
-                parentID: mainCategoryId, // Set as child of the new main category
-                created_at: new Date(),
-                position: newRowPosition + 20
-            });
-
-            // Add blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 11
-            });
-
-            // Add another blank row under "Cash Inflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-                created_at: new Date(),
-                position: newRowPosition + 12
-            });
-
-            // Add blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 21
-            });
-
-            // Add another blank row under "Cash Outflows"
-            await addDoc(categoriesCollectionRef, {
-                categoryName: '', // Blank row
-                parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-                created_at: new Date(),
-                position: newRowPosition + 22
-            });
-
-            setShowModal(false); // Close modal after adding the category
+            await batch.commit();
+            
+            setShowModal(false);
+            setNewCategory("");
+            setSelectedCategories([]);
         } catch (error) {
-            console.error('Error adding new category:', error);
+            console.error("Error adding categories:", error);
         }
     };
 
@@ -583,29 +654,29 @@ export default function CashflowsDetails() {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
             const categoriesCollectionRef = collection(cashflowDocRef, 'categories');
 
-            // Step 1: Create the new parent category at the same position as the selected row
+
             const newParentDocRef = await addDoc(categoriesCollectionRef, {
                 categoryName: '',
-                parentID: null, // No parent for the new top-level category
+                parentID: null,
                 created_at: new Date(),
-                position: selectedRowData.position // Position the new parent right next to the selected row
+                position: selectedRowData.position
             });
 
-            // Step 2: Update the selected row to be a child of the new parent category
+
             await updateDoc(doc(categoriesCollectionRef, selectedRowData.id), {
-                parentID: newParentDocRef.id, // Make the new category the parent of the selected row
-                position: 1 // Position the selected row as the first child under the new parent
+                parentID: newParentDocRef.id,
+                position: 1
             });
 
-            // Step 3: Shift positions of other categories if necessary
+
             const categoriesToUpdate = cashflowCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
             for (const cat of categoriesToUpdate) {
                 await updateDoc(doc(categoriesCollectionRef, cat.id), {
-                    position: cat.position + 1 // Shift other categories to make space for the new parent
+                    position: cat.position + 1
                 });
             }
 
-            setShowModal(false); // Close modal after adding the parent category
+            setShowModal(false);
         } catch (error) {
             console.error('Error adding new parent category:', error);
             setIsError(true);
@@ -819,12 +890,12 @@ export default function CashflowsDetails() {
                             <span
                                 onClick={() => {
                                     if (
-                                        category.categoryName !== 'Cash Inflows' &&
-                                        category.categoryName !== 'Cash Outflows' &&
-                                        category.categoryName !== 'Operating Activities' &&
-                                        category.categoryName !== 'Investing Activities' &&
-                                        category.categoryName !== 'Financing Activities' &&
-                                        category.categoryName !== 'Net Increase(Decrease) in Cash and Cash Equivalents'
+                                        category.id !== "cash_inflows" &&
+                                        category.id !== "cash_outflows" &&
+                                        category.id !== "operating_activities" &&
+                                        category.id !== "investing_activities" &&
+                                        category.id !== "financing_activities" &&
+                                        category.id !== "net_increase(decrease)_in_cash_and_cash_equivalents"
                                     ) {
                                         // Make only other categories clickable
                                         setEditingCell(category.id);
@@ -865,7 +936,7 @@ export default function CashflowsDetails() {
                         </span>
                     ) : (
                         // Non-main categories: Keep the original logic
-                        category.categoryName === 'Net Increase(Decrease) in Cash and Cash Equivalents' ?
+                        category.id === "net_increase(decrease)_in_cash_and_cash_equivalents" ?
                             <span className="font-bold"> {formatNumber(netChange)}</span> :
                             category.isFromPeriod ? (
                                 <span>{formatNumber(totalAmount) || ''}</span>
@@ -908,6 +979,7 @@ export default function CashflowsDetails() {
                                 )
                             )
                     )}
+
                 </td>
 
                 <td className="px-2 py-2 w-56 h-6 ">
@@ -917,7 +989,7 @@ export default function CashflowsDetails() {
                             {formatNumber(netTotals[category.categoryName]?.netTotalPeriodAmount) || ''}
                         </span>
                     ) : (
-                        category.categoryName === 'Net Increase(Decrease) in Cash and Cash Equivalents' ?
+                        category.id === "net_increase(decrease)_in_cash_and_cash_equivalents" ?
                             <span className="font-bold"> {formatNumber(netPeriodChange)}</span> :
                             category.isFromPeriod ? (
                                 <span>{formatNumber(category.periodAmount) || ''}</span>
@@ -948,6 +1020,15 @@ export default function CashflowsDetails() {
                                 )
                     )}
                 </td>
+                {/* <td className="px-6">
+                    {category.isFromPeriod ? (
+                        <div className="flex space-x-4">
+                            <YesNoButton type="yes" size="xs" />
+                            <YesNoButton type="no" size="xs" />
+                        </div>
+                    ) : <div></div>
+                    }
+                </td> */}
 
 
             </tr >
@@ -1265,7 +1346,7 @@ export default function CashflowsDetails() {
 
 
     const handleDeleteRow = async () => {
-        if (!selectedRowData || selectedRowData.isLocked) return;
+        if (!selectedRowData) return;
 
         try {
             const cashflowDocRef = doc(db, 'cashflow', cashflowId);
@@ -1355,6 +1436,8 @@ export default function CashflowsDetails() {
                 </div>
             </div>
             <div className="px-6 py-8">
+
+
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -1368,7 +1451,22 @@ export default function CashflowsDetails() {
                             </thead>
                         </table>
                     </div>
+
+
                     <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
+                        {isEmpty ? (
+                            <div className="w-full h-full flex flex-col justify-center items-center text-center space-y-4">
+                                <p className="text-lg font-poppins font-medium text-gray-800">
+                                    Would you like to generate a cashflow Template?
+                                </p>
+                                <div className="flex space-x-4">
+                                    <YesNoButton type="yes" label={"Yes"} onClick={handleYesClick} />
+                                    <YesNoButton type="no" label={"No"} onClick={handleNoClick} />
+                                </div>
+                            </div>
+
+
+                        ) : null}
                         <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
                             <tbody>
                                 <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
@@ -1389,40 +1487,62 @@ export default function CashflowsDetails() {
 
 
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[360px] h-60 rounded py-2 px-4">
+                <div className="bg-white w-[360px] h-auto rounded py-4 px-4">
                     <div className="flex justify-between">
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Add New Category</h1>
-                        <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
+                        <button
+                            className="font-poppins text-[27px] text-[#1E1E1E]"
+                            onClick={() => setShowModal(false)}
+                        >
+                            ×
+                        </button>
                     </div>
                     <hr className="border-t border-[#7694D4] my-3" />
-                    <div className="relative">
+                    <div className="relative mb-4">
+                        {/* Input for custom category */}
                         <input
                             type="text"
-                            id="default_outlined1"
+                            id="new_category_input"
                             className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:outline-none focus:border-blue-600 peer"
                             placeholder=" "
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
                         />
                         <label
-                            htmlFor="default_outlined1"
+                            htmlFor="new_category_input"
                             className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-0 bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
                         >
                             Category Name
                         </label>
-
                     </div>
-                    <div className="">
-                        <SubmitButton
+
+                    {/* Checkboxes for main categories */}
+                    <div className="mb-4">
+                        <h2 className="font-semibold text-sm text-gray-700 mb-2">Select Main Categories:</h2>
+                        {mainCategories.map((category) => (
+                            <label key={category.name} className="block text-sm mb-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(category.name)}
+                                    onChange={() => toggleCheckbox(category.name)}
+                                    className="mr-2"
+                                />
+                                {category.name}
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Add Button */}
+                    <div className="flex justify-end">
+                        <YesNoButton type="yes" label={"Add"}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 addNewCategory();
-                            }}
-                            label={"ADD"}
-                        />
+                            }} />
                     </div>
                 </div>
             </Modal>
+
 
             {/*Period*/}
             <Modal isVisible={showModalPeriod}>

@@ -326,7 +326,7 @@ export default function ChangesInEquityDetails() {
 
     // Function to get visible categories based on the expanded state
     const getVisibleCategories = () => {
-        return cEquityCategoriesData.filter((category) => {
+        return cEquityMergeData.filter((category) => {
             // Check if the category is a main category or if it is expanded
             if (category.parentID === null) return true;
 
@@ -336,7 +336,7 @@ export default function ChangesInEquityDetails() {
                 if (!expandedCategories[currentCategory.parentID]) {
                     return false; // Parent is not expanded
                 }
-                currentCategory = cEquityCategoriesData.find(cat => cat.id === currentCategory.parentID);
+                currentCategory = cEquityMergeData.find(cat => cat.id === currentCategory.parentID);
             }
             return true; // This category and its parents are expanded
         });
@@ -363,60 +363,15 @@ export default function ChangesInEquityDetails() {
                 position: newRowPosition
             });
 
-            // const mainCategoryId = mainCategoryDocRef.id; // ID of the new main category
-
-            // // Add "Cash Inflows" and "Cash Outflows" as subcategories
-            // const inflowsRef = await addDoc(categoriesCollectionRef, {
-            //     categoryName: 'Cash Inflows',
-            //     parentID: mainCategoryId, // Set as child of the new main category
-            //     created_at: new Date(),
-            //     position: newRowPosition + 10
-            // });
-
-            // const outflowsRef = await addDoc(categoriesCollectionRef, {
-            //     categoryName: 'Cash Outflows',
-            //     parentID: mainCategoryId, // Set as child of the new main category
-            //     created_at: new Date(),
-            //     position: newRowPosition + 20
-            // });
-
-            // // Add blank row under "Cash Inflows"
-            // await addDoc(categoriesCollectionRef, {
-            //     categoryName: '', // Blank row
-            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-            //     created_at: new Date(),
-            //     position: newRowPosition + 11
-            // });
-
-            // // Add another blank row under "Cash Inflows"
-            // await addDoc(categoriesCollectionRef, {
-            //     categoryName: '', // Blank row
-            //     parentID: inflowsRef.id, // Set as child of "Cash Inflows"
-            //     created_at: new Date(),
-            //     position: newRowPosition + 12
-            // });
-
-            // // Add blank row under "Cash Outflows"
-            // await addDoc(categoriesCollectionRef, {
-            //     categoryName: '', // Blank row
-            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-            //     created_at: new Date(),
-            //     position: newRowPosition + 21
-            // });
-
-            // // Add another blank row under "Cash Outflows"
-            // await addDoc(categoriesCollectionRef, {
-            //     categoryName: '', // Blank row
-            //     parentID: outflowsRef.id, // Set as child of "Cash Outflows"
-            //     created_at: new Date(),
-            //     position: newRowPosition + 22
-            // });
-
             setShowModal(false); // Close modal after adding the category
         } catch (error) {
             console.error('Error adding new category:', error);
         }
     };
+
+
+    //Add Category with formula
+
 
     // Function to add a new subcategory
     const addNewRow = async () => {
@@ -615,7 +570,11 @@ export default function ChangesInEquityDetails() {
 
                     {/* Category Name */}
                     <span>
-                        {editingCell === category.id && editValue.field === 'categoryName' ? (
+                    {category.isFromPeriod ? (
+                            <span className="block px-1 py-1 px-6">
+                                {category.categoryName || '-'}
+                            </span>
+                        ):editingCell === category.id && editValue.field === 'categoryName' ? (
                             <>
                                 {/* Hidden span to measure the text width */}
                                 <span
