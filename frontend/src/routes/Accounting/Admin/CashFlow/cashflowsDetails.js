@@ -236,70 +236,75 @@ export default function CashflowsDetails() {
         if (Array.isArray(cashflowCategoriesData) && cashflowCategoriesData.length > 0) {
             try {
                 const mergedMap = new Map();
-
-                // Add current category data to the map
+                const idMapping = new Map(); // Map to track ID resolution
+    
+                // Add current categories to the map
                 cashflowCategoriesData.forEach((item) => {
                     mergedMap.set(item.id, {
                         ...item,
-                        periodAmount: 0, // Initialize periodAmount for current data
+                        periodAmount: 0, // Initialize periodAmount
                     });
                 });
-
-                // Merge or add period data if it exists
+    
+                // Merge period data
                 if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
                     periodDataCategories.forEach((item) => {
-                        if (
-                            Array.from(mergedMap.values()).some(
-                                (existingItem) =>
-                                    existingItem.parentID === item.parentID &&
-                                    existingItem.categoryName === item.categoryName
-                            )
-                        ) {
-                            // If match found, update periodAmount
-                            const matchingItem = Array.from(mergedMap.values()).find(
-                                (existingItem) =>
-                                    existingItem.parentID === item.parentID &&
-                                    existingItem.categoryName === item.categoryName
-                            );
-                            if (matchingItem) {
-                                mergedMap.set(matchingItem.id, {
-                                    ...matchingItem,
-                                    periodAmount: item.amount, // Add period data to periodAmount
-                                });
-                            }
-                        } else {
-                            if (item.categoryName) {
-                                // Calculate position for the new item
-                                const siblingPositions = Array.from(mergedMap.values())
-                                    .filter((cat) => cat.parentID === item.parentID)
-                                    .map((cat) => cat.position);
-                                const newPosition =
-                                    siblingPositions.length > 0
-                                        ? Math.max(...siblingPositions) + 1
-                                        : 1; // Default position if no siblings exist
-
-                                mergedMap.set(item.id, {
-                                    ...item,
-                                    amount: 0, // No current amount
-                                    periodAmount: item.amount, // Assign period amount
-                                    position: newPosition, // Assign calculated position
-                                    isFromPeriod: true,
-                                });
-                            }
+                        const resolvedParentID =
+                            item.parentID === "null" ? null : idMapping.get(item.parentID) || item.parentID;
+    
+                        // Find a matching item based on resolvedParentID and categoryName
+                        const existingItem = Array.from(mergedMap.values()).find(
+                            (existing) =>
+                                existing.categoryName === item.categoryName &&
+                                existing.parentID === resolvedParentID
+                        );
+    
+                        if (existingItem) {
+                            // Update the idMapping and periodAmount of the existing item
+                            idMapping.set(item.id, existingItem.id);
+                            mergedMap.set(existingItem.id, {
+                                ...existingItem,
+                                periodAmount: existingItem.periodAmount + item.amount,
+                            });
+                        } else if (item.categoryName) {
+                            // Calculate position for new items
+                            const siblingPositions = Array.from(mergedMap.values())
+                                .filter((cat) => cat.parentID === resolvedParentID)
+                                .map((cat) => cat.position);
+    
+                            const newPosition =
+                                siblingPositions.length > 0
+                                    ? Math.max(...siblingPositions) + 1
+                                    : 1; // Default position if no siblings exist
+    
+                            // Add the new item to the map
+                            const newItem = {
+                                ...item,
+                                parentID: resolvedParentID, // Use resolvedParentID
+                                amount: 0, // Initialize amount
+                                periodAmount: item.amount, // Assign period amount
+                                position: newPosition, // Set calculated position
+                                isFromPeriod: true, // Mark as period data
+                            };
+                            mergedMap.set(item.id, newItem);
+    
+                            // Update the idMapping with the new item's id
+                            idMapping.set(item.id, item.id);
                         }
                     });
                 }
-
-                // Convert the merged map back to an array
+    
+                // Convert mergedMap to an array
                 const mergedData = Array.from(mergedMap.values());
-                console.log(mergedData);
+    
                 // Sort and recursively build hierarchy
                 setCashflowMergeData(sortCategoriesRecursively(mergedData));
             } catch (error) {
-                console.error("Error during merge: ", error);
+                console.error("Error during merge:", error);
             }
         }
     }, [cashflowCategoriesData, periodDataCategories]);
+    
 
     const handleNoClick = () => {
         setisEmpty(false); // Just set isEmpty to false
