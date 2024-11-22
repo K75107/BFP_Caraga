@@ -5,6 +5,7 @@ import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, 
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import ExcelJS from 'exceljs';
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
@@ -580,7 +581,7 @@ export default function CashflowsDetails() {
             }
 
             await batch.commit();
-            
+
             setShowModal(false);
             setNewCategory("");
             setSelectedCategories([]);
@@ -1408,7 +1409,213 @@ export default function CashflowsDetails() {
         }
 
     }
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+    const exportToExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Cashflow Data');
 
+            // Add Header Data
+            const worksheetData = [
+                ["STATEMENT OF CASHFLOWS"],
+                ["REGULAR AGENCY FUND"],
+                [`FOR THE QUARTER ENDED`],
+            ];
+
+
+            worksheetData.forEach((row) => worksheet.addRow(row));
+
+            // Adjust Header Row Heights and Styles
+            worksheet.getRow(1).height = 15.75;
+            worksheet.getRow(2).height = 15.75;
+            worksheet.getRow(3).height = 15.75;
+
+            // Merge Header Cells
+            worksheet.mergeCells('A1:D1');
+            worksheet.mergeCells('A2:D2');
+            worksheet.mergeCells('A3:D3');
+
+            // Set Column Widths
+            worksheet.columns = [
+                { width: 45 },
+                { width: 20 },
+                { width: 5 },
+                { width: 20 },
+            ];
+
+            // Header Styles
+            const headerStyle = {
+                font: { bold: true, size: 14, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const subHeaderStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const mainCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const subCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const dataStyle = {
+                font: { size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const boldDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const mainCategoryamountStyle = {
+                font: {bold: true, size: 12, name: 'Times New Roman'},
+                alignment: {horizontal: 'center' , vertical: 'middle'},
+            };
+
+            // Apply Header Styles
+            ['A1', 'A2', 'A3'].forEach((cell) => {
+                worksheet.getCell(cell).style = headerStyle;
+            });
+
+            worksheet.addRow([]); // Add space below header
+
+            const yearRow = worksheet.addRow([]);
+            yearRow.getCell(2).value = `${currentCashflow.year}`;
+            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
+            yearRow.getCell(4).value = `${selectedYear}`;
+            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
+
+            // Apply underlines and styles for columns 2 and 4
+            [2, 4].forEach((col) => {
+                yearRow.getCell(col).border = { bottom: { style: 'thin' } };
+                yearRow.getCell(col).style = subHeaderStyle;
+            });
+
+            yearRow.height = 36; // Adjust height
+
+
+            const addCategoryAndChildrenRows = (category, level = 0) => {
+                const noAmountCategories = ['Operating Activities', 'Investing Activities', 'Financing Activities', 'Cash Inflows', 'Cash Outflows'];
+                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
+
+                // Initialize totals for this category and its descendants
+                let totalAmount = category.amount || 0;
+                let totalPeriodAmount = category.periodAmount || 0;
+
+                // Add category row
+                const row = worksheet.addRow([
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
+                    shouldDisplayAmount ? formatNumber(category.amount) : '',
+                    '',
+                    shouldDisplayAmount ? formatNumber(category.periodAmount) : '',
+                ]);
+
+                // Apply formatting for amounts 
+                // Underline only the amounts in the main categories
+                if (shouldDisplayAmount) {
+                    // Parse and apply styles for the amount cell (column 2)
+                    if (!isNaN(parseFloat(category.amount))) {
+                        const amountCell = row.getCell(2);
+                        amountCell.style = mainCategoryamountStyle; // Apply bold and centered styles
+                        amountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
+                    }
+        
+                    // Parse and apply styles for the period amount cell (column 4)
+                    if (!isNaN(parseFloat(category.periodAmount))) {
+                        const periodAmountCell = row.getCell(4);
+                        periodAmountCell.style = mainCategoryamountStyle; // Apply bold and centered styles
+                        periodAmountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
+                    }
+                }
+        
+        
+
+
+                // Style main categories
+                if (level === 0) {
+                    row.eachCell((cell) => {
+                        cell.style = mainCategoryStyle;
+                    });
+                    worksheet.addRow([]); // Add spacing after main categories
+                }
+
+                // Style subcategories
+                if (level === 1) {
+                    row.eachCell((cell) => {
+                        cell.style = subCategoryStyle;
+                    });
+                    worksheet.addRow([]); // Add spacing after subcategories
+                } else if (level > 1) {
+                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
+                    [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
+                }
+
+                // Find child categories
+                const childCategories = cashflowMergeData.filter(child => child.parentID === category.id);
+
+                // Recursively process child categories
+                childCategories.forEach(child => {
+                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
+                    totalAmount += childTotals.totalAmount;
+                    totalPeriodAmount += childTotals.totalPeriodAmount;
+                });
+
+                // Add totals for "Cash Inflows" and "Cash Outflows"
+                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
+                    worksheet.addRow([]); // Add space above totals
+
+                    const totalRow = worksheet.addRow([
+                        `    Total ${category.categoryName}`,
+                        formatNumber(totalAmount),
+                        '',
+                        formatNumber(totalPeriodAmount),
+                    ]);
+
+                    // Style totals
+                    totalRow.getCell(1).font = { bold: true, size: 12 , name: 'Times New Roman'};
+                    totalRow.getCell(2).style = boldDataStyle;
+                    totalRow.getCell(4).style = boldDataStyle;
+
+                    // Add borders for columns 2 and 4 only
+                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+
+                    worksheet.addRow([]); // Add spacing after totals
+                }
+
+                return { totalAmount, totalPeriodAmount };
+            };
+
+            // Add Visible Categories
+            visibleCategories
+                .filter((category) => category.parentID === null)
+                .forEach((category) => addCategoryAndChildrenRows(category));
+
+            // Save Workbook
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+
+            // Trigger Download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Cashflow Data.xlsx';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting data to Excel:', error);
+        }
+    };
+
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
     return (
         <Fragment>
 
@@ -1435,6 +1642,10 @@ export default function CashflowsDetails() {
                             <AddButton
                                 onClick={() => setShowModalPeriod(true)}
                                 label={"ADD PERIOD"}
+                            />
+                            <ExportButton
+                                onClick={exportToExcel}
+                                label={"EXPORT"}
                             />
                         </div>
                     </div>
