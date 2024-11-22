@@ -104,7 +104,7 @@ export default function ChangesInEquityDetails() {
                             const incomeData = docSnapshot.data();
                             setTotalSurplusDeficit(incomeData.totalSurplusDeficit); // Ensure totalSurplusDeficit exists in document
                             setcEquityPeriod(data.year);
-                            console.log("Total Surplus/Deficit fetched:", incomeData.totalSurplusDeficit); // Log fetched data
+
                         } else {
                             console.warn("No such incomestatement document!");
                         }
@@ -121,7 +121,6 @@ export default function ChangesInEquityDetails() {
 
         fetchChangesInEquity();
     }, [cEquityId]);
-
 
 
     // Fetch categories data only once initially to reduce continuous reads
@@ -208,74 +207,81 @@ export default function ChangesInEquityDetails() {
     }, [periodId])
 
     useEffect(() => {
-        if (Array.isArray(cEquityCategoriesData) && periodData.length > 0) {
+        if (Array.isArray(cEquityCategoriesData) && cEquityCategoriesData.length > 0) {
             try {
                 const mergedMap = new Map();
-
-                // Add current category data to the map
+                const idMapping = new Map(); // Tracks id mappings between periodData and cEquityCategoriesData
+    
+                // Add current categories to the map
                 cEquityCategoriesData.forEach((item) => {
                     mergedMap.set(item.id, {
                         ...item,
-                        periodAmount: 0, // Initialize periodAmount for current data
+                        periodAmount: 0, // Initialize periodAmount
                     });
                 });
-
-                // Merge or add period data if it exists
+    
+                // Merge period data
                 if (Array.isArray(periodData) && periodData.length > 0) {
                     periodData.forEach((item) => {
-                        if (
-                            Array.from(mergedMap.values()).some(
-                                (existingItem) =>
-                                    existingItem.parentID === item.parentID &&
-                                    existingItem.categoryName === item.categoryName
-                            )
-                        ) {
-                            // If match found, update periodAmount
-                            const matchingItem = Array.from(mergedMap.values()).find(
-                                (existingItem) =>
-                                    existingItem.parentID === item.parentID &&
-                                    existingItem.categoryName === item.categoryName
-                            );
-                            if (matchingItem) {
-                                mergedMap.set(matchingItem.id, {
-                                    ...matchingItem,
-                                    periodAmount: item.amount, // Add period data to periodAmount
-                                });
-                            }
+                        const resolvedParentID =
+                            item.parentID === "null" ? null : idMapping.get(item.parentID) || item.parentID;
+    
+                        // Detect conflicts by categoryName and resolvedParentID
+                        const existingItem = Array.from(mergedMap.values()).find(
+                            (existing) =>
+                                existing.categoryName === item.categoryName &&
+                                existing.parentID === resolvedParentID
+                        );
+    
+                        if (existingItem) {
+                            // Map periodData id to the existing item's id
+                            idMapping.set(item.id, existingItem.id);
+    
+                            // Update existing item's periodAmount
+                            mergedMap.set(existingItem.id, {
+                                ...existingItem,
+                                periodAmount: existingItem.periodAmount + item.amount,
+                            });
                         } else {
-                            if (item.categoryName) {
-                                // Calculate position for the new item
-                                const siblingPositions = Array.from(mergedMap.values())
-                                    .filter((cat) => cat.parentID === item.parentID)
-                                    .map((cat) => cat.position);
-                                const newPosition =
-                                    siblingPositions.length > 0
-                                        ? Math.max(...siblingPositions) + 1
-                                        : 1; // Default position if no siblings exist
-
-                                mergedMap.set(item.id, {
-                                    ...item,
-                                    amount: 0, // No current amount
-                                    periodAmount: item.amount, // Assign period amount
-                                    position: newPosition, // Assign calculated position
-                                    isFromPeriod: true,
-                                });
-                            }
+                            // Calculate position for the new item
+                            const siblingPositions = Array.from(mergedMap.values())
+                                .filter((cat) => cat.parentID === resolvedParentID)
+                                .map((cat) => cat.position);
+    
+                            const newPosition =
+                                siblingPositions.length > 0
+                                    ? Math.max(...siblingPositions) + 1
+                                    : 1; // Default position if no siblings exist
+    
+                            // Add new item to the map
+                            const newItem = {
+                                ...item,
+                                id: item.id, // Retain the id from periodData
+                                parentID: resolvedParentID, // Use resolved parentID
+                                amount: 0, // No current amount
+                                periodAmount: item.amount, // Assign period amount
+                                position: newPosition, // Set calculated position
+                                isFromPeriod: true, // Mark as period data
+                            };
+                            mergedMap.set(item.id, newItem);
+    
+                            // Track id mapping for new item
+                            idMapping.set(item.id, item.id);
                         }
                     });
                 }
-
-                // Convert the merged map back to an array
+    
+                // Convert map to array
                 const mergedData = Array.from(mergedMap.values());
-                console.log(mergedData);
+    
                 // Sort and recursively build hierarchy
                 setcEquityMergeData(sortCategoriesRecursively(mergedData));
             } catch (error) {
-                console.error("Error during merge: ", error);
+                console.error("Error during merge:", error);
             }
         }
     }, [cEquityCategoriesData, periodData]);
-
+    
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
@@ -443,25 +449,25 @@ export default function ChangesInEquityDetails() {
             const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
             const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
-            // Step 1: Create the new parent category at the same position as the selected row
+           
             const newParentDocRef = await addDoc(categoriesCollectionRef, {
                 categoryName: '',
-                parentID: null, // No parent for the new top-level category
+                parentID: null, 
                 created_at: new Date(),
-                position: selectedRowData.position // Position the new parent right next to the selected row
+                position: selectedRowData.position 
             });
 
-            // Step 2: Update the selected row to be a child of the new parent category
+           
             await updateDoc(doc(categoriesCollectionRef, selectedRowData.id), {
-                parentID: newParentDocRef.id, // Make the new category the parent of the selected row
-                position: 1 // Position the selected row as the first child under the new parent
+                parentID: newParentDocRef.id, 
+                position: 1 
             });
 
-            // Step 3: Shift positions of other categories if necessary
+      
             const categoriesToUpdate = cEquityCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
             for (const cat of categoriesToUpdate) {
                 await updateDoc(doc(categoriesCollectionRef, cat.id), {
-                    position: cat.position + 1 // Shift other categories to make space for the new parent
+                    position: cat.position + 1 
                 });
             }
 
@@ -554,27 +560,28 @@ export default function ChangesInEquityDetails() {
                 ref={setNodeRef}
                 {...attributes}
                 style={style}
-                className="border-b"
+                className={`border-b px-6 ${category.isFromPeriod ? 'bg-red-100' : 'bg-white'}`}
                 onContextMenu={(e) => handleRightClick(e, category)}
             >
                 <td
-                    className="px-2 w-full py-3 bg-white dark:bg-gray-800 flex items-center "
+                    className="px-2 w-full py-3 flex items-center "
                     style={{ paddingLeft: `${45 * category.level}px` }}
                 >
-                    {/* Conditionally render Drag Icon */}
-                    {category.categoryName !== 'Cash Inflows' && category.categoryName !== 'Cash Outflows' && (
-                        <span {...listeners} className="cursor-grab mr-2 text-gray-500">
-                            ☰
-                        </span>
-                    )}
+                    <span
+                        className={!category.isFromPeriod ? 'cursor-grab mr-2 text-gray-500 pl-4' : 'invisible '}
+                        {...(!category.isFromPeriod ? listeners : {})}
+                    >
+                        ☰
+                    </span>
+
 
                     {/* Category Name */}
                     <span>
-                    {category.isFromPeriod ? (
+                        {category.isFromPeriod ? (
                             <span className="block px-1 py-1 px-6">
                                 {category.categoryName || '-'}
                             </span>
-                        ):editingCell === category.id && editValue.field === 'categoryName' ? (
+                        ) : editingCell === category.id && editValue.field === 'categoryName' ? (
                             <>
                                 {/* Hidden span to measure the text width */}
                                 <span
@@ -611,7 +618,7 @@ export default function ChangesInEquityDetails() {
 
 
                     {/* Toggle Button at the end */}
-                    {(category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id)) && (
+                    {(category.level >= 0 && cEquityMergeData.some(subCat => subCat.parentID === category.id)) && (
                         <button
                             onClick={() => toggleCategory(category.id)}
                             className="mr-2 text-blue-500 px-5"
