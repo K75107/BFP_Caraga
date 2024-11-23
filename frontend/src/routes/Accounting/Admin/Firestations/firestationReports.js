@@ -370,7 +370,7 @@ export default function FirestationReports() {
             if (data.fireStationName !== currentCity) {
                 // Insert a blank row with the city name
                 worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-                worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName} City`; // City name
+                worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName}`; 
                 worksheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
                 worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
 
