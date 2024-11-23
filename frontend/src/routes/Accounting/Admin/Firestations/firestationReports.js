@@ -8,6 +8,7 @@ import { BiFilterAlt, BiChevronDown } from "react-icons/bi";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { PiStack, PiStackFill } from "react-icons/pi";
+import ExcelHeader2 from '../../../../assets/ExcelHeader2.png';
 import ExcelJS from 'exceljs';
 import SearchBar from "../../../../components/searchBar";
 import ExportButton from "../../../../components/exportButton";
@@ -147,6 +148,8 @@ export default function FirestationReports() {
         setYears(yearList);
     }, []);
 
+    //EXPORTING 
+
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Firestation Reports");
@@ -158,6 +161,65 @@ export default function FirestationReports() {
             fitToHeight: 0,
         };
 
+        worksheet.pageSetup.margins = {
+            left: 0.4, // Left margin (in inches)
+            right: 0.4, // Right margin (in inches)
+            top: 0.1, // Top margin (in inches)
+            bottom: 0, // Bottom margin (in inches)
+            header: 1.3, // Header margin (distance from the top edge)
+            footer: 0, // Footer margin (distance from the bottom edge)
+          };
+        // Text data
+        const textData = [
+            'Republic of the Philippines',
+            'DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT',
+            'BUREAU OF FIRE PROTECTION',
+            'CARAGA REGIONAL OFFICE',
+            'Maharlika Road, Brgy. Rizal, Surigao City',
+            'Telefax No. (085) 816-3599',
+            'Email address: bfp_caraga@yahoo.com'
+        ];
+
+        // Start adding text to merged cells from A9 to W15
+        let startRow = 9; // Starting at row 9
+        textData.forEach((text, index) => {
+            const rowIndex = startRow + index; // Calculate the row number
+
+            // Merge cells from A to W for the current row
+            worksheet.mergeCells(`A${rowIndex}:W${rowIndex}`);
+
+            // Get the merged cell
+            const cell = worksheet.getCell(`A${rowIndex}`);
+
+            // Set the text value
+            cell.value = text;
+
+            // Center the text horizontally and vertically
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+            // Apply font styling
+            cell.font = {
+                bold: index < 3, // Make the first three lines bold
+                size: index === 0 ? 14 : 12 // Larger font size for the first line
+            };
+        });
+
+        // Merge A9:W9 and apply bold specifically to this row
+        const titleCell = worksheet.getCell('A9');
+        titleCell.font = { ...titleCell.font, bold: true };
+
+
+        // Load the image
+        const logoPath = ExcelHeader2; // Replace with the path to your image file
+        const logoImage = await fetch(logoPath).then(res => res.blob()); // Fetch the image as a Blob
+        const logoBuffer = await logoImage.arrayBuffer(); // Convert Blob to ArrayBuffer
+
+        // Add the image to the workbook
+        const logoId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+        });
+
         const startDate = new Date(startExportDate);
         const endDate = new Date(endExportDate);
 
@@ -166,21 +228,18 @@ export default function FirestationReports() {
         const monthName2 = endDate.toLocaleString('default', { month: 'long' });
 
         // Merge and format the main title
-        worksheet.mergeCells("A2:W2");
-        worksheet.getCell("A2").value = "SUMMARY OF COLLECTIONS AND DEPOSITS";
-        worksheet.getCell("A2").alignment = { horizontal: "center", vertical: "middle" };
-        worksheet.getCell("A2").font = { bold: true, size: 14 };
-        worksheet.getCell("A2").border = { top: null, left: null, bottom: null, right: null };
+        worksheet.mergeCells("A17:W17");
+        worksheet.getCell("A17").value = "SUMMARY OF COLLECTIONS AND DEPOSITS";
+        worksheet.getCell("A17").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getCell("A17").font = { bold: true, size: 14 };
 
-        // Merge and format the subtitle
-        worksheet.mergeCells("A3:W3");
-        worksheet.getCell("A3").value = `As of ${monthName} ${startDate.getFullYear()}`;
-        worksheet.getCell("A3").alignment = { horizontal: "center", vertical: "middle" };
-        worksheet.getCell("A3").font = { bold: true };
-        worksheet.getCell("A3").border = { top: null, left: null, bottom: null, right: null };
+        worksheet.mergeCells("A18:W18");
+        worksheet.getCell("A18").value = `As of ${monthName} ${startDate.getFullYear()}`;
+        worksheet.getCell("A18").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getCell("A18").font = { bold: true };
 
         // Define headers
-        worksheet.getRow(5).values = [
+        worksheet.getRow(19).values = [
             "CITY / MUNICIPALITY",
             "COLLECTING OFFICER",
             "ACCOUNT CODE",
@@ -207,13 +266,13 @@ export default function FirestationReports() {
 
         ];
 
-        worksheet.mergeCells('C5:M5'); // Merge ACCOUNT CODE range
-        worksheet.mergeCells('N5:R5'); // Merge CURRENT YEAR header
-        worksheet.mergeCells('S5:U5');
+        worksheet.mergeCells('C19:M19'); // Merge ACCOUNT CODE range
+        worksheet.mergeCells('N19:R19'); // Merge CURRENT YEAR header
+        worksheet.mergeCells('S19:U19');
 
 
         // Subheaders for "NATURE OF COLLECTION DATA"
-        worksheet.getRow(6).values = [
+        worksheet.getRow(20).values = [
             "", "",
             "628 - BFP-01", "628 - BFP-02", "628 - BFP-03",
             "628 - BFP-04", "628 - BFP-05", "628 - BFP-06",
@@ -224,20 +283,20 @@ export default function FirestationReports() {
         ];
 
         // Apply header styles
-        [6].forEach((rowIndex) => {
+        [20].forEach((rowIndex) => {
             worksheet.getRow(rowIndex).font = { name: "Arial", size: 7 };
             worksheet.getRow(rowIndex).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
         });
-        [5].forEach((rowIndex) => {
+        [19].forEach((rowIndex) => {
             worksheet.getRow(rowIndex).font = { bold: true, name: "Arial", size: 7 };
             worksheet.getRow(rowIndex).alignment = { horizontal: "center", vertical: "middle" };
         });
-        worksheet.getRow(6).height = 20; // Adjust to desired height
+        worksheet.getRow(20).height = 20; // Adjust to desired height
 
-        worksheet.mergeCells('A5:A6'); // Merge CITY / MUNICIPALITY
-        worksheet.getCell('A5').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        worksheet.getCell('A5').font = { bold: true, name: "Arial", size: 7 };
-        ['A5', 'A6'].forEach((cell) => {
+        worksheet.mergeCells('A19:A20'); // Merge CITY / MUNICIPALITY
+        worksheet.getCell('A19').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        worksheet.getCell('A19').font = { bold: true, name: "Arial", size: 7 };
+        ['A19', 'A20'].forEach((cell) => {
             worksheet.getCell(cell).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
@@ -247,10 +306,10 @@ export default function FirestationReports() {
         });
 
 
-        worksheet.mergeCells('B5:B6'); // Merge COLLECTING OFFICER
-        worksheet.getCell('B5').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        worksheet.getCell('B5').font = { bold: true, name: "Arial", size: 7 };
-        ['B5', 'B6'].forEach((cell) => {
+        worksheet.mergeCells('B19:B20'); // Merge COLLECTING OFFICER
+        worksheet.getCell('B19').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        worksheet.getCell('B19').font = { bold: true, name: "Arial", size: 7 };
+        ['B19', 'B20'].forEach((cell) => {
             worksheet.getCell(cell).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
@@ -259,11 +318,11 @@ export default function FirestationReports() {
             };
         });
 
-        worksheet.mergeCells('V5:W6'); // Merge TOTAL UNDEPOSITED
-        worksheet.getCell('V5').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        worksheet.getCell('V5').value = "TOTAL UNDEPOSITED";
-        worksheet.getCell('V5').font = { bold: true, name: "Arial", size: 7 };
-        ['V5', 'W6'].forEach((cell) => {
+        worksheet.mergeCells('V19:W20'); // Merge TOTAL UNDEPOSITED
+        worksheet.getCell('V19').alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        worksheet.getCell('V19').value = "TOTAL UNDEPOSITED";
+        worksheet.getCell('V19').font = { bold: true, name: "Arial", size: 7 };
+        ['V19', 'W20'].forEach((cell) => {
             worksheet.getCell(cell).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
@@ -303,12 +362,13 @@ export default function FirestationReports() {
         worksheet.views = [
             {
                 state: 'frozen',
-                xSplit: 0, // No horizontal freeze
-                ySplit: 6, // Freeze row 5 (just below your headers)
-                topLeftCell: 'A7', // The first cell visible after freeze
-                activeCell: 'A7', // The cell that is active when the worksheet is opened
+                xSplit: 0, // Freeze columns to the left of W
+                ySplit: 15, // Freeze rows above A17
+                topLeftCell: 'A18', // Start display from A17
+                activeCell: 'A18'   // A17 will be the active cell
             }
         ];
+        
 
         // Add data dynamically
         const filteredData = reportsData.filter((data) => {
@@ -358,7 +418,7 @@ export default function FirestationReports() {
             return a.collectingOfficer.localeCompare(b.collectingOfficer); // Sort by officer
         });
 
-        let currentRow = 7; // Start adding data from row 8
+        let currentRow = 21;// Start adding data from row 8
         let currentCity = ''; // To keep track of the current city
 
 
@@ -370,7 +430,7 @@ export default function FirestationReports() {
             if (data.fireStationName !== currentCity) {
                 // Insert a blank row with the city name
                 worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-                worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName}`; 
+                worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName}`;
                 worksheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
                 worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
 
@@ -576,23 +636,41 @@ export default function FirestationReports() {
             currentRow++;
         });
 
-        // Apply styles to all data rows
         worksheet.eachRow((row, rowIndex) => {
-            row.eachCell((cell) => {
-                // Apply borders
-                cell.border = {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    bottom: { style: "thin" },
-                    right: { style: "thin" },
-                };
+            if (rowIndex > 16) { // Check if the row index is greater than 16
+                row.eachCell((cell) => {
+                    // Apply borders
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
 
-                // Apply font and alignment
-                if (rowIndex > 6) {
+                    // Apply font and alignment
                     cell.font = { name: "Arial", size: 7 };
-                    cell.alignment = { horizontal: "center", vertical: "middle" };
-                }
-            });
+                    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+                });
+            }
+        });
+
+        // Add the logo to the worksheet at a specific position
+        const totalColumns = 23; // Total number of columns in your worksheet
+        const imageWidth = 650; // Width of the image in pixels
+        const cellWidth = 75; // Average column width in pixels (adjust based on your worksheet settings)
+        
+        const imageWidthInColumns = imageWidth / cellWidth; // Convert image width to columns
+        const initialCenterColumn = (totalColumns - imageWidthInColumns) / 2;
+        const leftAdjustedColumn = initialCenterColumn - 2; // Shift further left by 1 column
+        
+        worksheet.addImage(logoId, {
+            tl: { col: Math.max(0, leftAdjustedColumn), row: 1 }, // Shifted column, ensuring no negative value
+            ext: { width: 650, height: 150 }, // Adjusted width and height for the image
+            positioning: {
+                type: 'absolute', // Positioning type
+                moveWithCells: true, // Move with cells
+                size: true // Resize with cells
+            }
         });
 
         const buffer = await workbook.xlsx.writeBuffer();
