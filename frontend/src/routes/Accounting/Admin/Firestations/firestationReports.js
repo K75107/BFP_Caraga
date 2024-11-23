@@ -158,19 +158,26 @@ export default function FirestationReports() {
             fitToHeight: 0,
         };
 
-        
+        const startDate = new Date(startExportDate);
+        const endDate = new Date(endExportDate);
+
+        // Get the month name
+        const monthName = startDate.toLocaleString('default', { month: 'long' });
+        const monthName2 = endDate.toLocaleString('default', { month: 'long' });
 
         // Merge and format the main title
         worksheet.mergeCells("A2:W2");
         worksheet.getCell("A2").value = "SUMMARY OF COLLECTIONS AND DEPOSITS";
         worksheet.getCell("A2").alignment = { horizontal: "center", vertical: "middle" };
         worksheet.getCell("A2").font = { bold: true, size: 14 };
+        worksheet.getCell("A2").border = { top: null, left: null, bottom: null, right: null };
 
         // Merge and format the subtitle
         worksheet.mergeCells("A3:W3");
-        worksheet.getCell("A3").value = "As of (DATE)";
+        worksheet.getCell("A3").value = `As of ${monthName} ${startDate.getFullYear()}`;
         worksheet.getCell("A3").alignment = { horizontal: "center", vertical: "middle" };
         worksheet.getCell("A3").font = { bold: true };
+        worksheet.getCell("A3").border = { top: null, left: null, bottom: null, right: null };
 
         // Define headers
         worksheet.getRow(5).values = [
@@ -265,16 +272,6 @@ export default function FirestationReports() {
             };
         });
 
-        worksheet.views = [
-            {
-              state: 'frozen',
-              xSplit: 0,
-              ySplit: 1, // This freezes the first row
-              topLeftCell: 'A1', // Starting point of the view (top-left of the sheet)
-              activeCell: 'A1',  // The active cell (optional, can specify any cell)
-            }
-          ];
-
         // Adjust column widths to fit within one page
         worksheet.columns = [
             { width: 8 },  // CITY / MUNICIPALITY
@@ -301,6 +298,16 @@ export default function FirestationReports() {
             { width: 7 },  //
             { width: 7 },  //
 
+        ];
+
+        worksheet.views = [
+            {
+                state: 'frozen',
+                xSplit: 0, // No horizontal freeze
+                ySplit: 6, // Freeze row 5 (just below your headers)
+                topLeftCell: 'A7', // The first cell visible after freeze
+                activeCell: 'A7', // The cell that is active when the worksheet is opened
+            }
         ];
 
         // Add data dynamically
@@ -353,7 +360,7 @@ export default function FirestationReports() {
 
         let currentRow = 7; // Start adding data from row 8
         let currentCity = ''; // To keep track of the current city
-        
+
 
         // Create a map to store all reports for each officer (as an array)
         const officerReportsMap = {};
@@ -362,12 +369,18 @@ export default function FirestationReports() {
             // Check if the current city's name has changed
             if (data.fireStationName !== currentCity) {
                 // Insert a blank row with the city name
+                worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
                 worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName} City`; // City name
                 worksheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
                 worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
 
-                worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-
+                // Apply borders to the merged row
+                worksheet.getCell(`A${currentRow}`).border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
 
                 // Increase the row to leave space above
                 currentRow++;
@@ -590,7 +603,7 @@ export default function FirestationReports() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "FirestationReports.xlsx";
+        link.download = `Firestation Report ${monthName} to ${monthName2}.xlsx`;
         link.click();
         URL.revokeObjectURL(url);
     };
@@ -759,8 +772,8 @@ export default function FirestationReports() {
                             <div className="px-3 py-1 flex flex-row justify-between">
                                 <div className='px-3 py-1'>
                                     <DatePicker
-                                        // selected={startExportDate}
-                                        // onChange={(date) => setStartExportDate(date)}
+                                        selected={startExportDate}
+                                        onChange={(date) => setStartExportDate(date)}
                                         placeholderText="Start Date"
                                         dateFormat="yyyy-MM-dd"
                                         onKeyDown={(e) => e.stopPropagation()}
@@ -769,8 +782,8 @@ export default function FirestationReports() {
                                 </div>
                                 <div className='px-3 py-1'>
                                     <DatePicker
-                                        // selected={endExportDate}
-                                        // onChange={(date) => setEndExportDate(date)}
+                                        selected={endExportDate}
+                                        onChange={(date) => setEndExportDate(date)}
                                         placeholderText="End Date"
                                         dateFormat="yyyy-MM-dd"
                                         onKeyDown={(e) => e.stopPropagation()}
