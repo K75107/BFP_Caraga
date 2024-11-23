@@ -55,7 +55,7 @@ export default function CashflowsDetails() {
         { name: "Cash and Cash Equivalents at the End of the Period", isLocked: false },
     ];
     const [selectedCategories, setSelectedCategories] = useState([]);
-
+    console.log("data of selectedCategories: ", selectedCategories);
 
     //Current Year
     const [currentCashflow, setCurrentCashflow] = useState();
@@ -238,7 +238,7 @@ export default function CashflowsDetails() {
             try {
                 const mergedMap = new Map();
                 const idMapping = new Map(); // Map to track ID resolution
-    
+
                 // Add current categories to the map
                 cashflowCategoriesData.forEach((item) => {
                     mergedMap.set(item.id, {
@@ -246,20 +246,20 @@ export default function CashflowsDetails() {
                         periodAmount: 0, // Initialize periodAmount
                     });
                 });
-    
+
                 // Merge period data
                 if (Array.isArray(periodDataCategories) && periodDataCategories.length > 0) {
                     periodDataCategories.forEach((item) => {
                         const resolvedParentID =
                             item.parentID === "null" ? null : idMapping.get(item.parentID) || item.parentID;
-    
+
                         // Find a matching item based on resolvedParentID and categoryName
                         const existingItem = Array.from(mergedMap.values()).find(
                             (existing) =>
                                 existing.categoryName === item.categoryName &&
                                 existing.parentID === resolvedParentID
                         );
-    
+
                         if (existingItem) {
                             // Update the idMapping and periodAmount of the existing item
                             idMapping.set(item.id, existingItem.id);
@@ -272,12 +272,12 @@ export default function CashflowsDetails() {
                             const siblingPositions = Array.from(mergedMap.values())
                                 .filter((cat) => cat.parentID === resolvedParentID)
                                 .map((cat) => cat.position);
-    
+
                             const newPosition =
                                 siblingPositions.length > 0
                                     ? Math.max(...siblingPositions) + 1
                                     : 1; // Default position if no siblings exist
-    
+
                             // Add the new item to the map
                             const newItem = {
                                 ...item,
@@ -288,16 +288,16 @@ export default function CashflowsDetails() {
                                 isFromPeriod: true, // Mark as period data
                             };
                             mergedMap.set(item.id, newItem);
-    
+
                             // Update the idMapping with the new item's id
                             idMapping.set(item.id, item.id);
                         }
                     });
                 }
-    
+
                 // Convert mergedMap to an array
                 const mergedData = Array.from(mergedMap.values());
-    
+
                 // Sort and recursively build hierarchy
                 setCashflowMergeData(sortCategoriesRecursively(mergedData));
             } catch (error) {
@@ -305,7 +305,7 @@ export default function CashflowsDetails() {
             }
         }
     }, [cashflowCategoriesData, periodDataCategories]);
-    
+
 
     const handleNoClick = () => {
         setisEmpty(false); // Just set isEmpty to false
@@ -1475,8 +1475,8 @@ export default function CashflowsDetails() {
             };
 
             const mainCategoryamountStyle = {
-                font: {bold: true, size: 12, name: 'Times New Roman'},
-                alignment: {horizontal: 'center' , vertical: 'middle'},
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
             };
 
             // Apply Header Styles
@@ -1526,7 +1526,7 @@ export default function CashflowsDetails() {
                         amountCell.style = mainCategoryamountStyle; // Apply bold and centered styles
                         amountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
                     }
-        
+
                     // Parse and apply styles for the period amount cell (column 4)
                     if (!isNaN(parseFloat(category.periodAmount))) {
                         const periodAmountCell = row.getCell(4);
@@ -1534,8 +1534,8 @@ export default function CashflowsDetails() {
                         periodAmountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
                     }
                 }
-        
-        
+
+
 
 
                 // Style main categories
@@ -1579,7 +1579,7 @@ export default function CashflowsDetails() {
                     ]);
 
                     // Style totals
-                    totalRow.getCell(1).font = { bold: true, size: 12 , name: 'Times New Roman'};
+                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
                     totalRow.getCell(2).style = boldDataStyle;
                     totalRow.getCell(4).style = boldDataStyle;
 
@@ -1703,58 +1703,91 @@ export default function CashflowsDetails() {
 
 
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[360px] h-auto rounded py-4 px-4">
-                    <div className="flex justify-between">
-                        <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Add New Category</h1>
+                <div className="bg-white w-[600px] h-auto rounded-lg py-4 px-4 shadow-xl flex flex-col">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4">
+                        <h1 className="font-poppins font-bold text-xl text-gray-700">Add New Category</h1>
                         <button
-                            className="font-poppins text-[27px] text-[#1E1E1E]"
-                            onClick={() => setShowModal(false)}
+                            className="text-2xl font-semibold text-gray-500 focus:outline-none"
+                            onClick={() => {
+                                setSelectedCategories([]); // Reset selected checkboxes
+                                setShowModal(false);
+                            }}
                         >
                             ×
                         </button>
                     </div>
-                    <hr className="border-t border-[#7694D4] my-3" />
-                    <div className="relative mb-4">
-                        {/* Input for custom category */}
-                        <input
-                            type="text"
-                            id="new_category_input"
-                            className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:outline-none focus:border-blue-600 peer"
-                            placeholder=" "
-                            value={newCategory}
-                            onChange={(e) => setNewCategory(e.target.value)}
-                        />
-                        <label
-                            htmlFor="new_category_input"
-                            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-0 bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-                        >
-                            Category Name
-                        </label>
-                    </div>
+                    <hr className="border-t border-[#7694D4] -my-1" />
 
-                    {/* Checkboxes for main categories */}
-                    <div className="mb-4">
-                        <h2 className="font-semibold text-sm text-gray-700 mb-2">Select Main Categories:</h2>
-                        {mainCategories.map((category) => (
-                            <label key={category.name} className="block text-sm mb-2">
+                    {/* Content */}
+                    <div className="p-4 flex flex-col flex-grow items-center">
+                        {/* Input for category name */}
+                        <div className="w-full max-w-[500px] mb-4">
+                            <div className="relative">
                                 <input
-                                    type="checkbox"
-                                    checked={selectedCategories.includes(category.name)}
-                                    onChange={() => toggleCheckbox(category.name)}
-                                    className="mr-2"
+                                    type="text"
+                                    id="new_category_input"
+                                    className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:outline-none focus:border-blue-600 peer"
+                                    placeholder=" "
+                                    value={newCategory}
+                                    onChange={(e) => setNewCategory(e.target.value)}
                                 />
-                                {category.name}
-                            </label>
-                        ))}
+                                <label
+                                    htmlFor="new_category_input"
+                                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-0 bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
+                                >
+                                    Category Name
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Checkboxes for main categories */}
+                        <div className="w-full max-w-[500px] mb-4">
+                            <h2 className="font-semibold text-sm text-gray-700 mb-2">Select Main Categories:</h2>
+                            <ul className="h-40 px-3 pb-3 overflow-y-auto text-sm text-gray-700 border rounded-lg">
+                                {mainCategories.map((category) => (
+                                    <li key={category.name} className="flex items-center p-2 hover:bg-gray-200 active:bg-gray-300">
+                                        <label className="flex items-center w-full cursor-pointer">
+                                            <span className="flex-grow text-sm text-gray-900">{category.name}</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedCategories.includes(category.name)}
+                                                onChange={() => toggleCheckbox(category.name)}
+                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                        </label>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
 
-                    {/* Add Button */}
-                    <div className="flex justify-end">
-                        <YesNoButton type="yes" label={"Add"}
+                    {/* Footer */}
+                    <div className="mb-2 flex justify-center">
+                        {/* Cancel Button */}
+                        <button
+                            type="button"
+                            className="w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg mr-2"
+                            onClick={() => {
+                                setSelectedCategories([]); // Reset selected checkboxes
+                                setShowModal(false);
+                            }}
+                        >
+                            Cancel
+                        </button>
+
+                        {/* Add Button */}
+                        <button
+                            type="button"
+                            className={`w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg ${!newCategory && selectedCategories.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={!newCategory && selectedCategories.length === 0}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 addNewCategory();
-                            }} />
+                            }}
+                        >
+                            Add
+                        </button>
                     </div>
                 </div>
             </Modal>
