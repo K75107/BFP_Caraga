@@ -55,7 +55,6 @@ export default function CashflowsDetails() {
         { name: "Cash and Cash Equivalents at the End of the Period", isLocked: false },
     ];
     const [selectedCategories, setSelectedCategories] = useState([]);
-    console.log("data of selectedCategories: ", selectedCategories);
 
     //Current Year
     const [currentCashflow, setCurrentCashflow] = useState();
@@ -830,6 +829,7 @@ export default function CashflowsDetails() {
         const netTotals = getNetTotalByMainCategory(cashflowMergeData);
 
         const { netChange, netPeriodChange } = getNetCashChange(cashflowMergeData);
+        
         return (
             <tr
                 ref={setNodeRef}
@@ -1652,8 +1652,6 @@ export default function CashflowsDetails() {
                 </div>
             </div>
             <div className="px-6 py-8">
-
-
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">

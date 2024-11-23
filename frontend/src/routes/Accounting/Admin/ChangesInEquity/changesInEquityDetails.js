@@ -46,7 +46,11 @@ export default function ChangesInEquityDetails() {
     //Merge Data
     const [cEquityMergeData, setcEquityMergeData] = useState([]);
 
+    //Current Year
+    const [currentcEquity, setCurrentcEquity] = useState();
 
+    //Selected Year
+    const [selectedYear, setSelectedYear] = useState();
 
 
     // Function to recursively calculate the total for a main category and its subcategories
@@ -67,6 +71,58 @@ export default function ChangesInEquityDetails() {
             return acc + calculateCategoryTotal(subcategory.id);
         }, 0);
     };
+
+    //Current Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "ChangesInEquity", cEquityId);
+                const cEquityDoc = await getDoc(selectedCashflowRef);
+
+                if (cEquityDoc.exists()) {
+                    const data = cEquityDoc.data();
+                    setCurrentcEquity(data);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (cEquityId) {
+            fetchYear();
+        }
+
+    }, [cEquityId]);
+
+    //Selected Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "ChangesInEquity", periodId);
+                const cEquityDoc = await getDoc(selectedCashflowRef);
+
+                if (cEquityDoc.exists()) {
+
+                    const year = cEquityDoc.data().year;
+                    setSelectedYear(year);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (periodId) {
+            fetchYear();
+        }
+
+    }, [periodId]);
+
 
     // Calculate total for all main categories
     useEffect(() => {
@@ -539,10 +595,10 @@ export default function ChangesInEquityDetails() {
             transform: CSS.Transform.toString(transform),
         };
 
-        const hasSubcategories = category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id);
+        const hasSubcategories = category.level >= 0 && cEquityMergeData.some(subCat => subCat.parentID === category.id);
 
         const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cEquityMergeData);
-    
+
 
 
 
@@ -595,10 +651,10 @@ export default function ChangesInEquityDetails() {
                         ) : (
                             <span
                                 onClick={() => {
-                                    
-                                        setEditingCell(category.id);
-                                        setEditValue({ field: 'categoryName', value: category.categoryName || '' });
-                               
+
+                                    setEditingCell(category.id);
+                                    setEditValue({ field: 'categoryName', value: category.categoryName || '' });
+
                                 }}
                                 className="block px-1 py-1 hover:bg-gray-100"
                             >
@@ -652,13 +708,9 @@ export default function ChangesInEquityDetails() {
                     ) : (
                         (
                             <span
-                                onClick={() => {
-                                    setEditingCell(category.id);
-                                    setEditValue({ field: 'amount', value: category.amount || '' });
-                                }}
                                 className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
                             >
-                                {formatNumber(category.amount) || '-'}
+                                {formatNumber(category.periodAmount) || '-'}
                             </span>
                         )
                     )}
@@ -1055,7 +1107,7 @@ export default function ChangesInEquityDetails() {
             <div className="px-6">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
-                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes In Equity</h1>
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
 
                         <div class="flex space-x-4">
 
@@ -1076,16 +1128,18 @@ export default function ChangesInEquityDetails() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="px-6 py-8">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+                    <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                            <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                                    <th scope="col" className="w-[20px]"></th>
+                                    <th scope="col" className="px-2 py-4 w-[600px]">Account Description</th>
+                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{currentcEquity?.year || ""}</th>
+                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{selectedYear || ''}</th>
+
                                 </tr>
                             </thead>
                             <tbody>
@@ -1109,15 +1163,12 @@ export default function ChangesInEquityDetails() {
                                     <td className="px-2 py-3 font-bold text-gray-700">
                                         {totalSurplusDeficit?.toLocaleString() || '-'}
                                     </td>
-                                    <td></td>
-                                    <td></td>
 
                                 </tr>
                                 <tr>
                                     <td className="px-2 py-3">Balance</td>
                                     <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
-                                    <td></td>
-                                    <td></td>
+
                                 </tr>
                             </tfoot>
                         </table>
@@ -1201,47 +1252,49 @@ export default function ChangesInEquityDetails() {
                 </div>
             </Modal>
             {/* Right-click context modal */}
-            {showRightClickModal && (
-                <div
-                    id="user-modal-overlay"
-                    className="fixed inset-0 flex justify-center items-center"
-                    onClick={closeModalOnOutsideClick}
-                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
-                >
+            {
+                showRightClickModal && (
                     <div
-                        style={{ top: modalPosition.y, left: modalPosition.x }}
-                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                        id="user-modal-overlay"
+                        className="fixed inset-0 flex justify-center items-center"
+                        onClick={closeModalOnOutsideClick}
+                        onContextMenu={(event) => closeModalOnOutsideClick(event)}
                     >
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewRow}
+                        <div
+                            style={{ top: modalPosition.y, left: modalPosition.x }}
+                            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
                         >
-                            Add Row Below
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewParentCategory}
-                        >
-                            Add Parent Category
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewSubcategory}
-                        >
-                            Add Subcategory
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewRow}
+                            >
+                                Add Row Below
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewParentCategory}
+                            >
+                                Add Parent Category
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewSubcategory}
+                            >
+                                Add Subcategory
+                            </button>
 
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={handleDeleteRow}
-                        >
-                            Delete Row
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={handleDeleteRow}
+                            >
+                                Delete Row
+                            </button>
 
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </Fragment>
+        </Fragment >
     );
 }
