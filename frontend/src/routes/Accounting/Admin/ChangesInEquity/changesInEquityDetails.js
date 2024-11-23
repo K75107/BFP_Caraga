@@ -11,7 +11,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import ExportButton from "../../../../components/exportButton";
-
+import AddButton from "../../../../components/addButton";
 
 
 export default function ChangesInEquityDetails() {
@@ -211,7 +211,7 @@ export default function ChangesInEquityDetails() {
             try {
                 const mergedMap = new Map();
                 const idMapping = new Map(); // Tracks id mappings between periodData and cEquityCategoriesData
-    
+
                 // Add current categories to the map
                 cEquityCategoriesData.forEach((item) => {
                     mergedMap.set(item.id, {
@@ -219,24 +219,24 @@ export default function ChangesInEquityDetails() {
                         periodAmount: 0, // Initialize periodAmount
                     });
                 });
-    
+
                 // Merge period data
                 if (Array.isArray(periodData) && periodData.length > 0) {
                     periodData.forEach((item) => {
                         const resolvedParentID =
                             item.parentID === "null" ? null : idMapping.get(item.parentID) || item.parentID;
-    
+
                         // Detect conflicts by categoryName and resolvedParentID
                         const existingItem = Array.from(mergedMap.values()).find(
                             (existing) =>
                                 existing.categoryName === item.categoryName &&
                                 existing.parentID === resolvedParentID
                         );
-    
+
                         if (existingItem) {
                             // Map periodData id to the existing item's id
                             idMapping.set(item.id, existingItem.id);
-    
+
                             // Update existing item's periodAmount
                             mergedMap.set(existingItem.id, {
                                 ...existingItem,
@@ -247,12 +247,12 @@ export default function ChangesInEquityDetails() {
                             const siblingPositions = Array.from(mergedMap.values())
                                 .filter((cat) => cat.parentID === resolvedParentID)
                                 .map((cat) => cat.position);
-    
+
                             const newPosition =
                                 siblingPositions.length > 0
                                     ? Math.max(...siblingPositions) + 1
                                     : 1; // Default position if no siblings exist
-    
+
                             // Add new item to the map
                             const newItem = {
                                 ...item,
@@ -264,16 +264,16 @@ export default function ChangesInEquityDetails() {
                                 isFromPeriod: true, // Mark as period data
                             };
                             mergedMap.set(item.id, newItem);
-    
+
                             // Track id mapping for new item
                             idMapping.set(item.id, item.id);
                         }
                     });
                 }
-    
+
                 // Convert map to array
                 const mergedData = Array.from(mergedMap.values());
-    
+
                 // Sort and recursively build hierarchy
                 setcEquityMergeData(sortCategoriesRecursively(mergedData));
             } catch (error) {
@@ -281,7 +281,7 @@ export default function ChangesInEquityDetails() {
             }
         }
     }, [cEquityCategoriesData, periodData]);
-    
+
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
@@ -449,25 +449,25 @@ export default function ChangesInEquityDetails() {
             const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
             const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
-           
+
             const newParentDocRef = await addDoc(categoriesCollectionRef, {
                 categoryName: '',
-                parentID: null, 
+                parentID: null,
                 created_at: new Date(),
-                position: selectedRowData.position 
+                position: selectedRowData.position
             });
 
-           
+
             await updateDoc(doc(categoriesCollectionRef, selectedRowData.id), {
-                parentID: newParentDocRef.id, 
-                position: 1 
+                parentID: newParentDocRef.id,
+                position: 1
             });
 
-      
+
             const categoriesToUpdate = cEquityCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
             for (const cat of categoriesToUpdate) {
                 await updateDoc(doc(categoriesCollectionRef, cat.id), {
-                    position: cat.position + 1 
+                    position: cat.position + 1
                 });
             }
 
@@ -493,43 +493,33 @@ export default function ChangesInEquityDetails() {
     };
 
 
-    function getTotalAmountForCategory(categoryId, data) {
-        // Start with the amount of the current category
-        const currentCategory = data.find(cat => cat.id === categoryId);
-        let totalAmount = currentCategory ? currentCategory.amount || 0 : 0;
 
-        // Find all subcategories with the parentID matching the current category's id
-        const subcategories = data.filter(subCat => subCat.parentID === categoryId);
-
-        // Recursively add up the amount for each subcategory
-        subcategories.forEach(subCat => {
-            totalAmount += getTotalAmountForCategory(subCat.id, data);
-        });
-
-        return totalAmount;
-    }
 
     function getLeafCategoryAmountTotal(categoryId, data) {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
 
-        // Initialize the total amount
+        // Initialize the total amounts
         let totalAmount = 0;
+        let totalPeriodAmount = 0;
 
         subcategories.forEach(subCat => {
             // Check if the subcategory has any further subcategories
             const hasChildren = data.some(cat => cat.parentID === subCat.id);
 
             if (!hasChildren) {
-                // If no children, add its amount to the total
+                // If no children, add its amounts to the totals
                 totalAmount += subCat.amount || 0;
+                totalPeriodAmount += subCat.periodAmount || 0;
             } else {
-                // If it has children, recursively calculate the total for those children
-                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
+                // If it has children, recursively calculate the totals for those children
+                const childTotals = getLeafCategoryAmountTotal(subCat.id, data);
+                totalAmount += childTotals.totalAmount;
+                totalPeriodAmount += childTotals.totalPeriodAmount;
             }
         });
 
-        return totalAmount;
+        return { totalAmount, totalPeriodAmount };
     }
 
     const [inputWidth, setInputWidth] = useState('auto');
@@ -551,7 +541,8 @@ export default function ChangesInEquityDetails() {
 
         const hasSubcategories = category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id);
 
-        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cEquityCategoriesData);
+        const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cEquityMergeData);
+    
 
 
 
@@ -604,12 +595,12 @@ export default function ChangesInEquityDetails() {
                         ) : (
                             <span
                                 onClick={() => {
-                                    if (category.categoryName !== 'Cash Inflows' && category.categoryName !== 'Cash Outflows') {  // Make only other categories clickable
+                                    
                                         setEditingCell(category.id);
                                         setEditValue({ field: 'categoryName', value: category.categoryName || '' });
-                                    }
+                               
                                 }}
-                                className={`block px-1 py-1 ${category.categoryName === 'Cash Inflows' || category.categoryName === 'Cash Outflows' ? '' : 'hover:bg-gray-100'}`}
+                                className="block px-1 py-1 hover:bg-gray-100"
                             >
                                 {category.categoryName || '-'}
                             </span>
@@ -631,7 +622,7 @@ export default function ChangesInEquityDetails() {
 
                 <td className="px-2 py-2 w-56 h-6 ">
                     {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
+                        <span className="font-bold">{formatNumber(totalAmount) || '-'}</span>
                     ) : (
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
@@ -655,7 +646,23 @@ export default function ChangesInEquityDetails() {
                         )
                     )}
                 </td>
-                <td className="px-2 py-3 text-center">{/* Any actions */}</td>
+                <td className="px-2 py-2 w-56 h-6 ">
+                    {hasSubcategories ? (
+                        <span className="font-bold">{formatNumber(totalPeriodAmount) || '-'}</span>
+                    ) : (
+                        (
+                            <span
+                                onClick={() => {
+                                    setEditingCell(category.id);
+                                    setEditValue({ field: 'amount', value: category.amount || '' });
+                                }}
+                                className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                            >
+                                {formatNumber(category.amount) || '-'}
+                            </span>
+                        )
+                    )}
+                </td>
             </tr>
         );
     }
@@ -1045,30 +1052,29 @@ export default function ChangesInEquityDetails() {
                 </div>
             )}
 
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
-                <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes In Equity</h1>
-                </div>
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
-                        <li className="ml-auto flex-row">
-                            <button
+            <div className="px-6">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes In Equity</h1>
+
+                        <div class="flex space-x-4">
+
+
+                            <AddButton
                                 onClick={() => setShowModal(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
-                            >
-                                + ADD CATEGORY
-                            </button>
-                            <button
+                                label={"ADD CATEGORY"}
+                            />
+
+                            <AddButton
                                 onClick={() => setShowModalPeriod(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
-                            >
-                                + ADD PERIOD
-                            </button>
-                        </li>
-                        <ExportButton
-                            label="EXPORT"
-                        />
-                    </ul>
+                                label={"ADD PERIOD"}
+                            />
+
+                            <ExportButton
+                                label="EXPORT"
+                            />
+                        </div>
+                    </div>
                 </div>
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
