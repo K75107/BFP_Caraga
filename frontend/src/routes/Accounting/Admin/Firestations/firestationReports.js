@@ -168,7 +168,7 @@ export default function FirestationReports() {
             bottom: 0, // Bottom margin (in inches)
             header: 1.3, // Header margin (distance from the top edge)
             footer: 0, // Footer margin (distance from the bottom edge)
-          };
+        };
         // Text data
         const textData = [
             'Republic of the Philippines',
@@ -181,7 +181,7 @@ export default function FirestationReports() {
         ];
 
         // Start adding text to merged cells from A9 to W15
-        let startRow = 9; // Starting at row 9
+        let startRow = 8; // Starting at row 9
         textData.forEach((text, index) => {
             const rowIndex = startRow + index; // Calculate the row number
 
@@ -361,14 +361,14 @@ export default function FirestationReports() {
 
         worksheet.views = [
             {
-                state: 'frozen',
-                xSplit: 0, // Freeze columns to the left of W
-                ySplit: 15, // Freeze rows above A17
-                topLeftCell: 'A18', // Start display from A17
-                activeCell: 'A18'   // A17 will be the active cell
+                state: 'split',
+                ySplit: 16,
+                xSplit: 0,
+                topLeftCell: 'A17',
+                activeCell: 'A17'
             }
         ];
-        
+
 
         // Add data dynamically
         const filteredData = reportsData.filter((data) => {
@@ -425,28 +425,53 @@ export default function FirestationReports() {
         // Create a map to store all reports for each officer (as an array)
         const officerReportsMap = {};
 
+        const grandTotals = [];
+        let cityTotals = Array(21).fill(0); // Array to track subtotals for each column
+
+
         filteredData.forEach((data) => {
-            // Check if the current city's name has changed
             if (data.fireStationName !== currentCity) {
-                // Insert a blank row with the city name
+                if (currentCity) {
+                    worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+                    worksheet.getCell(`A${currentRow}`).value = `${currentCity} Subtotal`;
+                    worksheet.getCell(`A${currentRow}`).font = { bold: true };
+                    worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center" };
+
+                    cityTotals.forEach((value, index) => {
+                        const colIndex = index + 3; // Adjust column index
+                        const cell = worksheet.getCell(currentRow, colIndex); // Define 'cell'
+
+                        if (value > 0) {
+                            cell.value = value;
+                            cell.font = { bold: true };
+                        } else {
+                            cell.value = ""; // Ensure empty cells are properly defined
+                        }
+
+                        cell.border = {
+                            top: { style: "thin" },
+                            left: { style: "thin" },
+                            bottom: { style: "thin" },
+                            right: { style: "thin" },
+                        };
+
+                        // Accumulate grand total
+                        grandTotals[index] = (grandTotals[index] || 0) + value;
+                    });
+
+                    currentRow++;
+                    cityTotals.fill(0); // Reset city totals for the next city
+                }
+
+                // Increase the row to leave space above
                 worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
                 worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName}`;
                 worksheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
                 worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
-
-                // Apply borders to the merged row
-                worksheet.getCell(`A${currentRow}`).border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-
-                // Increase the row to leave space above
+                currentCity = data.fireStationName;
                 currentRow++;
-
-                currentCity = data.fireStationName; // Update current city
             }
+
 
             // Insert the data for the current row
             worksheet.getCell(`A${currentRow}`).value = data.fireStationName || "N/A";
@@ -477,6 +502,7 @@ export default function FirestationReports() {
                     bottom: { style: "thin" },
                     right: { style: "thin" },
                 };
+                cityTotals[index] += value || 0;
             });
 
             // Calculate and insert the Total Collections (sum of the collectionData)
@@ -496,6 +522,8 @@ export default function FirestationReports() {
                 right: { style: "thin" },
             };
 
+            cityTotals[11] += totalCollection;
+
             // Calculate 20% LGU Share Collections (20% of the total collection)
             const lguShare = totalCollection * 0.2;
 
@@ -510,6 +538,8 @@ export default function FirestationReports() {
                 right: { style: "thin" },
             };
 
+            cityTotals[12] += lguShare;
+
             // Store this report in the map for the current officer
             if (!officerReportsMap[data.collectingOfficer]) {
                 officerReportsMap[data.collectingOfficer] = [];
@@ -522,14 +552,34 @@ export default function FirestationReports() {
 
             // Populate "Total Last Report" column (16th column) with the second-to-last report's collection amount
             const officerReports = officerReportsMap[data.collectingOfficer];
+            let totalAmount = 0;
+
+            // Ensure the officer reports are sorted by date
+            officerReports.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort ascending by date
 
             // Check if there are more than 1 report for the officer (second-to-last exists)
             if (officerReports.length > 1) {
                 const secondToLastReport = officerReports[officerReports.length - 2]; // Get second-to-last report
-                worksheet.getCell(currentRow, 16).value = secondToLastReport.collectionAmount; // Set the value in the "Total Last Report" column
+                worksheet.getCell(currentRow, 16).value = parseFloat(secondToLastReport.collectionAmount || 0); // Ensure decimals
             } else {
                 worksheet.getCell(currentRow, 16).value = ""; // If there's no second-to-last report, leave it empty
             }
+
+            // Format the "Total Last Report" column to show decimals
+            worksheet.getCell(currentRow, 16).numFmt = "0.00"; // Ensure 2 decimal places
+
+            // Calculate total collection amount for the officer
+            officerReports.forEach((report) => {
+                totalAmount += parseFloat(report.collectionAmount || 0); // Use parseFloat to preserve decimals
+            });
+
+            // Accumulate total amount into cityTotals
+            cityTotals[13] = (cityTotals[13] || 0) + totalAmount;
+
+            // Debugging log (optional)
+            console.log("Officer Reports:", officerReports);
+            console.log("Total Amount:", totalAmount);
+            console.log("City Totals:", cityTotals);
 
             // Apply border to the "Total Last Report" column
             worksheet.getCell(currentRow, 16).border = {
@@ -538,6 +588,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+            cityTotals[13] += totalAmount;
 
             const totalDeposits = depositMap[data.collectingOfficer] || null; // Use `null` if no deposits
 
@@ -549,6 +600,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+            cityTotals[14] += totalDeposits;
 
             // Calculate "Undeposited Collection" (18th column)
             const totalCollections = worksheet.getCell(currentRow, 14).value || 0; // Default to 0 if missing
@@ -561,6 +613,8 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+
+            cityTotals[15] += undeposited;
 
             // Calculate "Prior Year Total Collections" (19th column)
             const currentYear = new Date().getFullYear();
@@ -580,6 +634,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+            cityTotals[16] += priorYearCollections;
 
             const priorYearDeposits = filteredData2
                 .filter(
@@ -596,6 +651,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+            cityTotals[17] += priorYearDeposits;
 
 
             const priorYearUndeposited =
@@ -610,6 +666,8 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
+            cityTotals[18] += priorYearUndeposited;
+
 
             // Retrieve values from columns 18 and 21
             const undeposited2 = worksheet.getCell(currentRow, 18).value || 0; // Use 0 if null or undefined
@@ -632,14 +690,87 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-
+            cityTotals[19] += totalCollection;
             currentRow++;
         });
 
+        if (currentCity) {
+            // Add Subtotal row for the current city
+            worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+            const subtotalCell = worksheet.getCell(`A${currentRow}`);
+            subtotalCell.value = `${currentCity} Subtotal`;
+            subtotalCell.font = { bold: true };
+            subtotalCell.alignment = { horizontal: "center", vertical: "middle" };
+
+            cityTotals.forEach((value, index) => {
+                const colIndex = index + 3; // Start from column C (index 3)
+                const cell = worksheet.getCell(currentRow, colIndex);
+
+                // Ensure that totals for columns like 'Undeposited Collection' or '20% LGU Share' are included
+                if (value > 0) {
+                    cell.value = value;
+                } else {
+                    cell.value = ""; // Ensure empty cells are properly defined
+                }
+
+                cell.font = { bold: true };
+                cell.alignment = { horizontal: "center", vertical: "middle" };
+
+                // Apply borders to each subtotal cell
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" },
+                };
+
+                // Accumulate grand total
+                grandTotals[index] = (grandTotals[index] || 0) + value;
+            });
+
+            // Ensure columns 22 and 23 (V and W) are merged after all cells are set
+            worksheet.mergeCells(`V${currentRow}:W${currentRow}`); // Merge columns V (22) and W (23)
+            currentRow++; // Move to the next row
+        }
+
+        // Add Grand Total row directly
+        worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        const grandTotalCell = worksheet.getCell(`A${currentRow}`);
+        grandTotalCell.value = "Grand Total";
+        grandTotalCell.font = { bold: true, size: 14 };
+        grandTotalCell.alignment = { horizontal: "center", vertical: "middle" };
+
+        grandTotals.forEach((total, index) => {
+            const colIndex = index + 3; // Start from column C (index 3)
+            const cell = worksheet.getCell(currentRow, colIndex);
+
+            if (total > 0) {
+                cell.value = total;
+                cell.font = { bold: true, size: 14 };
+                cell.alignment = { horizontal: "center", vertical: "middle" };
+
+                // Apply borders to each grand total cell
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" },
+                };
+            } else {
+                // Ensure that columns with no values show empty cells
+                const cell = worksheet.getCell(currentRow, colIndex);
+                cell.value = ""; // Set empty value for missing totals (like Undeposited Collection)
+            }
+        });
+
+        // Merge columns 22 and 23 in the Grand Total row once
+        worksheet.mergeCells(`V${currentRow}:W${currentRow}`); // Merge columns V (22) and W (23)
+
+        // Minimal formatting for rows after row 16
         worksheet.eachRow((row, rowIndex) => {
-            if (rowIndex > 16) { // Check if the row index is greater than 16
+            if (rowIndex > 16) {
                 row.eachCell((cell) => {
-                    // Apply borders
+                    // Apply basic borders
                     cell.border = {
                         top: { style: "thin" },
                         left: { style: "thin" },
@@ -648,23 +779,45 @@ export default function FirestationReports() {
                     };
 
                     // Apply font and alignment
-                    cell.font = { name: "Arial", size: 7 };
+                    cell.font = { name: "Arial", size: 7, }; // Standard size
                     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
                 });
             }
         });
 
+        worksheet.eachRow((row, rowIndex) => {
+            if (rowIndex > 16 && rowIndex < 20) {
+                row.eachCell((cell) => {
+                    // Apply basic borders
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+
+                    // Apply font and alignment
+                    cell.font = { name: "Arial", size: 7, bold: true }; // Standard size
+                    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+                });
+            }
+        });
+
+
+
+
+
         // Add the logo to the worksheet at a specific position
         const totalColumns = 23; // Total number of columns in your worksheet
         const imageWidth = 650; // Width of the image in pixels
         const cellWidth = 75; // Average column width in pixels (adjust based on your worksheet settings)
-        
+
         const imageWidthInColumns = imageWidth / cellWidth; // Convert image width to columns
         const initialCenterColumn = (totalColumns - imageWidthInColumns) / 2;
         const leftAdjustedColumn = initialCenterColumn - 2; // Shift further left by 1 column
-        
+
         worksheet.addImage(logoId, {
-            tl: { col: Math.max(0, leftAdjustedColumn), row: 1 }, // Shifted column, ensuring no negative value
+            tl: { col: Math.max(0, leftAdjustedColumn), row: 0 }, // Shifted column, ensuring no negative value
             ext: { width: 650, height: 150 }, // Adjusted width and height for the image
             positioning: {
                 type: 'absolute', // Positioning type
@@ -672,6 +825,8 @@ export default function FirestationReports() {
                 size: true // Resize with cells
             }
         });
+
+
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
