@@ -5,6 +5,7 @@ import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, 
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import ExcelJS from 'exceljs';
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
@@ -1090,6 +1091,232 @@ export default function ChangesInEquityDetails() {
 
     }
 
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+    const exportToExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Changes in Equity Data');
+
+            // Add Header Data
+            const worksheetData = [
+                ["STATEMENT OF CHANGES IN NET ASSETS/EQUITY "],
+                ["REGULAR AGENCY FUND"],
+                [`FOR THE QUARTER ENDED`],
+                [""],
+                [""],
+                ["", "Accumulated Surplus / (Deficit)"],
+            ];
+
+            worksheetData.forEach((row) => worksheet.addRow(row));
+
+            // Adjust Header Row Heights and Styles
+            worksheet.getRow(1).height = 15.75;
+            worksheet.getRow(2).height = 15.75;
+            worksheet.getRow(3).height = 15.75;
+            worksheet.getRow(6).height = 36;
+
+            // Merge Header Cells
+            worksheet.mergeCells('A1:D1');
+            worksheet.mergeCells('A2:D2');
+            worksheet.mergeCells('A3:D3');
+            worksheet.mergeCells('B6:D6');
+
+            // Set Column Widths
+            worksheet.columns = [
+                { width: 45 },
+                { width: 20 },
+                { width: 5 },
+                { width: 20 },
+            ];
+
+            // Header Styles
+            const headerStyle = {
+                font: { bold: true, size: 14, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const subHeaderStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const mainCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const subCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const dataStyle = {
+                font: { size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const boldDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const balanceDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: {
+                    bottom: { style: 'double', color: { argb: '000000' } }, // Black border
+                    top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
+                },
+            };    
+
+            const mainCategoryamountStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            // Apply Header Styles
+            ['A1', 'A2', 'A3'].forEach((cell) => {
+                worksheet.getCell(cell).style = headerStyle;
+            });
+
+            worksheet.getRow(6).style = boldDataStyle;
+
+
+            // Apply additional style to the merged "Accumulated Surplus / (Deficit)" text
+            worksheet.getCell('B6').style = {
+                ...boldDataStyle,
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+        
+
+
+
+            const yearRow = worksheet.addRow([]);
+            yearRow.getCell(2).value = `${currentcEquity.year}`;
+            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
+            yearRow.getCell(4).value = `${selectedYear}`;
+            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
+
+            // Apply underlines and styles for columns 2 and 4
+            [2, 4].forEach((col) => {
+                yearRow.getCell(col).border = { bottom: { style: 'thin' } };
+                yearRow.getCell(col).font = { bold: true, size: 12, name: 'Times New Roman' };
+                yearRow.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            yearRow.height = 22; // Adjust height
+
+            const addCategoryAndChildrenRows = (category, level = 0) => {
+                const noAmountCategories = [];
+                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
+
+                // Initialize totals for this category and its descendants
+                let totalAmount = category.amount || 0;
+                let totalPeriodAmount = category.periodAmount || 0;
+
+                // Determine if the amount cells should be empty
+                const displayAmount = (totalAmount === 0) ? '' : formatNumber(category.amount);
+                const displayPeriodAmount = (totalPeriodAmount === 0) ? '' : formatNumber(category.periodAmount);
+
+                // Add category row
+                const row = worksheet.addRow([
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
+                    displayAmount,
+                    '',
+                    displayPeriodAmount,
+                ]);
+
+                // Style main categories (columns 2 and 4)
+                if (level === 0) {
+                    row.getCell(1).style = mainCategoryStyle;
+                    row.getCell(2).style = {
+                        font: { bold: true, size: 12, name: 'Times New Roman' },
+                        alignment: { horizontal: 'center', vertical: 'middle' },
+                    };
+
+                    row.getCell(4).style = {
+                        font: { bold: true, size: 12, name: 'Times New Roman' },
+                        alignment: { horizontal: 'center', vertical: 'middle' },
+                    };
+                }
+
+                // Style subcategories
+                if (level === 1) {
+                    row.eachCell((cell) => {
+                        cell.style = subCategoryStyle;
+                        [2, 4].forEach((col => row.getCell(col).style = dataStyle));
+                    });
+                } else if (level > 1) {
+                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
+                    [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
+                }
+
+                // Find child categories
+                const childCategories = cEquityMergeData.filter(child => child.parentID === category.id);
+
+                // Recursively process child categories
+                childCategories.forEach(child => {
+                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
+                    totalAmount += childTotals.totalAmount;
+                    totalPeriodAmount += childTotals.totalPeriodAmount;
+                });
+
+                // Add totals for "Cash Inflows" and "Cash Outflows"
+                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
+                    const totalRow = worksheet.addRow([
+                        `    Total ${category.categoryName}`,
+                        formatNumber(totalAmount),
+                        '',
+                        formatNumber(totalPeriodAmount),
+                    ]);
+
+                    // Style totals
+                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
+                    totalRow.getCell(2).style = boldDataStyle;
+                    totalRow.getCell(4).style = boldDataStyle;
+
+                    // Add borders for columns 2 and 4 only
+                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                }
+
+                return { totalAmount, totalPeriodAmount };
+            };
+
+
+
+            // Add Visible Categories
+            visibleCategories
+                .filter((category) => category.parentID === null)
+                .forEach((category) => addCategoryAndChildrenRows(category));
+
+            worksheet.addRow([]);  // This adds a blank row for spacing
+
+            const balanceRow = worksheet.addRow([]);
+            balanceRow.getCell(1).value = "Balance for the Period";
+            balanceRow.getCell(1).style = mainCategoryStyle;
+            balanceRow.getCell(2).value = periodTotal;
+            balanceRow.getCell(2).style = balanceDataStyle;
+            balanceRow.getCell(4).style = balanceDataStyle;
+            // Save Workbook
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+
+            // Trigger Download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Changes in Equity ${currentcEquity.year}.xlsx`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting data to Excel:', error);
+        }
+    };
+
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+
     return (
         <Fragment>
 
@@ -1123,6 +1350,7 @@ export default function ChangesInEquityDetails() {
                             />
 
                             <ExportButton
+                                onClick={exportToExcel}
                                 label="EXPORT"
                             />
                         </div>
