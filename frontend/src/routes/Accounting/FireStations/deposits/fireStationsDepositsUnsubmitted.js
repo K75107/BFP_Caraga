@@ -1163,6 +1163,7 @@ export default function FireStationDepositsUnsubmitted() {
                 setSelectedMonth("");
                 setSelectedCategories([]);
                 setShowModal2(false);
+                handleSubmitDataToRegion();
               }}
             >
               Submit
