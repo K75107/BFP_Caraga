@@ -137,25 +137,75 @@ export default function IncomeStatement() {
             .filter(account => !selectedAccounts.includes(account.accountTitle)) // Exclude selected accounts
             .sort((a, b) => a.accountTitle.localeCompare(b.accountTitle)); // Sort alphabetically by accountTitle
     };
-
+    // ----------------------- S U B C A T E G O R I E S   S T A T E S   A N D   F U N C T I O N S -----------------------
     const [subcategories, setSubcategories] = useState([]);
-    const addSubcategory = (newName, newParentCategory, newSubcategoryType, newSelectedAccounts = []) => {
+    const fetchAndUpdateSubcategories = async () => {
+        try {
+            const subcategoriesDataRef = collection(db, "incomestatement", incomeStatementID, "subcategories");
+            const querySnapshot = await getDocs(subcategoriesDataRef);
+
+            // Extract subcategories and their fields
+            const fetchedSubcategories = querySnapshot.docs.map(doc => ({
+                id: doc.id, // Optional: document ID
+                ...doc.data(),
+            }));
+
+            // Update state with fetched data   
+            setSubcategories(fetchedSubcategories); // Full subcategories data
+
+            if (selectParentCategory.length === 3 && selectedAccounts.length === 0) {
+
+                // Extract subcategoryNames and accountTitles separately
+                const subcategoryNames = fetchedSubcategories.map(sub => sub.subcategoryName);
+                const accountTitles = fetchedSubcategories.flatMap(sub => sub.accountTitles || []); // Flatten the arrays
+
+                // Update selectParentCategory while preserving existing values and avoiding duplicates
+                setSelectParentCategory(prevSelected => {
+                    const newCategories = [...prevSelected, ...subcategoryNames];
+                    return [...new Set(newCategories)]; // Ensure uniqueness
+                });
+
+                setSelectedAccounts(accountTitles);        // Only account titles
+
+            }
+
+        } catch (error) {
+            console.error("Error fetching subcategories:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchAndUpdateSubcategories();
+    }, []);
+
+    const addSubcategory = async (newName, newParentCategory, newSubcategoryType, newSelectedAccounts = []) => {
         const accountTitlesArray = Array.isArray(newSelectedAccounts)
             ? newSelectedAccounts
             : Array.from(newSelectedAccounts || []);
 
-        setSubcategories((prevSubcategories) => [
-            ...prevSubcategories,
-            {
-                subcategoryName: newName,
-                parentCategory: newParentCategory,
-                subcategoryType: newSubcategoryType,
-                accountTitles: accountTitlesArray
-            }
-        ]);
-    };
+        const newSubcategory = {
+            subcategoryName: newName,
+            parentCategory: newParentCategory,
+            subcategoryType: newSubcategoryType,
+            accountTitles: accountTitlesArray,
+        };
 
+        const subcategoriesDataRef = collection(db, "incomestatement", incomeStatementID, "subcategories");
+
+        try {
+            const docRef = await addDoc(subcategoriesDataRef, newSubcategory);
+            console.log(`Subcategory added to Firestore with ID: ${docRef.id}`);
+
+            // Fetch and update subcategories after adding a new one
+            await fetchAndUpdateSubcategories();
+        } catch (error) {
+            console.error("Error adding subcategory to Firestore:", error);
+        }
+    };
+    // ----------------------- S U B C A T E G O R I E S   S T A T E S   A N D   F U N C T I O N S -----------------------
     console.log("Data of subcategories: ", subcategories)
+    console.log("Data of selectedAccounts: ", selectedAccounts)
+    console.log("Data of selectParentCategory: ", selectParentCategory)
 
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
     const [showRightClickModal, setShowRightClickModal] = useState(false);
@@ -168,31 +218,34 @@ export default function IncomeStatement() {
         setShowRightClickModal(true);
     }, []);
 
+    const handleDeleteRow = async (subcategoryName) => {
+        try {
+            // Get the names of deleted subcategories and removed accounts
+            const { removedSubcategoryNames, removedAccountTitles } = await deleteSubcategoryAndDescendants(subcategoryName, subcategories);
 
-    const handleDeleteRow = (subcategoryName) => {
-        // Get the names of deleted subcategories and removed accounts
-        const { removedSubcategoryNames, removedAccountTitles } = deleteSubcategoryAndDescendants(subcategoryName, subcategories);
+            // Update `selectedAccounts` to reflect removed accounts
+            const updatedSelectedAccounts = selectedAccounts.filter(
+                account => !removedAccountTitles.includes(account)
+            );
+            setSelectedAccounts(updatedSelectedAccounts);
 
-        // Update `selectedAccounts` to reflect removed accounts
-        const updatedSelectedAccounts = selectedAccounts.filter(
-            account => !removedAccountTitles.includes(account)
-        );
-        setSelectedAccounts(updatedSelectedAccounts);
+            // Update `selectParentCategory` to remove all deleted subcategories
+            const updatedParentCategories = selectParentCategory.filter(
+                category => !removedSubcategoryNames.includes(category)
+            );
+            setSelectParentCategory(updatedParentCategories);
 
-        // Update `selectParentCategory` to remove all deleted subcategories
-        const updatedParentCategories = selectParentCategory.filter(
-            category => !removedSubcategoryNames.includes(category)
-        );
-        setSelectParentCategory(updatedParentCategories);
+            // Fetch and update subcategories to reflect the changes
+            await fetchAndUpdateSubcategories();
+        } catch (error) {
+            console.error("Error handling row deletion:", error);
+        }
     };
-
 
     const closeModalOnOutsideClick = () => {
         setShowRightClickModal(false);
         setSelectedSubcategory(null);
     };
-
-
     // Spinner Component
     const Spinner = () => (
         <div className="flex justify-center items-center h-screen">
@@ -251,7 +304,7 @@ export default function IncomeStatement() {
     };
     // -------------------------- Function to update totalSubsidy in the incomeStatement collection --------------------------
 
-    // --------------------------- FETCH BALANCE SHEET DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
+    // --------------------------- FETCH INCOME STATEMENT DESCRIPTION AND ASSOCIATED LEDGER YEAR ----------------------------
     useEffect(() => {
         const getIncomeStatementDescription = async () => {
             try {
@@ -592,10 +645,10 @@ export default function IncomeStatement() {
             return total + amount;
         }, 0);
 
-     // Calculate surplus/deficit as Revenue - Expenses
-     let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
-     let totalNetSurplusDeficit2 = totalNetRevenues2 + totalSubsidy2;
- 
+    // Calculate surplus/deficit as Revenue - Expenses
+    let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
+    let totalNetSurplusDeficit2 = totalNetRevenues2 + totalSubsidy2;
+
     // ----------------------------------------- A D D  P E R I O D  T O T A L S -----------------------------------------
 
     // ------------------------------------- R E V E N U E A C C O U N T  T I T L E S -------------------------------------
@@ -789,8 +842,7 @@ export default function IncomeStatement() {
 
     // -------------------------------------- N E S T E D  S U B C A T E G O R I E S -------------------------------------
 
-    //------------------------ D E L E T E  S U B C A T E G O R I E S  A N D  D E S C E N D A N T S ----------------------
-    const deleteSubcategoryAndDescendants = (subcategoryName, subcategories) => {
+    const deleteSubcategoryAndDescendants = async (subcategoryName, subcategories) => {
         // Prevent deletion of the main categories
         if (["Revenue", "Expenses", "Subsidy"].includes(subcategoryName)) {
             console.warn(`Deletion of Main Category "${subcategoryName}" is not allowed.`);
@@ -823,6 +875,24 @@ export default function IncomeStatement() {
         };
 
         deleteRecursive(subcategoryName);
+
+        try {
+            // Reference to the subcategories collection in Firestore
+            const subcategoriesDataRef = collection(db, "incomestatement", incomeStatementID, "subcategories");
+
+            // Delete documents from Firestore based on removedSubcategoryNames
+            for (const subcategoryToDelete of removedSubcategoryNames) {
+                const querySnapshot = await getDocs(
+                    query(subcategoriesDataRef, where("subcategoryName", "==", subcategoryToDelete))
+                );
+
+                for (const doc of querySnapshot.docs) {
+                    await deleteDoc(doc.ref);
+                }
+            }
+        } catch (error) {
+            console.error("Error deleting documents from Firestore:", error);
+        }
 
         // Return both removed subcategory names and account titles
         return { removedSubcategoryNames, removedAccountTitles };
@@ -1003,7 +1073,7 @@ export default function IncomeStatement() {
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Financial Performance');
-        
+
         let totalCounter = 0;
 
         // Recursive function to add rows for each parent and their children
@@ -1202,20 +1272,20 @@ export default function IncomeStatement() {
 
         // Underline for footer rows
         // Bold text for footer rows without underline
-        financialSubsidyRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
-        financialSubsidyRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true };
+        financialSubsidyRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true };
         financialSubsidyRow.getCell(2).numFmt = '#,##0.00';
         financialSubsidyRow.getCell(2).border = { bottom: { style: 'double' } };
         financialSubsidyRow.getCell(4).numFmt = '#,##0.00';
-        financialSubsidyRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        financialSubsidyRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true };
         financialSubsidyRow.getCell(4).border = { bottom: { style: 'double' } };
-        
-        netSurplusRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true }; 
-        netSurplusRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true }; 
+
+        netSurplusRow.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true };
+        netSurplusRow.getCell(2).font = { name: 'Times New Roman', size: 12, bold: true };
         netSurplusRow.getCell(2).numFmt = '#,##0.00';
         netSurplusRow.getCell(2).border = { bottom: { style: 'double' } };
         netSurplusRow.getCell(4).numFmt = '#,##0.00';
-        netSurplusRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true }; 
+        netSurplusRow.getCell(4).font = { name: 'Times New Roman', size: 12, bold: true };
         netSurplusRow.getCell(4).border = { bottom: { style: 'double' } }
 
 

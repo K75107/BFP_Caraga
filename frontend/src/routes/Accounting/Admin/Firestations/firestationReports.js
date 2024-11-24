@@ -752,7 +752,7 @@ export default function FirestationReports() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Firestation Report ${monthName}.xlsx`;
+        link.download = `Consolidated Reports ${monthName}.xlsx`;
         link.click();
         URL.revokeObjectURL(url);
     };
