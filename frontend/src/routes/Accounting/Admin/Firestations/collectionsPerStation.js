@@ -393,7 +393,7 @@ export default function CollectionsPerStation() {
                         label={
                             <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
                                 <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                                <span className="mr-2 font-medium">Filter</span>
+                                <span className="mr-2 font-medium">Group by</span>
                                 <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                             </div>
                         }

@@ -271,12 +271,9 @@ const handleAddUser = async () => {
         <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
         {/* TABLE */}
-        <div className="flex flex-row">
-                <div className="grow bg-white">
-                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
-                            <table className="w-full text-left text-black-700 ">
-            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white ">
+        <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
               <tr>
                 <th scope="col" className="px-6 py-4 ">USER</th>
                 <th scope="col" className="px-6 py-4">LOCATION</th>
@@ -286,77 +283,77 @@ const handleAddUser = async () => {
                 <th scope="col" className="px-6 py-4"></th>
               </tr>
             </thead>
-            <tbody>
-  {filteredUsersList
-    .sort((a, b) => (a.usertype === 'admin' ? -1 : b.usertype === 'admin' ? 1 : 0)) // Admins first
-    .map((user, index) => (
-      <tr
-        key={index}
-        className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${
-          user.usertype === 'admin' ? 'cursor-default' : 'cursor-pointer'
-        }`}
-      onClick={() => {
-        if (user.usertype === "admin") return; // Prevent editing admin
-        setSelectedUser(user);
-        setShowUserEditModal(true);
-      }}
-    >
-        <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
-          <div
-            className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
-            style={{
-              backgroundColor:
-                user?.province === 'Agusan del Norte'
-                  ? 'blue'
-                  : user?.province === 'Agusan del Sur'
-                  ? 'red'
-                  : user?.province === 'Dinagat Islands'
-                  ? 'brown'
-                  : user?.province === 'Surigao del Norte'
-                  ? 'orange'
-                  : user?.province === 'Surigao del Sur'
-                  ? 'violet'
-                  : 'gray', // Default color
-            }}
-          >
-            {user?.username?.charAt(0).toUpperCase()}
-          </div>
-          {user?.username || 'Unknown'}
-        </td>
-        <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
-        <td className="px-6 py-2">{user?.email || 'N/A'}</td>
-        <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-          {user?.usertype || 'N/A'}
-        </td>
-        <td className="px-6 py-2">
-          <span
-            className={`inline-block w-3 h-3 rounded-full ${
-              user?.isActive ? 'bg-green-500' : 'bg-red-500'
-            }`}
-          ></span>
-        </td>
-        <td className="table-cell px-6 py-3 w-72 text-center">
-        {user.usertype !== 'admin' && (
-          <span
-            className="font-medium text-red-600 hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteUserID(user.id);
-              setShowDeleteModal(true);
-            }}
-          >
-            Remove
-          </span>
-        )}
+          </table>
+              <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                  <table className='text-[14px]  w-full overflow-x-visible'>
+                      <tbody>
+                      {filteredUsersList
+                        .sort((a, b) => (a.usertype === 'admin' ? -1 : b.usertype === 'admin' ? 1 : 0)) // Admins first
+                        .map((user, index) => (
+                          <tr
+                            key={index}
+                            className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                              user.usertype === 'admin' ? 'cursor-default' : 'cursor-pointer'
+                            }`}
+                          onClick={() => {
+                            if (user.usertype === "admin") return; // Prevent editing admin
+                            setSelectedUser(user);
+                            setShowUserEditModal(true);
+                          }}
+                        >
+                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
+                              <div
+                                className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
+                                style={{
+                                  backgroundColor:
+                                    user?.province === 'Agusan del Norte'
+                                      ? 'blue'
+                                      : user?.province === 'Agusan del Sur'
+                                      ? 'red'
+                                      : user?.province === 'Dinagat Islands'
+                                      ? 'brown'
+                                      : user?.province === 'Surigao del Norte'
+                                      ? 'orange'
+                                      : user?.province === 'Surigao del Sur'
+                                      ? 'violet'
+                                      : 'gray', // Default color
+                                }}
+                              >
+                                {user?.username?.charAt(0).toUpperCase()}
+                              </div>
+                              {user?.username || 'Unknown'}
+                            </td>
+                            <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
+                            <td className="px-6 py-2">{user?.email || 'N/A'}</td>
+                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                              {user?.usertype || 'N/A'}
+                            </td>
+                            <td className="px-6 py-2">
+                              <span
+                                className={`inline-block w-3 h-3 rounded-full ${
+                                  user?.isActive ? 'bg-green-500' : 'bg-red-500'
+                                }`}
+                              ></span>
+                            </td>
+                            <td className="table-cell px-6 py-3 w-72 text-center">
+                            {user.usertype !== 'admin' && (
+                              <span
+                                className="font-medium text-red-600 hover:underline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteUserID(user.id);
+                                  setShowDeleteModal(true);
+                                }}
+                              >
+                                Remove
+                              </span>
+                            )}
 
-        </td>
-      </tr>
-    ))}
-</tbody>
-
-                            </table>
-                        </div>
-                    </div>
+                          </td>
+                        </tr>
+                      ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             </div>
