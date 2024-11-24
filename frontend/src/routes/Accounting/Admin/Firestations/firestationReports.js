@@ -551,36 +551,29 @@ export default function FirestationReports() {
             });
 
             // Populate "Total Last Report" column (16th column) with the second-to-last report's collection amount
-            const officerReports = officerReportsMap[data.collectingOfficer];
             let totalAmount = 0;
+            const officerReports = officerReportsMap[data.collectingOfficer];
 
-            // Ensure the officer reports are sorted by date
+            // Ensure reports are sorted by date
             officerReports.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort ascending by date
-
-            // Check if there are more than 1 report for the officer (second-to-last exists)
+            
             if (officerReports.length > 1) {
-                const secondToLastReport = officerReports[officerReports.length - 2]; // Get second-to-last report
-                worksheet.getCell(currentRow, 16).value = parseFloat(secondToLastReport.collectionAmount || 0); // Ensure decimals
+                const secondToLastReport = officerReports[officerReports.length - 2];
+                const collectionAmount = parseFloat(secondToLastReport.collectionAmount || 0); // Parse as float
+                console.log("Second-to-Last Collection Amount:", collectionAmount); // Debugging
+                worksheet.getCell(currentRow, 16).value = collectionAmount;
+                worksheet.getCell(currentRow, 16).numFmt = "0.00"; // Apply decimal formatting
             } else {
-                worksheet.getCell(currentRow, 16).value = ""; // If there's no second-to-last report, leave it empty
+                worksheet.getCell(currentRow, 16).value = ""; // Leave blank if fewer than 2 reports
             }
-
-            // Format the "Total Last Report" column to show decimals
-            worksheet.getCell(currentRow, 16).numFmt = "0.00"; // Ensure 2 decimal places
-
-            // Calculate total collection amount for the officer
-            officerReports.forEach((report) => {
-                totalAmount += parseFloat(report.collectionAmount || 0); // Use parseFloat to preserve decimals
-            });
-
-            // Accumulate total amount into cityTotals
-            cityTotals[13] = (cityTotals[13] || 0) + totalAmount;
-
-            // Debugging log (optional)
-            console.log("Officer Reports:", officerReports);
-            console.log("Total Amount:", totalAmount);
-            console.log("City Totals:", cityTotals);
-
+            
+            // Apply border to the "Total Last Report" column
+            worksheet.getCell(currentRow, 16).border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
             // Apply border to the "Total Last Report" column
             worksheet.getCell(currentRow, 16).border = {
                 top: { style: "thin" },
@@ -785,6 +778,7 @@ export default function FirestationReports() {
             }
         });
 
+
         worksheet.eachRow((row, rowIndex) => {
             if (rowIndex > 16 && rowIndex < 20) {
                 row.eachCell((cell) => {
@@ -836,7 +830,7 @@ export default function FirestationReports() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Firestation Report ${monthName} to ${monthName2}.xlsx`;
+        link.download = `Firestation Report ${monthName}.xlsx`;
         link.click();
         URL.revokeObjectURL(url);
     };
