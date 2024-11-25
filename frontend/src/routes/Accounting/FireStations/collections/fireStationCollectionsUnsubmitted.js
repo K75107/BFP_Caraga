@@ -20,6 +20,7 @@ export default function FireStationCollectionsUnsubmitted() {
 
   const [firestationCollection, setFirestationCollection] = useState([]);
   const [collectionsData, setCollectionsData] = useState([]);
+  console.log("data of collectionsData: ", collectionsData);
 
   //Hover on Rows
   const [hoveredRowId, setHoveredRowId] = useState(null);
@@ -373,6 +374,25 @@ export default function FireStationCollectionsUnsubmitted() {
   };
 
 
+  function groupedDataByMonthYear(data) {
+    const groupedData = {};
+
+    data.forEach((item) => {
+      if (item.dateCollected) {
+        const date = new Date(item.dateCollected); // Ensure it's a valid date object
+        const monthYear = date.toLocaleString("default", { month: "long", year: "numeric" });
+
+        if (!groupedData[monthYear]) {
+          groupedData[monthYear] = [];
+        }
+        groupedData[monthYear].push(item);
+      }
+    });
+
+    return groupedData;
+  }
+
+
   const handleSubmitDataToRegion = async () => {
     try {
       // Reference to the submittedReportsCollections (without logginUser.id initially)
@@ -628,7 +648,7 @@ export default function FireStationCollectionsUnsubmitted() {
       </div>
       {/*TABLE*/}
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg h-full">
-     
+
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
           <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
             <tr className="text-[12px]">
@@ -879,37 +899,99 @@ export default function FireStationCollectionsUnsubmitted() {
 
       {/*Submit Modal*/}
       <Modal isVisible={showModal}>
-        <div className="bg-white w-1/3 h-72 rounded py-2 px-4">
-          <div className="flex justify-between">
-            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-              Confirm Submission
-            </h1>
-            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+        <div className="bg-white w-[700px] h-auto rounded-lg py-4 px-6 shadow-xl flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="font-poppins font-bold text-xl text-gray-700">Submit Collections</h1>
+            <button
+              className="text-2xl font-semibold text-gray-500 focus:outline-none"
+              onClick={() => setShowModal(false)}
+            >
               ×
             </button>
           </div>
+          <hr className="border-t border-[#7694D4] -my-1" />
 
-          <hr className="border-t border-[#7694D4] my-3" />
-
-          {/*LABEL*/}
-          <div className="flex flex-row justify-start">
-
-
-            <div className="py-2 ">
-              <label className="block text-sm font-medium text-gray-700 w-80">Collecting Officer</label>
-
+          {/* Content */}
+          <div className="p-4 flex flex-col flex-grow items-center">
+            <div className="w-full max-w-[600px] mb-4">
+              <h2 className="font-semibold text-sm text-gray-700 mb-2">Collection Details:</h2>
+              {/* Increased height of scrollable content box */}
+              <div className="h-[300px] px-4 pb-3 overflow-y-auto text-sm text-gray-700 border rounded-lg">
+                {/* Sort and group data by month and year */}
+                {Object.entries(groupedDataByMonthYear(collectionsData)).map(([monthYear, items]) => (
+                  <details key={monthYear} className="mb-2">
+                    <summary className="font-semibold text-gray-800 cursor-pointer">
+                      {monthYear} ({items.length})
+                    </summary>
+                    <ul className="ml-4 mt-2 grid gap-4">
+                      {items.map((item, index) => (
+                        <li key={index} className="p-4 bg-gray-50 shadow rounded-lg border border-gray-300">
+                          <div className="grid grid-cols-[150px_1fr] gap-x-1 gap-y-2">
+                            <p className="text-sm text-gray-900 col-span-2">
+                              <strong>Officer:</strong> {item.collectingOfficer || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900 col-span-2">
+                              <strong>Agent:</strong> {item.collectingAgent || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900 col-span-2">
+                              <strong>Nature:</strong> {item.natureOfCollection || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900 col-span-2">
+                              <strong>Date:</strong> {item.dateCollected || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              <strong>OR#:</strong> {item.orNumber || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              <strong>LC#:</strong> {item.lcNumber || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              <strong>Payor:</strong> {item.nameOfPayor || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              <strong>Amount:</strong> ₱{item.collectionAmount || "0"}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ))}
+              </div>
             </div>
-
           </div>
 
+          {/* Footer */}
+          <div className="mb-2 flex justify-center">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              className="w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg mr-2"
+              onClick={() => {
+                setShowModal(false);
+              }}
+            >
+              Cancel
+            </button>
 
-          <div className="flex justify-end py-3 px-4">
-            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
-              onClick={handleSubmitDataToRegion}
-            >Submit</button>
+            {/* Submit Button */}
+            <button
+              type="button"
+              className={`w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg ${collectionsData.length === 0 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              disabled={collectionsData.length === 0}
+              onClick={() => {
+                handleSubmitDataToRegion();
+                setShowModal(false);
+              }}
+            >
+              Submit
+            </button>
           </div>
         </div>
       </Modal>
+
 
       {/* Right-click context modal */}
       {showRightClickModal && (

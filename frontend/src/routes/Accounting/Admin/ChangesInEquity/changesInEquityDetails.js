@@ -5,13 +5,14 @@ import { collection, doc, onSnapshot, addDoc, writeBatch, updateDoc, deleteDoc, 
 import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor } from '@dnd-kit/core';
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
+import ExcelJS from 'exceljs';
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
 import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import ExportButton from "../../../../components/exportButton";
-
+import AddButton from "../../../../components/addButton";
 
 
 export default function ChangesInEquityDetails() {
@@ -46,7 +47,11 @@ export default function ChangesInEquityDetails() {
     //Merge Data
     const [cEquityMergeData, setcEquityMergeData] = useState([]);
 
+    //Current Year
+    const [currentcEquity, setCurrentcEquity] = useState();
 
+    //Selected Year
+    const [selectedYear, setSelectedYear] = useState();
 
 
     // Function to recursively calculate the total for a main category and its subcategories
@@ -67,6 +72,58 @@ export default function ChangesInEquityDetails() {
             return acc + calculateCategoryTotal(subcategory.id);
         }, 0);
     };
+
+    //Current Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "ChangesInEquity", cEquityId);
+                const cEquityDoc = await getDoc(selectedCashflowRef);
+
+                if (cEquityDoc.exists()) {
+                    const data = cEquityDoc.data();
+                    setCurrentcEquity(data);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (cEquityId) {
+            fetchYear();
+        }
+
+    }, [cEquityId]);
+
+    //Selected Year
+    useEffect(() => {
+        const fetchYear = async () => {
+            try {
+                const selectedCashflowRef = doc(db, "ChangesInEquity", periodId);
+                const cEquityDoc = await getDoc(selectedCashflowRef);
+
+                if (cEquityDoc.exists()) {
+
+                    const year = cEquityDoc.data().year;
+                    setSelectedYear(year);
+
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.log("Error fetching year:", error);
+            }
+        };
+
+        if (periodId) {
+            fetchYear();
+        }
+
+    }, [periodId]);
+
 
     // Calculate total for all main categories
     useEffect(() => {
@@ -211,7 +268,7 @@ export default function ChangesInEquityDetails() {
             try {
                 const mergedMap = new Map();
                 const idMapping = new Map(); // Tracks id mappings between periodData and cEquityCategoriesData
-    
+
                 // Add current categories to the map
                 cEquityCategoriesData.forEach((item) => {
                     mergedMap.set(item.id, {
@@ -219,24 +276,24 @@ export default function ChangesInEquityDetails() {
                         periodAmount: 0, // Initialize periodAmount
                     });
                 });
-    
+
                 // Merge period data
                 if (Array.isArray(periodData) && periodData.length > 0) {
                     periodData.forEach((item) => {
                         const resolvedParentID =
                             item.parentID === "null" ? null : idMapping.get(item.parentID) || item.parentID;
-    
+
                         // Detect conflicts by categoryName and resolvedParentID
                         const existingItem = Array.from(mergedMap.values()).find(
                             (existing) =>
                                 existing.categoryName === item.categoryName &&
                                 existing.parentID === resolvedParentID
                         );
-    
+
                         if (existingItem) {
                             // Map periodData id to the existing item's id
                             idMapping.set(item.id, existingItem.id);
-    
+
                             // Update existing item's periodAmount
                             mergedMap.set(existingItem.id, {
                                 ...existingItem,
@@ -247,12 +304,12 @@ export default function ChangesInEquityDetails() {
                             const siblingPositions = Array.from(mergedMap.values())
                                 .filter((cat) => cat.parentID === resolvedParentID)
                                 .map((cat) => cat.position);
-    
+
                             const newPosition =
                                 siblingPositions.length > 0
                                     ? Math.max(...siblingPositions) + 1
                                     : 1; // Default position if no siblings exist
-    
+
                             // Add new item to the map
                             const newItem = {
                                 ...item,
@@ -264,16 +321,16 @@ export default function ChangesInEquityDetails() {
                                 isFromPeriod: true, // Mark as period data
                             };
                             mergedMap.set(item.id, newItem);
-    
+
                             // Track id mapping for new item
                             idMapping.set(item.id, item.id);
                         }
                     });
                 }
-    
+
                 // Convert map to array
                 const mergedData = Array.from(mergedMap.values());
-    
+
                 // Sort and recursively build hierarchy
                 setcEquityMergeData(sortCategoriesRecursively(mergedData));
             } catch (error) {
@@ -281,7 +338,7 @@ export default function ChangesInEquityDetails() {
             }
         }
     }, [cEquityCategoriesData, periodData]);
-    
+
 
     const sortCategoriesRecursively = (categories, parentID = null, level = 0) => {
         const filteredCategories = categories
@@ -449,25 +506,25 @@ export default function ChangesInEquityDetails() {
             const cEquityDocRef = doc(db, 'ChangesInEquity', cEquityId);
             const categoriesCollectionRef = collection(cEquityDocRef, 'categories');
 
-           
+
             const newParentDocRef = await addDoc(categoriesCollectionRef, {
                 categoryName: '',
-                parentID: null, 
+                parentID: null,
                 created_at: new Date(),
-                position: selectedRowData.position 
+                position: selectedRowData.position
             });
 
-           
+
             await updateDoc(doc(categoriesCollectionRef, selectedRowData.id), {
-                parentID: newParentDocRef.id, 
-                position: 1 
+                parentID: newParentDocRef.id,
+                position: 1
             });
 
-      
+
             const categoriesToUpdate = cEquityCategoriesData.filter(cat => cat.position >= selectedRowData.position && cat.id !== selectedRowData.id);
             for (const cat of categoriesToUpdate) {
                 await updateDoc(doc(categoriesCollectionRef, cat.id), {
-                    position: cat.position + 1 
+                    position: cat.position + 1
                 });
             }
 
@@ -493,43 +550,33 @@ export default function ChangesInEquityDetails() {
     };
 
 
-    function getTotalAmountForCategory(categoryId, data) {
-        // Start with the amount of the current category
-        const currentCategory = data.find(cat => cat.id === categoryId);
-        let totalAmount = currentCategory ? currentCategory.amount || 0 : 0;
 
-        // Find all subcategories with the parentID matching the current category's id
-        const subcategories = data.filter(subCat => subCat.parentID === categoryId);
-
-        // Recursively add up the amount for each subcategory
-        subcategories.forEach(subCat => {
-            totalAmount += getTotalAmountForCategory(subCat.id, data);
-        });
-
-        return totalAmount;
-    }
 
     function getLeafCategoryAmountTotal(categoryId, data) {
         // Find all subcategories with the parentID matching the given categoryId
         const subcategories = data.filter(subCat => subCat.parentID === categoryId);
 
-        // Initialize the total amount
+        // Initialize the total amounts
         let totalAmount = 0;
+        let totalPeriodAmount = 0;
 
         subcategories.forEach(subCat => {
             // Check if the subcategory has any further subcategories
             const hasChildren = data.some(cat => cat.parentID === subCat.id);
 
             if (!hasChildren) {
-                // If no children, add its amount to the total
+                // If no children, add its amounts to the totals
                 totalAmount += subCat.amount || 0;
+                totalPeriodAmount += subCat.periodAmount || 0;
             } else {
-                // If it has children, recursively calculate the total for those children
-                totalAmount += getLeafCategoryAmountTotal(subCat.id, data);
+                // If it has children, recursively calculate the totals for those children
+                const childTotals = getLeafCategoryAmountTotal(subCat.id, data);
+                totalAmount += childTotals.totalAmount;
+                totalPeriodAmount += childTotals.totalPeriodAmount;
             }
         });
 
-        return totalAmount;
+        return { totalAmount, totalPeriodAmount };
     }
 
     const [inputWidth, setInputWidth] = useState('auto');
@@ -549,9 +596,10 @@ export default function ChangesInEquityDetails() {
             transform: CSS.Transform.toString(transform),
         };
 
-        const hasSubcategories = category.level >= 0 && cEquityCategoriesData.some(subCat => subCat.parentID === category.id);
+        const hasSubcategories = category.level >= 0 && cEquityMergeData.some(subCat => subCat.parentID === category.id);
 
-        const totalLeafAmount = getLeafCategoryAmountTotal(category.id, cEquityCategoriesData);
+        const { totalAmount, totalPeriodAmount } = getLeafCategoryAmountTotal(category.id, cEquityMergeData);
+
 
 
 
@@ -604,12 +652,12 @@ export default function ChangesInEquityDetails() {
                         ) : (
                             <span
                                 onClick={() => {
-                                    if (category.categoryName !== 'Cash Inflows' && category.categoryName !== 'Cash Outflows') {  // Make only other categories clickable
-                                        setEditingCell(category.id);
-                                        setEditValue({ field: 'categoryName', value: category.categoryName || '' });
-                                    }
+
+                                    setEditingCell(category.id);
+                                    setEditValue({ field: 'categoryName', value: category.categoryName || '' });
+
                                 }}
-                                className={`block px-1 py-1 ${category.categoryName === 'Cash Inflows' || category.categoryName === 'Cash Outflows' ? '' : 'hover:bg-gray-100'}`}
+                                className="block px-1 py-1 hover:bg-gray-100"
                             >
                                 {category.categoryName || '-'}
                             </span>
@@ -631,7 +679,7 @@ export default function ChangesInEquityDetails() {
 
                 <td className="px-2 py-2 w-56 h-6 ">
                     {hasSubcategories ? (
-                        <span className="font-bold">{formatNumber(totalLeafAmount) || '-'}</span>
+                        <span className="font-bold">{formatNumber(totalAmount) || '-'}</span>
                     ) : (
                         editingCell === category.id && editValue.field === 'amount' ? (
                             <input
@@ -655,7 +703,19 @@ export default function ChangesInEquityDetails() {
                         )
                     )}
                 </td>
-                <td className="px-2 py-3 text-center">{/* Any actions */}</td>
+                <td className="px-2 py-2 w-56 h-6 ">
+                    {hasSubcategories ? (
+                        <span className="font-bold">{formatNumber(totalPeriodAmount) || '-'}</span>
+                    ) : (
+                        (
+                            <span
+                                className="block hover:bg-gray-100 w-full h-8 px-2 py-1"
+                            >
+                                {formatNumber(category.periodAmount) || '-'}
+                            </span>
+                        )
+                    )}
+                </td>
             </tr>
         );
     }
@@ -1031,6 +1091,251 @@ export default function ChangesInEquityDetails() {
 
     }
 
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+    const exportToExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Changes in Equity Data');
+
+            // Add Header Data
+            const worksheetData = [
+                ["STATEMENT OF CHANGES IN NET ASSETS/EQUITY "],
+                ["REGULAR AGENCY FUND"],
+                [`FOR THE QUARTER ENDED`],
+                [""],
+                [""],
+                ["", "Accumulated Surplus / (Deficit)"],
+            ];
+
+            worksheetData.forEach((row) => worksheet.addRow(row));
+
+            // Adjust Header Row Heights and Styles
+            worksheet.getRow(1).height = 15.75;
+            worksheet.getRow(2).height = 15.75;
+            worksheet.getRow(3).height = 15.75;
+            worksheet.getRow(6).height = 36;
+
+            // Merge Header Cells
+            worksheet.mergeCells('A1:D1');
+            worksheet.mergeCells('A2:D2');
+            worksheet.mergeCells('A3:D3');
+            worksheet.mergeCells('B6:D6');
+
+            // Set Column Widths
+            worksheet.columns = [
+                { width: 45 },
+                { width: 20 },
+                { width: 5 },
+                { width: 20 },
+            ];
+
+            // Header Styles
+            const headerStyle = {
+                font: { bold: true, size: 14, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const subHeaderStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const mainCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const subCategoryStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'left', vertical: 'middle' },
+            };
+
+            const dataStyle = {
+                font: { size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const boldDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            const balanceDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: {
+                    bottom: { style: 'double', color: { argb: '000000' } }, // Black border
+                    top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
+                },
+            };
+
+            
+            const sDeficitDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: {
+                    bottom: { style: 'thin', color: { argb: '000000' } }, // Black border
+                    top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
+                },
+            };
+
+            const mainCategoryamountStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+            // Apply Header Styles
+            ['A1', 'A2', 'A3'].forEach((cell) => {
+                worksheet.getCell(cell).style = headerStyle;
+            });
+
+            worksheet.getRow(6).style = boldDataStyle;
+
+
+            // Apply additional style to the merged "Accumulated Surplus / (Deficit)" text
+            worksheet.getCell('B6').style = {
+                ...boldDataStyle,
+                alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+
+
+
+
+            const yearRow = worksheet.addRow([]);
+            yearRow.getCell(2).value = `${currentcEquity.year}`;
+            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
+            yearRow.getCell(4).value = `${selectedYear}`;
+            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
+
+            // Apply underlines and styles for columns 2 and 4
+            [2, 4].forEach((col) => {
+                yearRow.getCell(col).border = { bottom: { style: 'thin' } };
+                yearRow.getCell(col).font = { bold: true, size: 12, name: 'Times New Roman' };
+                yearRow.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            yearRow.height = 22; // Adjust height
+
+            const addCategoryAndChildrenRows = (category, level = 0) => {
+                const noAmountCategories = [];
+                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
+
+                // Initialize totals for this category and its descendants
+                let totalAmount = category.amount || 0;
+                let totalPeriodAmount = category.periodAmount || 0;
+
+                // Determine if the amount cells should be empty
+                const displayAmount = (totalAmount === 0) ? '' : formatNumber(category.amount);
+                const displayPeriodAmount = (totalPeriodAmount === 0) ? '' : formatNumber(category.periodAmount);
+
+                // Add category row
+                const row = worksheet.addRow([
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
+                    displayAmount,
+                    '',
+                    displayPeriodAmount,
+                ]);
+
+                // Style main categories (columns 2 and 4)
+                if (level === 0) {
+                    row.getCell(1).style = mainCategoryStyle;
+                    row.getCell(2).style = {
+                        font: { bold: true, size: 12, name: 'Times New Roman' },
+                        alignment: { horizontal: 'center', vertical: 'middle' },
+                    };
+
+                    row.getCell(4).style = {
+                        font: { bold: true, size: 12, name: 'Times New Roman' },
+                        alignment: { horizontal: 'center', vertical: 'middle' },
+                    };
+                }
+
+                // Style subcategories
+                if (level === 1) {
+                    row.eachCell((cell) => {
+                        cell.style = subCategoryStyle;
+                        [2, 4].forEach((col => row.getCell(col).style = dataStyle));
+                    });
+                } else if (level > 1) {
+                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
+                    [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
+                }
+
+                // Find child categories
+                const childCategories = cEquityMergeData.filter(child => child.parentID === category.id);
+
+                // Recursively process child categories
+                childCategories.forEach(child => {
+                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
+                    totalAmount += childTotals.totalAmount;
+                    totalPeriodAmount += childTotals.totalPeriodAmount;
+                });
+
+                // Add totals for "Cash Inflows" and "Cash Outflows"
+                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
+                    const totalRow = worksheet.addRow([
+                        `    Total ${category.categoryName}`,
+                        formatNumber(totalAmount),
+                        '',
+                        formatNumber(totalPeriodAmount),
+                    ]);
+
+                    // Style totals
+                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
+                    totalRow.getCell(2).style = boldDataStyle;
+                    totalRow.getCell(4).style = boldDataStyle;
+
+                    // Add borders for columns 2 and 4 only
+                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                }
+
+                return { totalAmount, totalPeriodAmount };
+            };
+
+
+
+            // Add Visible Categories
+            visibleCategories
+                .filter((category) => category.parentID === null)
+                .forEach((category) => addCategoryAndChildrenRows(category));
+
+            worksheet.addRow([]);  // This adds a blank row for spacing
+
+            const sdeficitRow = worksheet.addRow([]);
+            sdeficitRow.getCell(1).value = "Surplus/Deficit for the Period";
+            sdeficitRow.getCell(1).style = mainCategoryStyle;
+            sdeficitRow.getCell(2).value = totalSurplusDeficit;
+            sdeficitRow.getCell(2).style = sDeficitDataStyle;
+            sdeficitRow.getCell(4).style = sDeficitDataStyle;
+
+            worksheet.addRow([]);  // This adds a blank row for spacing
+
+            const balanceRow = worksheet.addRow([]);
+            balanceRow.getCell(1).value = "Balance for the Period";
+            balanceRow.getCell(1).style = mainCategoryStyle;
+            balanceRow.getCell(2).value = periodTotal;
+            balanceRow.getCell(2).style = balanceDataStyle;
+            balanceRow.getCell(4).style = balanceDataStyle;
+            // Save Workbook
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+
+            // Trigger Download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Changes in Equity ${currentcEquity.year}.xlsx`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting data to Excel:', error);
+        }
+    };
+
+
+    //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
+
     return (
         <Fragment>
 
@@ -1045,41 +1350,43 @@ export default function ChangesInEquityDetails() {
                 </div>
             )}
 
-            <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
-                <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes In Equity</h1>
-                </div>
-                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
-                        <li className="ml-auto flex-row">
-                            <button
+            <div className="px-6">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
+
+                        <div class="flex space-x-4">
+
+
+                            <AddButton
                                 onClick={() => setShowModal(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-5"
-                            >
-                                + ADD CATEGORY
-                            </button>
-                            <button
+                                label={"ADD CATEGORY"}
+                            />
+
+                            <AddButton
                                 onClick={() => setShowModalPeriod(true)}
-                                className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium mr-4"
-                            >
-                                + ADD PERIOD
-                            </button>
-                        </li>
-                        <ExportButton
-                            label="EXPORT"
-                        />
-                    </ul>
+                                label={"ADD PERIOD"}
+                            />
+
+                            <ExportButton
+                                onClick={exportToExcel}
+                                label="EXPORT"
+                            />
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <div className="px-6 py-8">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
+                    <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-[12px] text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                            <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-2 py-3 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period - {cEquityPeriod}</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-start">Period</th>
-                                    <th scope="col" className="px-2 py-3 w-[80px] text-center"></th>
-                                    <th scope="col" className="w-[20px]"></th>
+                                    <th scope="col" className="px-2 py-4 w-[600px]">Account Description</th>
+                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{currentcEquity?.year || ""}</th>
+                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{selectedYear || ''}</th>
+
                                 </tr>
                             </thead>
                             <tbody>
@@ -1103,15 +1410,12 @@ export default function ChangesInEquityDetails() {
                                     <td className="px-2 py-3 font-bold text-gray-700">
                                         {totalSurplusDeficit?.toLocaleString() || '-'}
                                     </td>
-                                    <td></td>
-                                    <td></td>
 
                                 </tr>
                                 <tr>
                                     <td className="px-2 py-3">Balance</td>
                                     <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
-                                    <td></td>
-                                    <td></td>
+
                                 </tr>
                             </tfoot>
                         </table>
@@ -1195,47 +1499,49 @@ export default function ChangesInEquityDetails() {
                 </div>
             </Modal>
             {/* Right-click context modal */}
-            {showRightClickModal && (
-                <div
-                    id="user-modal-overlay"
-                    className="fixed inset-0 flex justify-center items-center"
-                    onClick={closeModalOnOutsideClick}
-                    onContextMenu={(event) => closeModalOnOutsideClick(event)}
-                >
+            {
+                showRightClickModal && (
                     <div
-                        style={{ top: modalPosition.y, left: modalPosition.x }}
-                        className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+                        id="user-modal-overlay"
+                        className="fixed inset-0 flex justify-center items-center"
+                        onClick={closeModalOnOutsideClick}
+                        onContextMenu={(event) => closeModalOnOutsideClick(event)}
                     >
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewRow}
+                        <div
+                            style={{ top: modalPosition.y, left: modalPosition.x }}
+                            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
                         >
-                            Add Row Below
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewParentCategory}
-                        >
-                            Add Parent Category
-                        </button>
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={addNewSubcategory}
-                        >
-                            Add Subcategory
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewRow}
+                            >
+                                Add Row Below
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewParentCategory}
+                            >
+                                Add Parent Category
+                            </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={addNewSubcategory}
+                            >
+                                Add Subcategory
+                            </button>
 
-                        <button
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={handleDeleteRow}
-                        >
-                            Delete Row
-                        </button>
+                            <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={handleDeleteRow}
+                            >
+                                Delete Row
+                            </button>
 
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </Fragment>
+        </Fragment >
     );
 }

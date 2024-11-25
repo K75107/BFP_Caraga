@@ -95,23 +95,28 @@ export default function ReportsOverview() {
 
   useEffect(() => {
     if (userId) {
-      const submittedSubdepositsDataRef = collection(db, 'submittedReportsDeposits', userId, 'deposits');
-
-      const unsubscribeSubmitteddepositsDataRef = onSnapshot(submittedSubdepositsDataRef, (snapshot) => {
-        const submittedDepositsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const totalAmount = submittedDepositsList.reduce((acc, deposit) => acc + parseFloat(deposit.depositAmount || 0), 0);
-
-        setFirestationDeposit(submittedDepositsList);
-        setTotalDepositAmount(totalAmount);
-        processMonthlyData(submittedDepositsList, 'depositAmount', 'Deposits');
+      // Fetch deposits instead of relying solely on collections
+      const submittedDepositsRef = collection(db, 'submittedReportsDeposits', userId, 'deposits');
+  
+      const unsubscribeDeposits = onSnapshot(submittedDepositsRef, (snapshot) => {
+        const depositsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+        // Calculate the total deposited amount
+        const totalDepositedAmount = depositsList.reduce(
+          (acc, deposit) => acc + parseFloat(deposit.depositAmount || 0),
+          0
+        );
+  
+        // Update the state for deposited amount
+        setTotalDepositedAmount(totalDepositedAmount);
       });
-
+  
       return () => {
-        unsubscribeSubmitteddepositsDataRef();
+        unsubscribeDeposits();
       };
     }
   }, [userId]);
+  
 
   const processMonthlyData = (data, amountField, type) => {
     const monthlyTotals = {};

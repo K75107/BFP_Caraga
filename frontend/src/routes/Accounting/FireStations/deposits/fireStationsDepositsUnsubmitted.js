@@ -18,19 +18,30 @@ export default function FireStationDepositsUnsubmitted() {
 
   const [firestationdeposit, setFirestationdeposit] = useState([]);
   const [depositsData, setDepositsData] = useState([]);
-
+  console.log("data of depositsData: ", depositsData);
   //Hover on Rows
   const [hoveredRowId, setHoveredRowId] = useState(null);
   const [selectedRowData, setSelectedRowData] = useState(null);
 
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
-
+  console.log("data of editValue: ", editValue);
 
   //Modal
   const [showModal, setShowModal] = useState(false);
   const [officersData, setOfficersData] = useState([]);
   const [selectedOfficer, setSelectedOfficer] = useState('');
+
+  //Modal II
+  const [showModal2, setShowModal2] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [dataCollection, setDataCollection] = useState([]);
+
+  console.log("data of dataCollection", dataCollection);
+  console.log("data of selectedCategories", selectedCategories);
 
   //Right click Modal
   const [showRightClickModal, setShowRightClickModal] = useState(false);
@@ -38,8 +49,7 @@ export default function FireStationDepositsUnsubmitted() {
 
   //Loggin User
   const [logginUser, setLogginUser] = useState('');
-
-
+  console.log("data of logginUser", logginUser);
   //loading
   const [isLoading, setIsLoading] = useState(false);  // New loading state
 
@@ -225,13 +235,81 @@ export default function FireStationDepositsUnsubmitted() {
     }
   }, 1000); // Delay of 1 second for debouncing
 
+  // ------------------------------------------  S U B M I T  M O D A L   I I  ------------------------------------------
+  useEffect(() => {
+    const getDataCollection = async () => {
+      try {
+        const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
+        const collectionsSnapshot = await getDocs(submittedCollectionRef);
+
+        const dataCollection = collectionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        // Check if dataCollection is valid before setting state
+        setDataCollection(dataCollection || []);
+      } catch (err) {
+        console.error("Error fetching ledger data:", err);
+      }
+    };
+
+    getDataCollection();
+  }, [logginUser]);
 
 
+  // Extract unique months with years where depositStatus is null/false
+  useEffect(() => {
+    const months = Array.from(
+      new Set(
+        dataCollection
+          .filter((item) => item.depositStatus === null || item.depositStatus === false)
+          .map((item) =>
+            new Date(item.dateCollected).toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })
+          )
+      )
+    );
+    setAvailableMonths(months);
+  }, [dataCollection]);
 
+
+  // Filter data based on selected month and depositStatus
+  useEffect(() => {
+    if (selectedMonth) {
+      const filtered = dataCollection.filter(
+        (item) =>
+          new Date(item.dateCollected).toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          }) === selectedMonth &&
+          (item.depositStatus === null || item.depositStatus === false)
+      );
+      setFilteredData(filtered);
+    } else {
+      setFilteredData([]);
+    }
+  }, [selectedMonth, dataCollection]);
+
+  // Toggle checkbox selection
+  const toggleCheckbox = (item) => {
+    setSelectedCategories((prev) =>
+      prev.includes(item)
+        ? prev.filter((i) => i !== item)
+        : [...prev, item]
+    );
+  };
+  // ------------------------------------------  S U B M I T  M O D A L   I I  ------------------------------------------
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowModal(true);
+  };
+
+  const handleSubmit2 = (e) => {
+    e.preventDefault();
+    setShowModal2(true);
   };
 
 
@@ -413,7 +491,7 @@ export default function FireStationDepositsUnsubmitted() {
         // Create an array of promises for each document to be added and deleted
         const submissionPromises = depositsSnapshot.docs.map(async (docSnapshot) => {
           const data = docSnapshot.data();
-
+          console.log("data of data: ", data);
           // Check if the row is not empty (you can add more fields to this check if needed)
           if (
             data.collectingAgent &&
@@ -494,6 +572,48 @@ export default function FireStationDepositsUnsubmitted() {
 
 
       // Update the undeposited Collections ------------------------------------------------------------------------------
+      // try {
+      //   // Reference to the 'submittedReportsDeposits' collection
+      //   const submittedDepositsRef = collection(db, 'submittedReportsDeposits', logginUser.id, 'deposits');
+
+      //   // Retrieve all documents in the 'submittedReportsDeposits' collection
+      //   const depositsSnapshot = await getDocs(submittedDepositsRef);
+
+      //   // Fetch all documents from the 'submittedReportsCollections' collection
+      //   const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
+      //   const collectionsSnapshot = await getDocs(submittedCollectionRef);
+
+      //   // Loop through each deposit document in 'submittedReportsDeposits'
+      //   depositsSnapshot.forEach(async (depositDoc) => {
+      //     const depositData = depositDoc.data();
+      //     const dateCollectedStart = depositData.dateCollectedStart; // Firestore Timestamp
+      //     const dateCollectedEnd = depositData.dateCollectedEnd; // Firestore Timestamp
+
+      //     if (!dateCollectedStart || !dateCollectedEnd) {
+      //       console.warn(`Missing date range in deposit document: ${depositDoc.id}`);
+      //       return; // Skip if date range is missing
+      //     }
+
+      //     // Loop through each collection document in 'submittedReportsCollections'
+      //     collectionsSnapshot.forEach(async (collectionDoc) => {
+      //       const collectionData = collectionDoc.data();
+      //       const dateCollected = collectionData.dateCollected; // Firestore Timestamp
+
+      //       // Check if dateCollected is within the specified date range
+      //       if (dateCollected && dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
+      //         const collectionDocRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', collectionDoc.id);
+
+      //         // Update the depositStatus
+      //         await updateDoc(collectionDocRef, {
+      //           depositStatus: true,
+      //         });
+      //       }
+      //     });
+      //   });
+      // } catch (error) {
+      //   console.error("Error updating depositStatus: ", error);
+      // }
+      // Update the undeposited Collections ------------------------------------------------------------------------------ 
       try {
         // Reference to the 'submittedReportsDeposits' collection
         const submittedDepositsRef = collection(db, 'submittedReportsDeposits', logginUser.id, 'deposits');
@@ -505,33 +625,38 @@ export default function FireStationDepositsUnsubmitted() {
         const submittedCollectionRef = collection(db, 'submittedReportsCollections', logginUser.id, 'collections');
         const collectionsSnapshot = await getDocs(submittedCollectionRef);
 
-        // Loop through each deposit document in 'submittedReportsDeposits'
-        depositsSnapshot.forEach(async (depositDoc) => {
-          const depositData = depositDoc.data();
-          const dateCollectedStart = depositData.dateCollectedStart; // Firestore Timestamp
-          const dateCollectedEnd = depositData.dateCollectedEnd; // Firestore Timestamp
+        // Process only selected categories
+        const selectedEntries = filteredData.filter((item) =>
+          selectedCategories.includes(`${item.natureOfCollection} - ₱${item.collectionAmount}`)
+        );
 
-          if (!dateCollectedStart || !dateCollectedEnd) {
-            console.warn(`Missing date range in deposit document: ${depositDoc.id}`);
-            return; // Skip if date range is missing
+        // Loop through each selected entry to update the depositStatus
+        for (const entry of selectedEntries) {
+          const collectionDoc = collectionsSnapshot.docs.find(
+            (doc) =>
+              doc.data().natureOfCollection === entry.natureOfCollection &&
+              doc.data().collectionAmount === entry.collectionAmount
+          );
+
+          if (collectionDoc) {
+            const collectionDocRef = doc(
+              db,
+              'submittedReportsCollections',
+              logginUser.id,
+              'collections',
+              collectionDoc.id
+            );
+
+            // Update the depositStatus
+            await updateDoc(collectionDocRef, {
+              depositStatus: true,
+            });
+
+            console.log(`Updated depositStatus for collection: ${entry.natureOfCollection}`);
+          } else {
+            console.warn(`No matching document found for: ${entry.natureOfCollection}`);
           }
-
-          // Loop through each collection document in 'submittedReportsCollections'
-          collectionsSnapshot.forEach(async (collectionDoc) => {
-            const collectionData = collectionDoc.data();
-            const dateCollected = collectionData.dateCollected; // Firestore Timestamp
-
-            // Check if dateCollected is within the specified date range
-            if (dateCollected && dateCollected >= dateCollectedStart && dateCollected <= dateCollectedEnd) {
-              const collectionDocRef = doc(db, 'submittedReportsCollections', logginUser.id, 'collections', collectionDoc.id);
-
-              // Update the depositStatus
-              await updateDoc(collectionDocRef, {
-                depositStatus: true,
-              });
-            }
-          });
-        });
+        }
       } catch (error) {
         console.error("Error updating depositStatus: ", error);
       }
@@ -678,14 +803,20 @@ export default function FireStationDepositsUnsubmitted() {
           </li>
         </ul>
       </div>
-      
-      <div className="absolute top-[125px] right-12">
+
+      {/* <div className="absolute top-[125px] right-12">
         <SubmitButton
           onClick={handleSubmit}
           label={"SUBMIT"}
         />
-      </div>
+      </div> */}
 
+      <div className="absolute top-[125px] right-12">
+        <SubmitButton
+          onClick={handleSubmit2}
+          label={"SUBMIT"}
+        />
+      </div>
 
 
 
@@ -968,7 +1099,7 @@ export default function FireStationDepositsUnsubmitted() {
 
 
             <div className="py-2 ">
-              
+
 
             </div>
 
@@ -979,6 +1110,143 @@ export default function FireStationDepositsUnsubmitted() {
             <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
               onClick={handleSubmitDataToRegion}
             >Submit</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/*Submit Modal II*/}
+      <Modal isVisible={showModal2}>
+        <div className="bg-white w-[600px] h-auto rounded-lg py-4 px-4 shadow-xl flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="font-poppins font-bold text-xl text-gray-700">Submit Unsubmitted Deposits / Undeposited Reports</h1>
+            <button
+              className="text-2xl font-semibold text-gray-500 focus:outline-none"
+              onClick={() => {
+                setSelectedMonth("");
+                setSelectedCategories([]); // Reset selected checkboxes
+                setShowModal2(false);
+
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <hr className="border-t border-[#7694D4] -my-1" />
+
+          {/* Content */}
+          <div className="p-4 flex flex-col flex-grow items-center">
+            {/* Dropdown for month-year selection */}
+            <div className="w-full max-w-[500px] mb-4">
+              <label htmlFor="monthDropdown" className="font-semibold text-sm text-gray-700 mb-2">
+                Select Month:
+              </label>
+              <select
+                id="monthDropdown"
+                className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-600 focus:border-blue-600"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                <option value="" disabled>
+                  -- Select a Month --
+                </option>
+                {availableMonths.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Checkboxes for filtered data */}
+            <div className="w-full max-w-[500px] mb-4">
+              <h2 className="font-semibold text-sm text-gray-700 mb-2">Select Reports:</h2>
+              <ul className="h-40 px-3 pb-3 overflow-y-auto text-sm text-gray-700 border rounded-lg">
+                {availableMonths.length === 0 ? (
+                  <li className="mt-14 text-center text-gray-500">No Undeposited Reports Remaining</li>
+                ) : (
+                  filteredData.map((item, index) => {
+                    const uniqueIdentifier = `${item.natureOfCollection} - ₱${item.collectionAmount}`;
+                    return (
+                      <li key={index} className="flex items-center p-2 hover:bg-gray-200 active:bg-gray-300">
+                        <label className="flex items-center w-full cursor-pointer">
+                          {/* Display natureOfCollection and collectionAmount */}
+                          <span className="flex-grow text-sm text-gray-900">
+                            {item.natureOfCollection} - ₱{item.collectionAmount}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(uniqueIdentifier)}
+                            onChange={() => toggleCheckbox(uniqueIdentifier)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </label>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mb-2 flex justify-center">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              className="w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg mr-2"
+              onClick={() => {
+                setSelectedCategories([]); // Reset selected checkboxes
+                setSelectedMonth("");
+                setShowModal2(false);
+              }}
+            >
+              Cancel
+            </button>
+
+            {/* Apply Button */}
+            <button
+              type="button"
+              className={`w-full max-w-[240px] text-white bg-blue-600 hover:bg-blue-700 font-poppins text-sm font-medium py-2 px-8 rounded-lg ${(selectedCategories.length === 0 && depositsData.some(
+                (deposit) =>
+                  !deposit.collectingAgent ||
+                  !deposit.dateCollectedStart ||
+                  !deposit.dateCollectedEnd ||
+                  !deposit.dateDeposited ||
+                  !deposit.depositAmount ||
+                  !deposit.particulars ||
+                  !deposit.nameofDepositor ||
+                  !(deposit.orNumber || deposit.lcNumber) // At least one of these is required
+              )) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              disabled={
+                selectedCategories.length === 0 &&
+                depositsData.some(
+                  (deposit) =>
+                    !deposit.collectingAgent ||
+                    !deposit.dateCollectedStart ||
+                    !deposit.dateCollectedEnd ||
+                    !deposit.dateDeposited ||
+                    !deposit.depositAmount ||
+                    !deposit.particulars ||
+                    !deposit.nameofDepositor ||
+                    !(deposit.orNumber || deposit.lcNumber) // At least one of these is required
+                )
+              }
+              onClick={() => {
+                // Logic to handle filtered and selected data
+                console.log("Selected Categories:", selectedCategories);
+                console.log("Filtered Data:", filteredData);
+                setSelectedMonth("");
+                setSelectedCategories([]);
+                setShowModal2(false);
+                handleSubmitDataToRegion();
+              }}
+            >
+              Submit
+            </button>
+
           </div>
         </div>
       </Modal>
