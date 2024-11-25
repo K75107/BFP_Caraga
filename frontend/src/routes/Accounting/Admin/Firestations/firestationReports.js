@@ -125,6 +125,19 @@ export default function FirestationReports() {
         fetchReports2();
     }, []);
 
+    const getTotalCollections = (fireStationName) => {
+        return reportsData
+            .filter(report => report.fireStationName === fireStationName)
+            .reduce((total, report) => total + parseFloat(report.collectionAmount || 0), 0);
+    };
+    
+    const getTotalDeposits = (fireStationName) => {
+        return reportsData2
+            .filter(report => report.fireStationName === fireStationName)
+            .reduce((total, report) => total + parseFloat(report.depositAmount || 0), 0);
+    };
+    
+
     // Toggle function for provinces
     const toggleProvince = (province) => {
         setToggledRows((prev) => ({
@@ -911,9 +924,9 @@ export default function FirestationReports() {
                                                     <td className="text-[14px] px-6 py-2 w-[150px]">
                                                         {collection.province + ', ' + collection.municipalityCity}
                                                     </td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalCollections(collection.username).toLocaleString()}</td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalDeposits(collection.username).toLocaleString()}</td>
                                                     <td className="text-[14px] px-6 py-2 w-[150px]"></td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]"></td>
-
                                                 </tr>
                                             ))}
                                         </Fragment>
