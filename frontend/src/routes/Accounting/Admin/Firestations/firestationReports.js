@@ -108,7 +108,7 @@ export default function FirestationReports() {
             for (const doc of mainSnapshot.docs) {
                 const subCollectionRef = collection(
                     db,
-                    `submittedReportsDeposits/${doc.id}/collections`
+                    `submittedReportsDeposits/${doc.id}/deposits`
                 );
 
                 const subSnapshot = await getDocs(subCollectionRef);
@@ -124,6 +124,19 @@ export default function FirestationReports() {
 
         fetchReports2();
     }, []);
+
+    const getTotalCollections = (fireStationName) => {
+        return reportsData
+            .filter(report => report.fireStationName === fireStationName)
+            .reduce((total, report) => total + parseFloat(report.collectionAmount || 0), 0);
+    };
+    
+    const getTotalDeposits = (fireStationName) => {
+        return reportsData2
+            .filter(report => report.fireStationName === fireStationName)
+            .reduce((total, report) => total + parseFloat(report.depositAmount || 0), 0);
+    };
+    
 
     // Toggle function for provinces
     const toggleProvince = (province) => {
@@ -418,103 +431,139 @@ export default function FirestationReports() {
             return a.collectingOfficer.localeCompare(b.collectingOfficer); // Sort by officer
         });
 
-        let currentRow = 21;// Start adding data from row 8
+        filteredData.sort((a, b) => {
+            // Sort by collecting officer and date submitted (descending order)
+            if (a.collectingOfficer === b.collectingOfficer) {
+                return new Date(b.dateSubmitted) - new Date(a.dateSubmitted); // Sort by date descending
+            }
+            return a.collectingOfficer.localeCompare(b.collectingOfficer); // Sort by officer
+        });
+
         let currentCity = ''; // To keep track of the current city
+        const consolidatedData = {}; // Map to consolidate data by collecting officer
 
 
         // Create a map to store all reports for each officer (as an array)
-        const officerReportsMap = {};
+        const officerAggregateMap = {};
+        const collectionData = Array(validAccountCodes.length).fill(""); // Initialize with empty strings instead of null
 
         const grandTotals = [];
         let cityTotals = Array(21).fill(0); // Array to track subtotals for each column
 
 
+
+        // Process collection data
+        // Get the current year
+        const currentYear = new Date().getFullYear();
+
+        // Process collections data
         filteredData.forEach((data) => {
-            if (data.fireStationName !== currentCity) {
-                if (currentCity) {
-                    worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-                    worksheet.getCell(`A${currentRow}`).value = `${currentCity} Subtotal`;
-                    worksheet.getCell(`A${currentRow}`).font = { bold: true };
-                    worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center" };
+            const officer = data.collectingOfficer || "N/A"; // Use collectingOfficer for collections
+            const accountCode = data.natureOfCollection.split(" | ")[0]; // Extract the account code
+            const collectionAmount = parseFloat(data.collectionAmount) || 0; // Convert to number
+            const dateCollected = new Date(data.dateCollected);
 
-                    cityTotals.forEach((value, index) => {
-                        const colIndex = index + 3; // Adjust column index
-                        const cell = worksheet.getCell(currentRow, colIndex); // Define 'cell'
+            // Initialize officer if not exists
+            if (!officerAggregateMap[officer]) {
+                officerAggregateMap[officer] = {
+                    fireStationName: data.fireStationName,
+                    collections: new Array(validAccountCodes.length).fill(0), // Initialize collections array
+                    totalCollections: 0,
+                    totalDeposits: 0, // Initialize totalDeposits
+                    priorYearCollections: 0, // Initialize priorYearCollections
+                    priorYearDeposits: 0, // Initialize priorYearDeposits
+                    totalundepositedCollection: 0, // Initialize undepositedCollection
+                    priorYearUndepositedCollection: 0, // Initialize priorYearUndepositedCollection
+                };
+            }
 
-                        if (value > 0) {
-                            cell.value = value;
-                            cell.font = { bold: true };
-                        } else {
-                            cell.value = ""; // Ensure empty cells are properly defined
-                        }
-
-                        cell.border = {
-                            top: { style: "thin" },
-                            left: { style: "thin" },
-                            bottom: { style: "thin" },
-                            right: { style: "thin" },
-                        };
-
-                        // Accumulate grand total
-                        grandTotals[index] = (grandTotals[index] || 0) + value;
-                    });
-
-                    currentRow++;
-                    cityTotals.fill(0); // Reset city totals for the next city
+            // For current year collections
+            if (dateCollected.getFullYear() === currentYear) {
+                // Consolidate amounts by account code for collections
+                if (validAccountCodes.includes(accountCode)) {
+                    const index = validAccountCodes.indexOf(accountCode);
+                    officerAggregateMap[officer].collections[index] += collectionAmount; // Aggregate by account code
                 }
 
-                // Increase the row to leave space above
-                worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-                worksheet.getCell(`A${currentRow}`).value = `${data.fireStationName}`;
-                worksheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
-                worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
-                currentCity = data.fireStationName;
-                currentRow++;
+                // Add to total collections for the officer
+                officerAggregateMap[officer].totalCollections += collectionAmount;
+
+                // If depositStatus is false, add the amount to undepositedCollection for the current year
+                if (data.depositStatus === false) {
+                    officerAggregateMap[officer].totalundepositedCollection += collectionAmount; // Track undeposited collections
+                }
             }
 
+            // For prior year collections
+            if (dateCollected.getFullYear() === currentYear - 1) {
+                officerAggregateMap[officer].priorYearCollections += collectionAmount; // Track prior year collections
 
-            // Insert the data for the current row
-            worksheet.getCell(`A${currentRow}`).value = data.fireStationName || "N/A";
-            worksheet.getCell(`B${currentRow}`).value = data.collectingOfficer || "N/A";
+                // If depositStatus is false, add the amount to undepositedCollection for the prior year
+                if (data.depositStatus === false) {
+                    officerAggregateMap[officer].priorYearUndepositedCollection += collectionAmount; // Track undeposited collections for the prior year
+                }
+            }
+        });
 
-            // Initialize an array for the columns C to M (subheader account codes)
-            const collectionData = Array(validAccountCodes.length).fill(""); // Initialize with empty strings instead of null
+        // Process deposits data
+        filteredData2.forEach((data) => {
+            const officer = data.collectingAgent || "N/A"; // Use collectingAgent for deposits
+            const depositAmount = parseFloat(data.depositAmount) || 0; // Convert to number
+            const dateDeposited = new Date(data.dateDeposited);
 
-            // Extract the account code from `natureOfCollection` and match with valid account codes
-            const accountCode = data.natureOfCollection.split(' | ')[0]; // Get the part before the "|"
-
-            // Check if the extracted account code is in the valid list
-            if (validAccountCodes.includes(accountCode)) {
-                const index = validAccountCodes.indexOf(accountCode);
-                const amount = parseFloat(data.collectionAmount) || 0; // Convert to a number, default to 0 if invalid
-                collectionData[index] = amount === 0 ? "" : amount; // Leave empty if 0, otherwise use the number
+            // Initialize officer if not exists (if officer doesn't exist in collection data, create it here as well)
+            if (!officerAggregateMap[officer]) {
+                officerAggregateMap[officer] = {
+                    fireStationName: data.fireStationName,
+                    collections: new Array(validAccountCodes.length).fill(0), // Initialize collections array
+                    totalCollections: 0,
+                    totalDeposits: 0, // Initialize totalDeposits
+                    priorYearCollections: 0,
+                    priorYearDeposits: 0, // Initialize priorYearDeposits
+                    totalundepositedCollection: 0, // Initialize undepositedCollection
+                    priorYearUndepositedCollection: 0, // Initialize priorYearUndepositedCollection
+                };
             }
 
-            // Populate the worksheet with the mapped data for columns C to M
-            collectionData.forEach((value, index) => {
-                const colIndex = 3 + index; // Columns C to M (3 to 13)
-                worksheet.getCell(currentRow, colIndex).value = value;
+            // For current year deposits
+            if (dateDeposited.getFullYear() === currentYear) {
+                officerAggregateMap[officer].totalDeposits += depositAmount; // Add to total deposits
+            }
 
-                // Apply borders to each cell, even if it's empty
+            // For prior year deposits
+            if (dateDeposited.getFullYear() === currentYear - 1) {
+                officerAggregateMap[officer].priorYearDeposits += depositAmount; // Track prior year deposits
+            }
+        });
+
+        
+        // Initialize currentRow to start from 21
+        let currentRow = 21;
+
+        
+
+        // Populate worksheet with aggregated and derived data
+        Object.entries(officerAggregateMap).forEach(([officer, officerData]) => {
+            // Add a row for the officer
+            worksheet.getCell(currentRow, 1).value = officerData.fireStationName; // Column A: Fire Station Name
+            worksheet.getCell(currentRow, 2).value = officer; // Column B: Officer Name
+
+            // Populate columns 3–13 with consolidated amounts for valid account codes
+            officerData.collections.forEach((amount, index) => {
+                const colIndex = 3 + index; // Columns 3–13
+                worksheet.getCell(currentRow, colIndex).value = amount > 0 ? amount : ""; // Leave blank if 0
                 worksheet.getCell(currentRow, colIndex).border = {
                     top: { style: "thin" },
                     left: { style: "thin" },
                     bottom: { style: "thin" },
                     right: { style: "thin" },
                 };
-                cityTotals[index] += value || 0;
             });
 
-            // Calculate and insert the Total Collections (sum of the collectionData)
-            const totalCollection = collectionData.reduce((acc, value) => {
-                const numValue = (value === "" || value === 0) ? 0 : Number(value); // Treat empty as 0
-                return acc + numValue;
-            }, 0);
+            
 
-            // Insert the total in the "Total Collections" column (14th column)
-            worksheet.getCell(currentRow, 14).value = totalCollection;
-
-            // Apply border to the "Total Collections" column
+            // Populate column 14 with total collections
+            worksheet.getCell(currentRow, 14).value = officerData.totalCollections;
             worksheet.getCell(currentRow, 14).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
@@ -522,243 +571,129 @@ export default function FirestationReports() {
                 right: { style: "thin" },
             };
 
-            cityTotals[11] += totalCollection;
-
-            // Calculate 20% LGU Share Collections (20% of the total collection)
-            const lguShare = totalCollection * 0.2;
-
-            // Insert the 20% LGU Share Collections in the "20% LGU Share Collections" column (15th column, Column O)
-            worksheet.getCell(currentRow, 15).value = lguShare;
-
-            // Apply border to the "20% LGU Share Collections" column
+            const twentyPercent = officerData.totalCollections * 0.2;
+            worksheet.getCell(currentRow, 15).value = twentyPercent > 0 ? twentyPercent : ""; // Leave blank if 0
+            worksheet.getCell(currentRow, 15).numFmt = "0.00"; // Format as decimal
             worksheet.getCell(currentRow, 15).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-
-            cityTotals[12] += lguShare;
-
-            // Store this report in the map for the current officer
-            if (!officerReportsMap[data.collectingOfficer]) {
-                officerReportsMap[data.collectingOfficer] = [];
-            }
-
-            officerReportsMap[data.collectingOfficer].push({
-                dateSubmitted: data.dateSubmitted,
-                collectionAmount: totalCollection,
-            });
-
-            // Populate "Total Last Report" column (16th column) with the second-to-last report's collection amount
-            let totalAmount = 0;
-            const officerReports = officerReportsMap[data.collectingOfficer];
-
-            // Ensure reports are sorted by date
-            officerReports.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort ascending by date
-            
-            if (officerReports.length > 1) {
-                const secondToLastReport = officerReports[officerReports.length - 2];
-                const collectionAmount = parseFloat(secondToLastReport.collectionAmount || 0); // Parse as float
-                console.log("Second-to-Last Collection Amount:", collectionAmount); // Debugging
-                worksheet.getCell(currentRow, 16).value = collectionAmount;
-                worksheet.getCell(currentRow, 16).numFmt = "0.00"; // Apply decimal formatting
-            } else {
-                worksheet.getCell(currentRow, 16).value = ""; // Leave blank if fewer than 2 reports
-            }
-            
-            // Apply border to the "Total Last Report" column
-            worksheet.getCell(currentRow, 16).border = {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                bottom: { style: "thin" },
-                right: { style: "thin" },
-            };
-            // Apply border to the "Total Last Report" column
-            worksheet.getCell(currentRow, 16).border = {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                bottom: { style: "thin" },
-                right: { style: "thin" },
-            };
-            cityTotals[13] += totalAmount;
-
-            const totalDeposits = depositMap[data.collectingOfficer] || null; // Use `null` if no deposits
-
-            // Set the "Total Deposits" column (17th column)
-            worksheet.getCell(currentRow, 17).value = totalDeposits;
+            worksheet.getCell(currentRow, 16).value = ""; // Set it to empty
+            worksheet.getCell(currentRow, 17).value = officerData.totalDeposits;
             worksheet.getCell(currentRow, 17).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            cityTotals[14] += totalDeposits;
-
-            // Calculate "Undeposited Collection" (18th column)
-            const totalCollections = worksheet.getCell(currentRow, 14).value || 0; // Default to 0 if missing
-            const undeposited = totalDeposits !== null ? totalCollections - totalDeposits : totalCollections; // Handle null deposits
-
-            worksheet.getCell(currentRow, 18).value = undeposited > 0 ? undeposited : null; // Leave empty if no undeposited amount
+            worksheet.getCell(currentRow, 18).value = officerData.totalundepositedCollection;
             worksheet.getCell(currentRow, 18).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-
-            cityTotals[15] += undeposited;
-
-            // Calculate "Prior Year Total Collections" (19th column)
-            const currentYear = new Date().getFullYear();
-            const priorYear = currentYear - 1;
-
-            const priorYearCollections = reportsData
-                .filter((report) =>
-                    report.collectingOfficer === data.collectingOfficer &&
-                    new Date(report.dateCollected).getFullYear() === priorYear
-                )
-                .reduce((sum, report) => sum + (report.collectionAmount || 0), 0);
-
-            worksheet.getCell(currentRow, 19).value = priorYearCollections || null; // Leave empty if no prior year data
+            worksheet.getCell(currentRow, 19).value = officerData.priorYearCollections;
             worksheet.getCell(currentRow, 19).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            cityTotals[16] += priorYearCollections;
-
-            const priorYearDeposits = filteredData2
-                .filter(
-                    (report) =>
-                        report.collectingOfficer === data.collectingOfficer &&
-                        new Date(report.dateDeposited).getFullYear() === priorYear
-                )
-                .reduce((sum, report) => sum + (report.depositAmount || 0), 0);
-
-            worksheet.getCell(currentRow, 20).value = priorYearDeposits > 0 ? priorYearDeposits : null; // Leave empty if no data
+            worksheet.getCell(currentRow, 20).value = officerData.priorYearDeposits;
             worksheet.getCell(currentRow, 20).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            cityTotals[17] += priorYearDeposits;
-
-
-            const priorYearUndeposited =
-                priorYearCollections > 0
-                    ? priorYearCollections - priorYearDeposits
-                    : null; // Leave empty if no prior year data
-
-            worksheet.getCell(currentRow, 21).value = priorYearUndeposited;
+            worksheet.getCell(currentRow, 21).value = officerData.priorYearUndepositedCollection;
             worksheet.getCell(currentRow, 21).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            cityTotals[18] += priorYearUndeposited;
 
+            worksheet.getCell(currentRow, 22).value = officerData.priorYearUndepositedCollection + officerData.totalundepositedCollection;
 
-            // Retrieve values from columns 18 and 21
-            const undeposited2 = worksheet.getCell(currentRow, 18).value || 0; // Use 0 if null or undefined
-            const priorYearUndeposited2 = worksheet.getCell(currentRow, 21).value || 0; // Use 0 if null or undefined
-
-            // Calculate total undeposited as the sum of column 18 and column 21
-            const totalundeposited = undeposited2 + priorYearUndeposited2;
-
-            // Merge columns 22 and 23 (V and W) for the current row
+            // Merge columns 22 and 23 (adjust as per your needs)
             worksheet.mergeCells(`V${currentRow}:W${currentRow}`);
-
-            // Assign total undeposited value to the merged cells
-            worksheet.getCell(`V${currentRow}`).value = totalundeposited > 0 ? totalundeposited : null; // Only show if greater than 0
-            worksheet.getCell(`V${currentRow}`).alignment = { horizontal: "center", vertical: "middle" };
-
-            // Set borders for the merged cells
-            worksheet.getCell(`V${currentRow}`).border = {
+            
+            // Apply the borders for the merged cells
+            worksheet.getCell(currentRow, 22).border = {
                 top: { style: "thin" },
                 left: { style: "thin" },
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            cityTotals[19] += totalCollection;
+
+            // Apply borders to all cells in this row, even if empty
+            for (let colIndex = 3; colIndex <= 23; colIndex++) {
+                const cell = worksheet.getCell(currentRow, colIndex);
+                if (!cell.value) cell.value = ""; // Ensure blank cells are defined
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" },
+                };
+            }
+
+            // Move to the next row for the next officer
             currentRow++;
         });
 
-        if (currentCity) {
-            // Add Subtotal row for the current city
-            worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-            const subtotalCell = worksheet.getCell(`A${currentRow}`);
-            subtotalCell.value = `${currentCity} Subtotal`;
-            subtotalCell.font = { bold: true };
-            subtotalCell.alignment = { horizontal: "center", vertical: "middle" };
-
-            cityTotals.forEach((value, index) => {
-                const colIndex = index + 3; // Start from column C (index 3)
-                const cell = worksheet.getCell(currentRow, colIndex);
-
-                // Ensure that totals for columns like 'Undeposited Collection' or '20% LGU Share' are included
-                if (value > 0) {
-                    cell.value = value;
-                } else {
-                    cell.value = ""; // Ensure empty cells are properly defined
-                }
-
-                cell.font = { bold: true };
-                cell.alignment = { horizontal: "center", vertical: "middle" };
-
-                // Apply borders to each subtotal cell
-                cell.border = {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    bottom: { style: "thin" },
-                    right: { style: "thin" },
-                };
-
-                // Accumulate grand total
-                grandTotals[index] = (grandTotals[index] || 0) + value;
-            });
-
-            // Ensure columns 22 and 23 (V and W) are merged after all cells are set
-            worksheet.mergeCells(`V${currentRow}:W${currentRow}`); // Merge columns V (22) and W (23)
-            currentRow++; // Move to the next row
-        }
-
-        // Add Grand Total row directly
-        worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-        const grandTotalCell = worksheet.getCell(`A${currentRow}`);
-        grandTotalCell.value = "Grand Total";
-        grandTotalCell.font = { bold: true, size: 14 };
-        grandTotalCell.alignment = { horizontal: "center", vertical: "middle" };
-
-        grandTotals.forEach((total, index) => {
-            const colIndex = index + 3; // Start from column C (index 3)
-            const cell = worksheet.getCell(currentRow, colIndex);
-
-            if (total > 0) {
-                cell.value = total;
-                cell.font = { bold: true, size: 14 };
-                cell.alignment = { horizontal: "center", vertical: "middle" };
-
-                // Apply borders to each grand total cell
-                cell.border = {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    bottom: { style: "thin" },
-                    right: { style: "thin" },
-                };
-            } else {
-                // Ensure that columns with no values show empty cells
-                const cell = worksheet.getCell(currentRow, colIndex);
-                cell.value = ""; // Set empty value for missing totals (like Undeposited Collection)
-            }
+        // Add an empty row after the last data row
+        worksheet.getRow(currentRow).values = [];
+        worksheet.getRow(currentRow).eachCell((cell) => {
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            currentRow++;
         });
 
-        // Merge columns 22 and 23 in the Grand Total row once
-        worksheet.mergeCells(`V${currentRow}:W${currentRow}`); // Merge columns V (22) and W (23)
+        currentRow++;
+        worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        worksheet.getCell(`A${currentRow}`).value = "Grand Total";
+        worksheet.getCell(`A${currentRow}`).font = { bold: true };
+        worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center" };
+        
+        // Populate Subtotal row for columns 3–23
+        for (let colIndex = 3; colIndex <= 23; colIndex++) {
+            const subtotalCell = worksheet.getCell(currentRow, colIndex);
+            const formula = `SUM(${String.fromCharCode(64 + colIndex)}21:${String.fromCharCode(64 + colIndex)}${currentRow - 1})`;
+        
+            // Set formula to calculate subtotal
+            subtotalCell.value = { formula };
+        
+            // Apply conditional formula to display dash if result is 0, else show the sum
+            subtotalCell.value = {
+                formula: `IF(${formula}=0, "-", ${formula})`, // Formula to check if sum is 0 and display "-"
+            };
+        
+            subtotalCell.font = { bold: true };
+            subtotalCell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+        }
+        
+        // Set row height
+        worksheet.getRow(currentRow).height = 15;
+        
+        // Move to the next row after populating all columns for the subtotal
+        currentRow++; // Increment `currentRow` after processing all columns for the subtotal
+        
 
+        worksheet.addRow([]);
         // Minimal formatting for rows after row 16
         worksheet.eachRow((row, rowIndex) => {
             if (rowIndex > 16) {
@@ -830,7 +765,7 @@ export default function FirestationReports() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Firestation Report ${monthName}.xlsx`;
+        link.download = `Consolidated Reports ${monthName}.xlsx`;
         link.click();
         URL.revokeObjectURL(url);
     };
@@ -989,9 +924,9 @@ export default function FirestationReports() {
                                                     <td className="text-[14px] px-6 py-2 w-[150px]">
                                                         {collection.province + ', ' + collection.municipalityCity}
                                                     </td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalCollections(collection.username).toLocaleString()}</td>
+                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalDeposits(collection.username).toLocaleString()}</td>
                                                     <td className="text-[14px] px-6 py-2 w-[150px]"></td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]"></td>
-
                                                 </tr>
                                             ))}
                                         </Fragment>
