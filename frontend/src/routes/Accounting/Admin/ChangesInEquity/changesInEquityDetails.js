@@ -1167,7 +1167,17 @@ export default function ChangesInEquityDetails() {
                     bottom: { style: 'double', color: { argb: '000000' } }, // Black border
                     top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
                 },
-            };    
+            };
+
+            
+            const sDeficitDataStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: {
+                    bottom: { style: 'thin', color: { argb: '000000' } }, // Black border
+                    top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
+                },
+            };
 
             const mainCategoryamountStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
@@ -1187,7 +1197,7 @@ export default function ChangesInEquityDetails() {
                 ...boldDataStyle,
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-        
+
 
 
 
@@ -1289,6 +1299,15 @@ export default function ChangesInEquityDetails() {
             visibleCategories
                 .filter((category) => category.parentID === null)
                 .forEach((category) => addCategoryAndChildrenRows(category));
+
+            worksheet.addRow([]);  // This adds a blank row for spacing
+
+            const sdeficitRow = worksheet.addRow([]);
+            sdeficitRow.getCell(1).value = "Surplus/Deficit for the Period";
+            sdeficitRow.getCell(1).style = mainCategoryStyle;
+            sdeficitRow.getCell(2).value = totalSurplusDeficit;
+            sdeficitRow.getCell(2).style = sDeficitDataStyle;
+            sdeficitRow.getCell(4).style = sDeficitDataStyle;
 
             worksheet.addRow([]);  // This adds a blank row for spacing
 
