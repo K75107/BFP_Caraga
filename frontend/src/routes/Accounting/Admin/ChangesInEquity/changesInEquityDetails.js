@@ -1328,7 +1328,7 @@ export default function ChangesInEquityDetails() {
 
             {isSuccess && (
                 <div className="absolute top-4 right-4">
-                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Changes In Equity Created'} icon={'check'} />
+                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Changes in Equity Created'} icon={'check'} />
                 </div>
             )}
             {isError && (
@@ -1336,15 +1336,11 @@ export default function ChangesInEquityDetails() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Error occurred'} icon={'wrong'} />
                 </div>
             )}
-
             <div className="px-6">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
-                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
-
+                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
                         <div class="flex space-x-4">
-
-
                             <AddButton
                                 onClick={() => setShowModal(true)}
                                 label={"ADD CATEGORY"}
@@ -1354,28 +1350,26 @@ export default function ChangesInEquityDetails() {
                                 onClick={() => setShowModalPeriod(true)}
                                 label={"ADD PERIOD"}
                             />
-
                             <ExportButton
                                 onClick={exportToExcel}
-                                label="EXPORT"
+                                label={"EXPORT"}
                             />
                         </div>
                     </div>
                 </div>
             </div>
-
             <div className="px-6 py-8">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-2 py-4 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{currentcEquity?.year || ""}</th>
-                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{selectedYear || ''}</th>
+                                    <th scope="col" className="py-4 px-6 text-start">Account Description</th>
+                                    <th scope="col" className="py-4 ml-6 w-56 text-start">{currentcEquity?.year || ''}</th>
+                                    <th scope="col" className="py-4 ml-6 w-56  text-start">{selectedYear || ''}</th>
 
                                 </tr>
-                                </thead>
+                            </thead>
                         </table>
                     </div>
                     <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
