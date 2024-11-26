@@ -1333,7 +1333,11 @@ export default function ChangesInEquityDetails() {
                                     <th scope="col" className="px-2 py-4 w-[80px] text-start">{selectedYear || ''}</th>
 
                                 </tr>
-                            </thead>
+                                </thead>
+                        </table>
+                    </div>
+                    <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
+                    <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
                             <tbody>
                                 {/* Sortable rows for other categories */}
                                 <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
@@ -1346,7 +1350,7 @@ export default function ChangesInEquityDetails() {
                                     ))}
                                 </SortableContext>
                             </tbody>
-                            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
+                            <tfoot className="font-bold text-gray-700 dark:bg-gray-800">
                                 {/* Fixed row for Surplus/Deficit */}
                                 <tr className="border-b">
                                     <td className="px-2 py-3 font-bold text-gray-700">
@@ -1363,10 +1367,9 @@ export default function ChangesInEquityDetails() {
 
                                 </tr>
                             </tfoot>
-                        </table>
+                            </table>
                     </div>
                 </DndContext>
-
             </div>
 
             <Modal isVisible={showModal}>
