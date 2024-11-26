@@ -1450,7 +1450,7 @@ export default function CashflowsDetails() {
             const headerStyle2 = {
                 font: { bold: true, size: 14, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
-                border: {bottom: 'thin'},
+                border: { bottom: 'thin' },
             };
 
 
@@ -1474,19 +1474,19 @@ export default function CashflowsDetails() {
             const mainCategoryAmountStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
-                border: {top: 'thin', bottom: 'thin'}
+                border: { top: 'thin', bottom: 'thin' }
             };
 
             const subCategoryAmountStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
-                border: {bottom: 'thin'}
+                border: { bottom: 'thin' }
             };
 
             const mainCategoryisLockedAmountStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
-                border: {bottom: 'double'}
+                border: { bottom: 'double' }
             }
 
             const dataStyle = {
@@ -1516,49 +1516,42 @@ export default function CashflowsDetails() {
 
             // Helper function for category totals
             const calculateCategoryTotal = (categoryId) => {
-                const subcategories = cashflowCategoriesData.filter(
+                const subcategories = cashflowMergeData.filter(
                     (subcategory) => subcategory.parentID === categoryId
                 );
 
                 if (subcategories.length === 0) {
-                    const mainCategory = cashflowCategoriesData.find(
+                    const mainCategory = cashflowMergeData.find(
                         (category) => category.id === categoryId
                     );
                     return mainCategory ? mainCategory.amount || 0 : 0;
                 }
 
                 return subcategories.reduce(
-                    (acc, subcategory) =>
-                        acc + calculateCategoryTotal(subcategory.id),
+                    (acc, subcategory) => acc + calculateCategoryTotal(subcategory.id),
                     0
                 );
             };
 
             const calculateCategoryPeriodTotal = (categoryId) => {
-                const subcategories = cashflowCategoriesData.filter(
+                const subcategories = cashflowMergeData.filter(
                     (subcategory) => subcategory.parentID === categoryId
                 );
 
                 if (subcategories.length === 0) {
-                    const mainCategory = cashflowCategoriesData.find(
-                        (category) => category.id === categoryId
-                    );
-                    return mainCategory ? mainCategory.periodAmount || 0 : 0;
+                    const category = cashflowMergeData.find((cat) => cat.id === categoryId);
+                    return category ? category.periodAmount || 0 : 0; // Fetch periodAmount
                 }
 
                 return subcategories.reduce(
-                    (acc, subcategory) =>
-                        acc + calculateCategoryPeriodTotal(subcategory.id),
+                    (acc, subcategory) => acc + calculateCategoryPeriodTotal(subcategory.id),
                     0
                 );
             };
 
             // Recursive function to add rows
             const addCategoryAndChildrenRows = (category, level = 0, processedCategories = new Set()) => {
-                // Prevent duplicate processing of categories
-                if (processedCategories.has(category.id)) {
-                    return;
-                }
+                if (processedCategories.has(category.id)) return; // Prevent duplicate processing
                 processedCategories.add(category.id);
 
                 const totalAmount = calculateCategoryTotal(category.id);
@@ -1566,7 +1559,6 @@ export default function CashflowsDetails() {
 
                 if (totalAmount === 0 && totalPeriodAmount === 0) return; // Skip empty rows
 
-                // Check if the main category is locked
                 const isLocked = mainCategories.some(
                     (mainCategory) =>
                         mainCategory.name === category.categoryName && mainCategory.isLocked
@@ -1582,34 +1574,21 @@ export default function CashflowsDetails() {
                 if (level === 0) {
                     row.getCell(1).style = mainCategoryStyle;
                     worksheet.addRow([]);
-                } 
-                else if (level === 1) {
-                    row.getCell(1).style = mainCategoryStyle;
-                    worksheet.addRow([]);
-                }
-                else if (isLocked){
+                } else if (isLocked) {
                     [2, 4].forEach((col) => row.getCell(col).style = mainCategoryisLockedAmountStyle);
-                }
-                else {
+                } else {
                     row.getCell(1).style = subCategoryStyle;
                 }
                 [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
 
-
-                // Get child categories
-                const childCategories = cashflowCategoriesData.filter(
+                const childCategories = cashflowMergeData.filter(
                     (child) => child.parentID === category.id
                 );
 
-
-                // Add rows for child categories
                 childCategories.forEach((child) =>
                     addCategoryAndChildrenRows(child, level + 1, processedCategories)
                 );
-                
-                
 
-                // Add the "Total" row for Cash Inflow or Outflow
                 if (category.categoryName.includes('Cash Inflows') || category.categoryName.includes('Cash Outflows')) {
                     worksheet.addRow([]);
                     const totalRow = worksheet.addRow([
@@ -1622,14 +1601,8 @@ export default function CashflowsDetails() {
                     totalRow.getCell(1).style = mainCategoryStyle;
                     [2, 4].forEach((col) => {
                         totalRow.getCell(col).style = mainCategoryAmountStyle;
-                        // Add top and bottom borders
-                        totalRow.getCell(col).border = {
-                            top: { style: 'thin' },
-                            bottom: { style: 'thin' },
-                        };
+                        totalRow.getCell(col).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
                     });
-
-                    // Add empty space after the total row
                     worksheet.addRow([]);
                 }
             };
@@ -1639,7 +1612,7 @@ export default function CashflowsDetails() {
                 .filter((category) => !category.parentID)
                 .forEach((mainCategory) => addCategoryAndChildrenRows(mainCategory, 0, processedCategories));
 
-            // Add totals
+            // Function to calculate and display totals
             const calculateTotals = (categories) => {
                 return categories
                     .filter((category) => !category.parentID)
@@ -1648,6 +1621,18 @@ export default function CashflowsDetails() {
                         amount: calculateCategoryTotal(category.id),
                         periodAmount: calculateCategoryPeriodTotal(category.id),
                     }));
+            };
+
+            // Additional logic to handle added periods
+            const handleAddPeriod = async () => {
+                try {
+                    const cashflowListRef = doc(db, "cashflow", cashflowId);
+                    await updateDoc(cashflowListRef, { selectedPeriod: selectedPeriodId });
+                    setSelectedPeriodId('');
+                    setShowModalPeriod(false);
+                } catch (error) {
+                    console.error("Error updating period:", error);
+                }
             };
 
 
