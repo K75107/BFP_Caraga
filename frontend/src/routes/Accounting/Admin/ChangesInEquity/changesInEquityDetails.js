@@ -1096,7 +1096,7 @@ export default function ChangesInEquityDetails() {
         try {
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Changes in Equity Data');
-
+    
             // Add Header Data
             const worksheetData = [
                 ["STATEMENT OF CHANGES IN NET ASSETS/EQUITY "],
@@ -1106,55 +1106,46 @@ export default function ChangesInEquityDetails() {
                 [""],
                 ["", "Accumulated Surplus / (Deficit)"],
             ];
-
+    
             worksheetData.forEach((row) => worksheet.addRow(row));
-
+    
             // Adjust Header Row Heights and Styles
             worksheet.getRow(1).height = 15.75;
             worksheet.getRow(2).height = 15.75;
             worksheet.getRow(3).height = 15.75;
             worksheet.getRow(6).height = 36;
-
+    
             // Merge Header Cells
             worksheet.mergeCells('A1:D1');
             worksheet.mergeCells('A2:D2');
             worksheet.mergeCells('A3:D3');
             worksheet.mergeCells('B6:D6');
-
+    
             // Set Column Widths
             worksheet.columns = [
-                { width: 45 },
-                { width: 20 },
-                { width: 5 },
-                { width: 20 },
+                { width: 45 }, // Category column
+                { width: 20 }, // Amount column
+                { width: 5 },  // Empty spacer column
+                { width: 20 }, // Period Amount column
             ];
-
-            // Header Styles
+    
+            // Styles
             const headerStyle = {
                 font: { bold: true, size: 14, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-
-            const subHeaderStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
-
             const mainCategoryStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'left', vertical: 'middle' },
             };
-
             const subCategoryStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
+                font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'left', vertical: 'middle' },
             };
-
             const dataStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-
             const boldDataStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
@@ -1179,148 +1170,102 @@ export default function ChangesInEquityDetails() {
                 },
             };
 
-            const mainCategoryamountStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
-
+    
             // Apply Header Styles
             ['A1', 'A2', 'A3'].forEach((cell) => {
                 worksheet.getCell(cell).style = headerStyle;
             });
-
-            worksheet.getRow(6).style = boldDataStyle;
-
-
-            // Apply additional style to the merged "Accumulated Surplus / (Deficit)" text
             worksheet.getCell('B6').style = {
                 ...boldDataStyle,
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-
-
-
-
-            const yearRow = worksheet.addRow([]);
-            yearRow.getCell(2).value = `${currentcEquity.year}`;
-            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
-            yearRow.getCell(4).value = `${selectedYear}`;
-            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
-
-            // Apply underlines and styles for columns 2 and 4
-            [2, 4].forEach((col) => {
-                yearRow.getCell(col).border = { bottom: { style: 'thin' } };
-                yearRow.getCell(col).font = { bold: true, size: 12, name: 'Times New Roman' };
-                yearRow.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
-            });
-
-            yearRow.height = 22; // Adjust height
-
+    
+            worksheet.getRow(6).style = { ...headerStyle, font: { bold: true, size: 12 } };
+    
+            // Helper function for category totals
+            const calculateCategoryTotal = (categoryId) => {
+                const subcategories = cEquityCategoriesData.filter(
+                    subcategory => subcategory.parentID === categoryId
+                );
+    
+                if (subcategories.length === 0) {
+                    const mainCategory = cEquityCategoriesData.find(category => category.id === categoryId);
+                    return mainCategory ? mainCategory.amount || 0 : 0;
+                }
+    
+                return subcategories.reduce((acc, subcategory) => {
+                    return acc + calculateCategoryTotal(subcategory.id);
+                }, 0);
+            };
+    
+            const calculateCategoryPeriodTotal = (categoryId) => {
+                const subcategories = cEquityCategoriesData.filter(
+                    subcategory => subcategory.parentID === categoryId
+                );
+    
+                if (subcategories.length === 0) {
+                    const mainCategory = cEquityCategoriesData.find(category => category.id === categoryId);
+                    return mainCategory ? mainCategory.periodAmount || 0 : 0;
+                }
+    
+                return subcategories.reduce((acc, subcategory) => {
+                    return acc + calculateCategoryPeriodTotal(subcategory.id);
+                }, 0);
+            };
+    
+            // Recursive function to add rows
             const addCategoryAndChildrenRows = (category, level = 0) => {
-                const noAmountCategories = [];
-                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
-
-                // Initialize totals for this category and its descendants
-                let totalAmount = category.amount || 0;
-                let totalPeriodAmount = category.periodAmount || 0;
-
-                // Determine if the amount cells should be empty
-                const displayAmount = (totalAmount === 0) ? '' : formatNumber(category.amount);
-                const displayPeriodAmount = (totalPeriodAmount === 0) ? '' : formatNumber(category.periodAmount);
-
+                const totalAmount = calculateCategoryTotal(category.id);
+                const totalPeriodAmount = calculateCategoryPeriodTotal(category.id);
+    
                 // Add category row
                 const row = worksheet.addRow([
-                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
-                    displayAmount,
-                    '',
-                    displayPeriodAmount,
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'), // Column 1
+                    totalAmount === 0 ? '' : formatNumber(totalAmount),       // Column 2
+                    '',                                                      // Column 3
+                    totalPeriodAmount === 0 ? '' : formatNumber(totalPeriodAmount), // Column 4
                 ]);
-
-                // Style main categories (columns 2 and 4)
+    
+                // Style the row based on its level
                 if (level === 0) {
                     row.getCell(1).style = mainCategoryStyle;
-                    row.getCell(2).style = {
-                        font: { bold: true, size: 12, name: 'Times New Roman' },
-                        alignment: { horizontal: 'center', vertical: 'middle' },
-                    };
-
-                    row.getCell(4).style = {
-                        font: { bold: true, size: 12, name: 'Times New Roman' },
-                        alignment: { horizontal: 'center', vertical: 'middle' },
-                    };
+                } else {
+                    row.getCell(1).style = subCategoryStyle;
                 }
-
-                // Style subcategories
-                if (level === 1) {
-                    row.eachCell((cell) => {
-                        cell.style = subCategoryStyle;
-                        [2, 4].forEach((col => row.getCell(col).style = dataStyle));
-                    });
-                } else if (level > 1) {
-                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
-                    [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
-                }
-
-                // Find child categories
-                const childCategories = cEquityMergeData.filter(child => child.parentID === category.id);
-
-                // Recursively process child categories
-                childCategories.forEach(child => {
-                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
-                    totalAmount += childTotals.totalAmount;
-                    totalPeriodAmount += childTotals.totalPeriodAmount;
-                });
-
-                // Add totals for "Cash Inflows" and "Cash Outflows"
-                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
-                    const totalRow = worksheet.addRow([
-                        `    Total ${category.categoryName}`,
-                        formatNumber(totalAmount),
-                        '',
-                        formatNumber(totalPeriodAmount),
-                    ]);
-
-                    // Style totals
-                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
-                    totalRow.getCell(2).style = boldDataStyle;
-                    totalRow.getCell(4).style = boldDataStyle;
-
-                    // Add borders for columns 2 and 4 only
-                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-                }
-
-                return { totalAmount, totalPeriodAmount };
+                [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
+    
+                // Process child categories
+                const childCategories = cEquityCategoriesData.filter(child => child.parentID === category.id);
+                childCategories.forEach(child => addCategoryAndChildrenRows(child, level + 1));
             };
+    
+            // Process categories from `cEquityCategoriesData`
+            cEquityCategoriesData
+                .filter(category => !category.parentID) // Top-level categories
+                .forEach(category => addCategoryAndChildrenRows(category));
+    
+                worksheet.addRow([]);  // This adds a blank row for spacing
 
-
-
-            // Add Visible Categories
-            visibleCategories
-                .filter((category) => category.parentID === null)
-                .forEach((category) => addCategoryAndChildrenRows(category));
-
-            worksheet.addRow([]);  // This adds a blank row for spacing
-
-            const sdeficitRow = worksheet.addRow([]);
-            sdeficitRow.getCell(1).value = "Surplus/Deficit for the Period";
-            sdeficitRow.getCell(1).style = mainCategoryStyle;
-            sdeficitRow.getCell(2).value = totalSurplusDeficit;
-            sdeficitRow.getCell(2).style = sDeficitDataStyle;
-            sdeficitRow.getCell(4).style = sDeficitDataStyle;
-
-            worksheet.addRow([]);  // This adds a blank row for spacing
-
-            const balanceRow = worksheet.addRow([]);
-            balanceRow.getCell(1).value = "Balance for the Period";
-            balanceRow.getCell(1).style = mainCategoryStyle;
-            balanceRow.getCell(2).value = periodTotal;
-            balanceRow.getCell(2).style = balanceDataStyle;
-            balanceRow.getCell(4).style = balanceDataStyle;
+                const sdeficitRow = worksheet.addRow([]);
+                sdeficitRow.getCell(1).value = "Surplus/Deficit for the Period";
+                sdeficitRow.getCell(1).style = mainCategoryStyle;
+                sdeficitRow.getCell(2).value = totalSurplusDeficit;
+                sdeficitRow.getCell(2).style = sDeficitDataStyle;
+                sdeficitRow.getCell(4).style = sDeficitDataStyle;
+    
+                worksheet.addRow([]);  // This adds a blank row for spacing
+    
+                const balanceRow = worksheet.addRow([]);
+                balanceRow.getCell(1).value = "Balance for the Period";
+                balanceRow.getCell(1).style = mainCategoryStyle;
+                balanceRow.getCell(2).value = periodTotal;
+                balanceRow.getCell(2).style = balanceDataStyle;
+                balanceRow.getCell(4).style = balanceDataStyle;
+    
             // Save Workbook
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/octet-stream' });
-
+    
             // Trigger Download
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1332,7 +1277,7 @@ export default function ChangesInEquityDetails() {
             console.error('Error exporting data to Excel:', error);
         }
     };
-
+    
 
     //--------------------------------------------- E X P O R T I N G F U N C T I O N ---------------------------------------------
 
