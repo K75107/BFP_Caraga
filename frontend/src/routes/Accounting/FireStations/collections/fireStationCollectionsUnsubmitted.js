@@ -808,7 +808,7 @@ export default function FireStationCollectionsUnsubmitted() {
                           onBlur={() => handleCellChange(collections.id, 'natureOfCollection', editValue.value)}
                           autoFocus
                         >
-                          <option value="" disabled>Select an officer</option>
+                          <option value="" disabled>Select a collection</option>
                           {/* Dynamically render officers */}
                           {accountCodes.map((accountCode, index) => (
                             <option key={index} value={accountCode}>
