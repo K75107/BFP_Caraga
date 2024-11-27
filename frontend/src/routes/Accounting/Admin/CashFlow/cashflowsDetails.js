@@ -829,7 +829,7 @@ export default function CashflowsDetails() {
         const netTotals = getNetTotalByMainCategory(cashflowMergeData);
 
         const { netChange, netPeriodChange } = getNetCashChange(cashflowMergeData);
-        
+
         return (
             <tr
                 ref={setNodeRef}
@@ -1419,9 +1419,8 @@ export default function CashflowsDetails() {
             const worksheetData = [
                 ["STATEMENT OF CASHFLOWS"],
                 ["REGULAR AGENCY FUND"],
-                [`FOR THE QUARTER ENDED`],
+                ["FOR THE QUARTER ENDED"],
             ];
-
 
             worksheetData.forEach((row) => worksheet.addRow(row));
 
@@ -1437,22 +1436,30 @@ export default function CashflowsDetails() {
 
             // Set Column Widths
             worksheet.columns = [
-                { width: 45 },
-                { width: 20 },
-                { width: 5 },
-                { width: 20 },
+                { width: 45 }, // Column 1: Categories
+                { width: 20 }, // Column 2: Amount
+                { width: 5 },  // Column 3: Spacer
+                { width: 20 }, // Column 4: Period Amount
             ];
 
-            // Header Styles
+            // Styles
             const headerStyle = {
                 font: { bold: true, size: 14, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
+            const headerStyle2 = {
+                font: { bold: true, size: 14, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: { bottom: 'thin' },
+            };
+
 
             const subHeaderStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
+
+
 
             const mainCategoryStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
@@ -1460,22 +1467,30 @@ export default function CashflowsDetails() {
             };
 
             const subCategoryStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
+                font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'left', vertical: 'middle' },
             };
 
-            const dataStyle = {
+            const mainCategoryAmountStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
+                border: { top: 'thin', bottom: 'thin' }
             };
 
-            const boldDataStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
+            const subCategoryAmountStyle = {
+                font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
+                border: { bottom: 'thin' }
             };
 
-            const mainCategoryamountStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
+            const mainCategoryisLockedAmountStyle = {
+                font: { size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: { bottom: 'double' }
+            }
+
+            const dataStyle = {
+                font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
 
@@ -1483,120 +1498,143 @@ export default function CashflowsDetails() {
             ['A1', 'A2', 'A3'].forEach((cell) => {
                 worksheet.getCell(cell).style = headerStyle;
             });
+            // Apply Header Styles
+            ['B5', 'D5'].forEach((cell) => {
+                worksheet.getCell(cell).style = headerStyle2;
+            });
 
             worksheet.addRow([]); // Add space below header
 
             const yearRow = worksheet.addRow([]);
             yearRow.getCell(2).value = `${currentCashflow.year}`;
-            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
             yearRow.getCell(4).value = `${selectedYear}`;
-            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
-
-            // Apply underlines and styles for columns 2 and 4
             [2, 4].forEach((col) => {
                 yearRow.getCell(col).border = { bottom: { style: 'thin' } };
                 yearRow.getCell(col).style = subHeaderStyle;
             });
-
             yearRow.height = 36; // Adjust height
 
+            // Helper function for category totals
+            const calculateCategoryTotal = (categoryId) => {
+                const subcategories = cashflowMergeData.filter(
+                    (subcategory) => subcategory.parentID === categoryId
+                );
 
-            const addCategoryAndChildrenRows = (category, level = 0) => {
-                const noAmountCategories = ['Operating Activities', 'Investing Activities', 'Financing Activities', 'Cash Inflows', 'Cash Outflows'];
-                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
-
-                // Initialize totals for this category and its descendants
-                let totalAmount = category.amount || 0;
-                let totalPeriodAmount = category.periodAmount || 0;
-
-                // Add category row
-                const row = worksheet.addRow([
-                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
-                    shouldDisplayAmount ? formatNumber(category.amount) : '',
-                    '',
-                    shouldDisplayAmount ? formatNumber(category.periodAmount) : '',
-                ]);
-
-                // Apply formatting for amounts 
-                // Underline only the amounts in the main categories
-                if (shouldDisplayAmount) {
-                    // Parse and apply styles for the amount cell (column 2)
-                    if (!isNaN(parseFloat(category.amount))) {
-                        const amountCell = row.getCell(2);
-                        amountCell.style = mainCategoryamountStyle; // Apply bold and centered styles
-                        amountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
-                    }
-
-                    // Parse and apply styles for the period amount cell (column 4)
-                    if (!isNaN(parseFloat(category.periodAmount))) {
-                        const periodAmountCell = row.getCell(4);
-                        periodAmountCell.style = mainCategoryamountStyle; // Apply bold and centered styles
-                        periodAmountCell.alignment = { horizontal: 'center', vertical: 'middle' }; // Ensure centering
-                    }
+                if (subcategories.length === 0) {
+                    const mainCategory = cashflowMergeData.find(
+                        (category) => category.id === categoryId
+                    );
+                    return mainCategory ? mainCategory.amount || 0 : 0;
                 }
 
-
-
-
-                // Style main categories
-                if (level === 0) {
-                    row.eachCell((cell) => {
-                        cell.style = mainCategoryStyle;
-                    });
-                    worksheet.addRow([]); // Add spacing after main categories
-                }
-
-                // Style subcategories
-                if (level === 1) {
-                    row.eachCell((cell) => {
-                        cell.style = subCategoryStyle;
-                    });
-                    worksheet.addRow([]); // Add spacing after subcategories
-                } else if (level > 1) {
-                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
-                    [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
-                }
-
-                // Find child categories
-                const childCategories = cashflowMergeData.filter(child => child.parentID === category.id);
-
-                // Recursively process child categories
-                childCategories.forEach(child => {
-                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
-                    totalAmount += childTotals.totalAmount;
-                    totalPeriodAmount += childTotals.totalPeriodAmount;
-                });
-
-                // Add totals for "Cash Inflows" and "Cash Outflows"
-                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
-                    worksheet.addRow([]); // Add space above totals
-
-                    const totalRow = worksheet.addRow([
-                        `    Total ${category.categoryName}`,
-                        formatNumber(totalAmount),
-                        '',
-                        formatNumber(totalPeriodAmount),
-                    ]);
-
-                    // Style totals
-                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
-                    totalRow.getCell(2).style = boldDataStyle;
-                    totalRow.getCell(4).style = boldDataStyle;
-
-                    // Add borders for columns 2 and 4 only
-                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-
-                    worksheet.addRow([]); // Add spacing after totals
-                }
-
-                return { totalAmount, totalPeriodAmount };
+                return subcategories.reduce(
+                    (acc, subcategory) => acc + calculateCategoryTotal(subcategory.id),
+                    0
+                );
             };
 
-            // Add Visible Categories
-            visibleCategories
-                .filter((category) => category.parentID === null)
-                .forEach((category) => addCategoryAndChildrenRows(category));
+            const calculateCategoryPeriodTotal = (categoryId) => {
+                const subcategories = cashflowMergeData.filter(
+                    (subcategory) => subcategory.parentID === categoryId
+                );
+
+                if (subcategories.length === 0) {
+                    const category = cashflowMergeData.find((cat) => cat.id === categoryId);
+                    return category ? category.periodAmount || 0 : 0; // Fetch periodAmount
+                }
+
+                return subcategories.reduce(
+                    (acc, subcategory) => acc + calculateCategoryPeriodTotal(subcategory.id),
+                    0
+                );
+            };
+
+            // Recursive function to add rows
+            const addCategoryAndChildrenRows = (category, level = 0, processedCategories = new Set()) => {
+                if (processedCategories.has(category.id)) return; // Prevent duplicate processing
+                processedCategories.add(category.id);
+
+                const totalAmount = calculateCategoryTotal(category.id);
+                const totalPeriodAmount = calculateCategoryPeriodTotal(category.id);
+
+                if (totalAmount === 0 && totalPeriodAmount === 0) return; // Skip empty rows
+
+                const isLocked = mainCategories.some(
+                    (mainCategory) =>
+                        mainCategory.name === category.categoryName && mainCategory.isLocked
+                );
+
+                const row = worksheet.addRow([
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'), // Column 1
+                    level === 0 && isLocked ? '' : totalAmount === 0 ? '' : formatNumber(totalAmount), // Column 2
+                    '', // Column 3
+                    level === 0 && isLocked ? '' : totalPeriodAmount === 0 ? '' : formatNumber(totalPeriodAmount), // Column 4
+                ]);
+
+                if (level === 0) {
+                    row.getCell(1).style = mainCategoryStyle;
+                    worksheet.addRow([]);
+                } else if (isLocked) {
+                    [2, 4].forEach((col) => row.getCell(col).style = mainCategoryisLockedAmountStyle);
+                } else {
+                    row.getCell(1).style = subCategoryStyle;
+                }
+                [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
+
+                const childCategories = cashflowMergeData.filter(
+                    (child) => child.parentID === category.id
+                );
+
+                childCategories.forEach((child) =>
+                    addCategoryAndChildrenRows(child, level + 1, processedCategories)
+                );
+
+                if (category.categoryName.includes('Cash Inflows') || category.categoryName.includes('Cash Outflows')) {
+                    worksheet.addRow([]);
+                    const totalRow = worksheet.addRow([
+                        `Total ${category.categoryName}`, // Total row label
+                        totalAmount === 0 ? '' : formatNumber(totalAmount), // Total amount
+                        '', // Spacer
+                        totalPeriodAmount === 0 ? '' : formatNumber(totalPeriodAmount), // Total period amount
+                    ]);
+
+                    totalRow.getCell(1).style = mainCategoryStyle;
+                    [2, 4].forEach((col) => {
+                        totalRow.getCell(col).style = mainCategoryAmountStyle;
+                        totalRow.getCell(col).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
+                    });
+                    worksheet.addRow([]);
+                }
+            };
+
+            const processedCategories = new Set();
+            cashflowMergeData
+                .filter((category) => !category.parentID)
+                .forEach((mainCategory) => addCategoryAndChildrenRows(mainCategory, 0, processedCategories));
+
+            // Function to calculate and display totals
+            const calculateTotals = (categories) => {
+                return categories
+                    .filter((category) => !category.parentID)
+                    .map((category) => ({
+                        name: category.categoryName,
+                        amount: calculateCategoryTotal(category.id),
+                        periodAmount: calculateCategoryPeriodTotal(category.id),
+                    }));
+            };
+
+            // Additional logic to handle added periods
+            const handleAddPeriod = async () => {
+                try {
+                    const cashflowListRef = doc(db, "cashflow", cashflowId);
+                    await updateDoc(cashflowListRef, { selectedPeriod: selectedPeriodId });
+                    setSelectedPeriodId('');
+                    setShowModalPeriod(false);
+                } catch (error) {
+                    console.error("Error updating period:", error);
+                }
+            };
+
 
             // Save Workbook
             const buffer = await workbook.xlsx.writeBuffer();

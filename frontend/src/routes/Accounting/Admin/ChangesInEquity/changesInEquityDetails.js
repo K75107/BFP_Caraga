@@ -1123,41 +1123,37 @@ export default function ChangesInEquityDetails() {
 
             // Set Column Widths
             worksheet.columns = [
-                { width: 45 },
-                { width: 20 },
-                { width: 5 },
-                { width: 20 },
+                { width: 45 }, // Category column
+                { width: 20 }, // Amount column
+                { width: 5 },  // Empty spacer column
+                { width: 20 }, // Period Amount column
             ];
 
-            // Header Styles
+            // Styles
             const headerStyle = {
                 font: { bold: true, size: 14, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-
-            const subHeaderStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
-
             const mainCategoryStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'left', vertical: 'middle' },
             };
-
             const subCategoryStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
+                font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'left', vertical: 'middle' },
             };
-
             const dataStyle = {
                 font: { size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
-
             const boldDataStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
+            };
+            const subHeaderStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: { bottom: 'thin'},
             };
 
             const balanceDataStyle = {
@@ -1168,8 +1164,16 @@ export default function ChangesInEquityDetails() {
                     top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
                 },
             };
+            const thinBorderStyle = {
+                font: { bold: true, size: 12, name: 'Times New Roman' },
+                alignment: { horizontal: 'center', vertical: 'middle' },
+                border: {
+                    bottom: { style: 'thin', color: { argb: '000000' } }, // Black border
+                    top: { style: 'thin', color: { argb: '000000' } }, // Top border for Balance row
+                },
+            };
 
-            
+
             const sDeficitDataStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
@@ -1179,126 +1183,108 @@ export default function ChangesInEquityDetails() {
                 },
             };
 
-            const mainCategoryamountStyle = {
-                font: { bold: true, size: 12, name: 'Times New Roman' },
-                alignment: { horizontal: 'center', vertical: 'middle' },
-            };
 
             // Apply Header Styles
             ['A1', 'A2', 'A3'].forEach((cell) => {
                 worksheet.getCell(cell).style = headerStyle;
             });
-
-            worksheet.getRow(6).style = boldDataStyle;
-
-
-            // Apply additional style to the merged "Accumulated Surplus / (Deficit)" text
             worksheet.getCell('B6').style = {
                 ...boldDataStyle,
                 alignment: { horizontal: 'center', vertical: 'middle' },
             };
 
+            worksheet.getRow(6).style = { ...headerStyle, font: { bold: true, size: 12 } };
 
-
+            worksheet.addRow([]); // Add space below header
 
             const yearRow = worksheet.addRow([]);
             yearRow.getCell(2).value = `${currentcEquity.year}`;
-            yearRow.getCell(2).border = { bottom: { style: 'thin' } };
             yearRow.getCell(4).value = `${selectedYear}`;
-            yearRow.getCell(4).border = { bottom: { style: 'thin' } };
-
-            // Apply underlines and styles for columns 2 and 4
             [2, 4].forEach((col) => {
                 yearRow.getCell(col).border = { bottom: { style: 'thin' } };
-                yearRow.getCell(col).font = { bold: true, size: 12, name: 'Times New Roman' };
-                yearRow.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+                yearRow.getCell(col).style = subHeaderStyle;
             });
+            yearRow.height = 36; // Adjust height
 
-            yearRow.height = 22; // Adjust height
 
+            // Helper function for category totals
+            const calculateCategoryTotal = (categoryId) => {
+                const subcategories = cEquityMergeData.filter(
+                    (subcategory) => subcategory.parentID === categoryId
+                );
+
+                if (subcategories.length === 0) {
+                    const mainCategory = cEquityMergeData.find(
+                        (category) => category.id === categoryId
+                    );
+                    return mainCategory ? mainCategory.amount || 0 : 0;
+                }
+
+                return subcategories.reduce(
+                    (acc, subcategory) => acc + calculateCategoryTotal(subcategory.id),
+                    0
+                );
+            };
+
+            const calculateCategoryPeriodTotal = (categoryId) => {
+                const subcategories = cEquityMergeData.filter(
+                    (subcategory) => subcategory.parentID === categoryId
+                );
+
+                if (subcategories.length === 0) {
+                    const category = cEquityMergeData.find((cat) => cat.id === categoryId);
+                    return category ? category.periodAmount || 0 : 0; // Fetch periodAmount
+                }
+
+                return subcategories.reduce(
+                    (acc, subcategory) => acc + calculateCategoryPeriodTotal(subcategory.id),
+                    0
+                );
+            };
+
+            // Recursive function to add rows
             const addCategoryAndChildrenRows = (category, level = 0) => {
-                const noAmountCategories = [];
-                const shouldDisplayAmount = !noAmountCategories.includes(category.categoryName);
-
-                // Initialize totals for this category and its descendants
-                let totalAmount = category.amount || 0;
-                let totalPeriodAmount = category.periodAmount || 0;
-
-                // Determine if the amount cells should be empty
-                const displayAmount = (totalAmount === 0) ? '' : formatNumber(category.amount);
-                const displayPeriodAmount = (totalPeriodAmount === 0) ? '' : formatNumber(category.periodAmount);
+                const totalAmount = calculateCategoryTotal(category.id);
+                const totalPeriodAmount = calculateCategoryPeriodTotal(category.id);
 
                 // Add category row
                 const row = worksheet.addRow([
-                    ' '.repeat(level * 4) + (category.categoryName || '(-)'),
-                    displayAmount,
-                    '',
-                    displayPeriodAmount,
+                    ' '.repeat(level * 4) + (category.categoryName || '(-)'), // Column 1
+                    totalAmount === 0 ? '' : formatNumber(totalAmount),       // Column 2
+                    '',                                                      // Column 3
+                    totalPeriodAmount === 0 ? '' : formatNumber(totalPeriodAmount), // Column 4
                 ]);
 
-                // Style main categories (columns 2 and 4)
+                // Style the row based on its level
                 if (level === 0) {
-                    row.getCell(1).style = mainCategoryStyle;
-                    row.getCell(2).style = {
-                        font: { bold: true, size: 12, name: 'Times New Roman' },
-                        alignment: { horizontal: 'center', vertical: 'middle' },
-                    };
-
-                    row.getCell(4).style = {
-                        font: { bold: true, size: 12, name: 'Times New Roman' },
-                        alignment: { horizontal: 'center', vertical: 'middle' },
-                    };
-                }
-
-                // Style subcategories
-                if (level === 1) {
-                    row.eachCell((cell) => {
-                        cell.style = subCategoryStyle;
-                        [2, 4].forEach((col => row.getCell(col).style = dataStyle));
+                    row.getCell(1).style = mainCategoryStyle; // Main category style
+            
+                    // Add top and bottom borders for main categories
+                    [2, 4].forEach((col) => {
+                        const cell = row.getCell(col);
+                        cell.style = dataStyle; // Apply general style
+                        cell.border = {
+                            top: { style: 'thin' },
+                            bottom: { style: 'thin' }
+                        }; // Add borders
                     });
-                } else if (level > 1) {
-                    row.getCell(1).style = { font: { size: 12, name: 'Times New Roman' } }; // First column not centered
+                } else {
+                    // Style for subcategories without borders
+                    row.getCell(1).style = subCategoryStyle; // Subcategory style
                     [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
                 }
+            
 
-                // Find child categories
-                const childCategories = cEquityMergeData.filter(child => child.parentID === category.id);
 
-                // Recursively process child categories
-                childCategories.forEach(child => {
-                    const childTotals = addCategoryAndChildrenRows(child, level + 1);
-                    totalAmount += childTotals.totalAmount;
-                    totalPeriodAmount += childTotals.totalPeriodAmount;
-                });
-
-                // Add totals for "Cash Inflows" and "Cash Outflows"
-                if (['Cash Inflows', 'Cash Outflows'].includes(category.categoryName)) {
-                    const totalRow = worksheet.addRow([
-                        `    Total ${category.categoryName}`,
-                        formatNumber(totalAmount),
-                        '',
-                        formatNumber(totalPeriodAmount),
-                    ]);
-
-                    // Style totals
-                    totalRow.getCell(1).font = { bold: true, size: 12, name: 'Times New Roman' };
-                    totalRow.getCell(2).style = boldDataStyle;
-                    totalRow.getCell(4).style = boldDataStyle;
-
-                    // Add borders for columns 2 and 4 only
-                    totalRow.getCell(2).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-                    totalRow.getCell(4).border = { top: { style: 'thin' }, bottom: { style: 'thin' } };
-                }
-
-                return { totalAmount, totalPeriodAmount };
+                // Process child categories
+                const childCategories = cEquityCategoriesData.filter(child => child.parentID === category.id);
+                childCategories.forEach(child => addCategoryAndChildrenRows(child, level + 1));
             };
 
-
-
-            // Add Visible Categories
-            visibleCategories
-                .filter((category) => category.parentID === null)
-                .forEach((category) => addCategoryAndChildrenRows(category));
+            // Process categories from `cEquityCategoriesData`
+            cEquityCategoriesData
+                .filter(category => !category.parentID) // Top-level categories
+                .forEach(category => addCategoryAndChildrenRows(category));
 
             worksheet.addRow([]);  // This adds a blank row for spacing
 
@@ -1317,6 +1303,7 @@ export default function ChangesInEquityDetails() {
             balanceRow.getCell(2).value = periodTotal;
             balanceRow.getCell(2).style = balanceDataStyle;
             balanceRow.getCell(4).style = balanceDataStyle;
+
             // Save Workbook
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/octet-stream' });
@@ -1341,7 +1328,7 @@ export default function ChangesInEquityDetails() {
 
             {isSuccess && (
                 <div className="absolute top-4 right-4">
-                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Changes In Equity Created'} icon={'check'} />
+                    <SuccessUnsuccessfulAlert isSuccess={isSuccess} message={'New Changes in Equity Created'} icon={'check'} />
                 </div>
             )}
             {isError && (
@@ -1349,15 +1336,11 @@ export default function ChangesInEquityDetails() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Error occurred'} icon={'wrong'} />
                 </div>
             )}
-
             <div className="px-6">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
-                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
-
+                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
                         <div class="flex space-x-4">
-
-
                             <AddButton
                                 onClick={() => setShowModal(true)}
                                 label={"ADD CATEGORY"}
@@ -1367,28 +1350,30 @@ export default function ChangesInEquityDetails() {
                                 onClick={() => setShowModalPeriod(true)}
                                 label={"ADD PERIOD"}
                             />
-
                             <ExportButton
                                 onClick={exportToExcel}
-                                label="EXPORT"
+                                label={"EXPORT"}
                             />
                         </div>
                     </div>
                 </div>
             </div>
-
             <div className="px-6 py-8">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
                     <div className="relative overflow-y-auto sm:rounded-lg bg-white">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-2 py-4 w-[600px]">Account Description</th>
-                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{currentcEquity?.year || ""}</th>
-                                    <th scope="col" className="px-2 py-4 w-[80px] text-start">{selectedYear || ''}</th>
+                                    <th scope="col" className="py-4 px-6 text-start">Account Description</th>
+                                    <th scope="col" className="py-4 ml-6 w-56 text-start">{currentcEquity?.year || ''}</th>
+                                    <th scope="col" className="py-4 ml-6 w-56  text-start">{selectedYear || ''}</th>
 
                                 </tr>
                             </thead>
+                        </table>
+                    </div>
+                    <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
+                    <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
                             <tbody>
                                 {/* Sortable rows for other categories */}
                                 <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
@@ -1401,7 +1386,7 @@ export default function ChangesInEquityDetails() {
                                     ))}
                                 </SortableContext>
                             </tbody>
-                            <tfoot className="font-bold text-gray-700 bg-gray-50 dark:bg-gray-800">
+                            <tfoot className="font-bold text-gray-700 dark:bg-gray-800">
                                 {/* Fixed row for Surplus/Deficit */}
                                 <tr className="border-b">
                                     <td className="px-2 py-3 font-bold text-gray-700">
@@ -1418,10 +1403,9 @@ export default function ChangesInEquityDetails() {
 
                                 </tr>
                             </tfoot>
-                        </table>
+                            </table>
                     </div>
                 </DndContext>
-
             </div>
 
             <Modal isVisible={showModal}>
