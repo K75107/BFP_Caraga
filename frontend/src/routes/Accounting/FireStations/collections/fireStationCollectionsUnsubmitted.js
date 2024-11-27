@@ -1,6 +1,6 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { db } from "../../../../config/firebase-config";
 import Modal from "../../../../components/Modal"
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
@@ -21,6 +21,7 @@ export default function FireStationCollectionsUnsubmitted() {
   const [firestationCollection, setFirestationCollection] = useState([]);
   const [collectionsData, setCollectionsData] = useState([]);
   console.log("data of collectionsData: ", collectionsData);
+  console.log("data of firestationCollection: ", firestationCollection);
 
   //Hover on Rows
   const [hoveredRowId, setHoveredRowId] = useState(null);
@@ -41,7 +42,7 @@ export default function FireStationCollectionsUnsubmitted() {
 
   //Loggin User
   const [logginUser, setLogginUser] = useState('');
-
+  console.log("data of logginUser: ", logginUser);
 
   //loading
   const [isLoading, setIsLoading] = useState(false);  // New loading state
@@ -132,6 +133,59 @@ export default function FireStationCollectionsUnsubmitted() {
 
       } else {
         console.log('User not found in unsubmitted collections');
+
+        // ------------------- CREATE USER DOCUMENT IN fireStationReportsCollection IF USER NOT FOUND ------------------ 
+
+        console.log('Creating User Document in collections, deposits, and officers');
+
+        const auth = getAuth();
+
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            console.log("The logged-in user is: ", user);
+
+            try {
+              // Step 1: Query the 'users' collection for a document with a matching email
+              const usersRef = collection(db, 'users');
+              const q = query(usersRef, where('email', '==', user.email));
+              const querySnapshot = await getDocs(q);
+
+              // Step 2: Check if any documents match and replicate them into the other collections
+              if (!querySnapshot.empty) {
+                querySnapshot.forEach(async (docSnapshot) => {
+                  const userData = docSnapshot.data(); // Get the data of the matched document
+                  const userId = docSnapshot.id; // Get the specific document ID
+                  console.log("Matched user document: ", userData, "Document ID: ", userId);
+
+                  // Step 3: Define the collections to replicate the document into
+                  const collectionsToReplicate = [
+                    'firestationReportsCollections',
+                    'firestationReportsDeposits',
+                    'firestationReportsOfficers',
+                  ];
+
+                  // Step 4: Copy the document (with its ID) to the other collections
+                  for (const collectionName of collectionsToReplicate) {
+                    const targetDocRef = doc(db, collectionName, userId); // Use the same document ID
+                    await setDoc(targetDocRef, {
+                      ...userData, // Copy all fields from the matched document
+                      replicatedAt: new Date(), // Optional field to track replication time
+                    });
+                    console.log(`Document with ID '${userId}' replicated to '${collectionName}'.`);
+                  }
+                });
+              } else {
+                console.log("No matching user document found in 'users' collection.");
+              }
+            } catch (error) {
+              console.error("Error replicating document: ", error);
+            }
+          } else {
+            console.log('No user is currently logged in');
+          }
+        });
+
+        // ------------------- CREATE USER DOCUMENT IN fireStationReportsCollection IF USER NOT FOUND ------------------ 
       }
     };
 
@@ -144,6 +198,8 @@ export default function FireStationCollectionsUnsubmitted() {
       const auth = getAuth();
       onAuthStateChanged(auth, (user) => {
         if (user) {
+          console.log("the logged in user is: ", user);
+
           // Check if the logged-in user is part of the collections
           checkUserInCollections(user.email, listCollections);
         } else {
