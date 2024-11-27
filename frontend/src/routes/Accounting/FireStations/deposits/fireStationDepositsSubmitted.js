@@ -169,43 +169,38 @@ export default function FireStationDepositsSubmitted() {
     // Function to filter the grouped deposits based on search query
     const filterGroupedDeposits = (groupedDeposits, searchQuery) => {
         const filteredGroups = {};
-
+    
         Object.keys(groupedDeposits).forEach((groupKey) => {
             const deposits = groupedDeposits[groupKey];
-
-            // Filter deposits based on the search query
+    
+            // Filter deposits within the group based on nameofDepositor
             const filteredRows = deposits.filter((deposit) => {
-                const date = deposit.date_submitted?.toDate();
-                if (!date) return false; // Skip if date_submitted is missing
-
-                let formattedDate;
-
-                // Format the date based on the selected category
-                if (selectedCategory === 'year') {
-                    formattedDate = date.toLocaleDateString('en-US', { year: 'numeric' });
-                } else if (selectedCategory === 'month') {
-                    formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                } else if (selectedCategory === 'day') {
-                    formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                }
-
-                // Filter deposits based on the formatted date matching the search query
-                return formattedDate && formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
+                const depositorName = deposit.nameofDepositor?.toLowerCase() || ''; // Ensure case-insensitive search
+                return depositorName.includes(searchQuery.toLowerCase());
             });
-
+    
+            // Retain the group if it contains any matching deposits
             if (filteredRows.length > 0) {
                 filteredGroups[groupKey] = filteredRows;
             }
         });
-
+    
         return filteredGroups;
     };
+    
 
     // Update filteredGroupedDeposits when searchQuery or groupedDeposits change
     useEffect(() => {
-        const filtered = filterGroupedDeposits(groupedDeposits, searchQuery);
+        // Group deposits by selected category (e.g., Year, Month, Day)
+        const grouped = groupByDate(firestationdeposit, selectedCategory);
+    
+        // Apply search filter to the grouped data
+        const filtered = filterGroupedDeposits(grouped, searchQuery);
+    
+        // Update the state for rendering
         setFilteredGroupedDeposits(filtered);
-    }, [searchQuery, groupedDeposits, selectedCategory]); // Remove selectedDepositFilter from the dependencies
+    }, [firestationdeposit, selectedCategory, searchQuery]);
+
     // For SEARCH ---------------------------------------------------------------------------------------------
 
 
@@ -261,9 +256,9 @@ export default function FireStationDepositsSubmitted() {
             <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
                 {/* Search Form */}
                 <SearchBar
-                    placeholder="Search..."
+                    placeholder="Search Depositor"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+                    onChange={(e) => setSearchQuery(e.target.value)} // Updates the search query
                 />
 
                 {/* Buttons and Dropdowns */}
@@ -275,7 +270,7 @@ export default function FireStationDepositsSubmitted() {
                         label={
                             <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
                                 <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                                <span className="mr-2 font-medium">Filter</span>
+                                <span className="mr-2 font-medium">Group by</span>
                                 <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                             </div>
                         }

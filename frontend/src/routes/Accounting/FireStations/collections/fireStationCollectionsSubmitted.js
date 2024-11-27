@@ -200,53 +200,25 @@ export default function FireStationCollectionsSubmitted() {
     // Function to filter the grouped collections based on search query
     const filterGroupedCollections = (groupedCollections, searchQuery) => {
         const filteredGroups = {};
-
+    
         Object.keys(groupedCollections).forEach((groupKey) => {
             const collections = groupedCollections[groupKey];
-
-            // Filter collections based on the selected category and deposit status
+    
+            // Filter collections based on the search query for Name of Payor
             const filteredRows = collections.filter((collection) => {
-                const matchesSearchQuery = (collection) => {
-                    if (selectedCategory === 'year' || selectedCategory === 'month' || selectedCategory === 'day') {
-                        const date = collection.date_submitted?.toDate();
-                        if (!date) return false; // Skip if date_submitted is missing
-
-                        let formattedDate;
-
-                        // Format the date based on the selected category
-                        if (selectedCategory === 'year') {
-                            formattedDate = date.toLocaleDateString('en-US', { year: 'numeric' });
-                        } else if (selectedCategory === 'month') {
-                            formattedDate = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                        } else if (selectedCategory === 'day') {
-                            formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                        }
-
-                        return formattedDate && formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
-                    } else {
-                        // If selectedCategory is 'natureOfCollection', search by natureOfCollection
-                        return collection.natureOfCollection?.toLowerCase().includes(searchQuery.toLowerCase());
-                    }
-                };
-
-                // Filter based on the selected deposit filter
-                const matchesDepositFilter = () => {
-                    if (selectedDepositFilter === 'all') return true; // Show all entries
-                    if (selectedDepositFilter === 'deposited') return collection.depositStatus; // Adjust according to your data
-                    if (selectedDepositFilter === 'undeposited') return !collection.depositStatus; // Adjust according to your data
-                    return false; // Default case (should not occur)
-                };
-
-                return matchesSearchQuery(collection) && matchesDepositFilter();
+                const payorName = collection.nameOfPayor?.toLowerCase() || ''; // Ensure case-insensitive search
+                return payorName.includes(searchQuery.toLowerCase());
             });
-
+    
+            // Retain the group if it contains any matching rows
             if (filteredRows.length > 0) {
                 filteredGroups[groupKey] = filteredRows;
             }
         });
-
+    
         return filteredGroups;
     };
+    
 
     // Update filteredGroupedCollections when searchQuery or groupedCollections change
     useEffect(() => {
@@ -305,10 +277,11 @@ export default function FireStationCollectionsSubmitted() {
 
 
             <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
-                <SearchBar
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)} />
+            <SearchBar
+                placeholder="Search Payor"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)} // Updates the search query
+            />
 
                 {/* Buttons and Dropdowns */}
                 <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
@@ -318,7 +291,7 @@ export default function FireStationCollectionsSubmitted() {
                         label={
                             <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
                                 <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                                <span className="mr-2 font-medium">Filter</span>
+                                <span className="mr-2 font-medium">Group by</span>
                                 <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
                             </div>
                         }
