@@ -43,16 +43,16 @@ export default function Login() {
         const normalizedUserType = userType.toLowerCase(); // Normalize for case sensitivity
         switch (normalizedUserType) {
           case "admin":
-            navigate("/main/dashboard");
+            navigate("/main/adminDashboard");
             break;
           case "regional-accountant":
-            navigate("/main/dashboard");
+            navigate("/main/accountingDashboard");
             break;
           case "chief-fmd":
-            navigate("/main/dashboard");
+            navigate("/main/accountingDashboard");
             break;
           case "disbursement-processor":
-            navigate("/main/dashboard");
+            navigate("/main/accountingDashboard");
             break;
           case "bookkeeper":
             navigate("/main/bookkeeper/dashboard");

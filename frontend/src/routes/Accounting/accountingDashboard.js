@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
-import { db, auth } from '../../../config/firebase-config';
+import { db, auth } from '../../config/firebase-config';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import SuccessUnsuccessfulAlert from '../../../components/Alerts/SuccessUnsuccessfulALert';
+import SuccessUnsuccessfulAlert from '../../components/Alerts/SuccessUnsuccessfulALert';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
