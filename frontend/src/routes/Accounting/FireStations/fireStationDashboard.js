@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { format } from 'date-fns';
+import { useNavigate } from "react-router-dom";
+import ViewButton from "../../../components/viewButton";
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from '../../../config/firebase-config'; // Firebase setup
@@ -13,6 +15,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -84,13 +87,20 @@ const Dashboard = () => {
     },
   };
 
+  //FOR NAVIGATE
+
+  const navigate = useNavigate();
+  
+
   // --------------------------- U S E R   I D   A N D   D A T A   F E T C H I N G ---------------------------
   const [logUserID, setlogUserID] = useState(null); // Set initial value to null
   const [firestationdeposit, setFirestationdeposit] = useState([]);
   const [totalDeposits, setTotalDeposits] = useState(0);
   const [firestationCollections, setFirestationCollections] = useState([]);
   const [totalCollections, setTotalCollections] = useState(0);
-
+  const [firestationOfficers, setFirestationOfficers] = useState([]);
+  const [totalOfficers, setTotalOfficers] = useState(0); // New state for officer count
+ 
   console.log("data of logUserID: ", logUserID);
   console.log("data of firestationdeposit: ", firestationdeposit);
   console.log("data of firestationCollections: ", firestationCollections);
@@ -146,13 +156,24 @@ const Dashboard = () => {
         setFirestationCollections(submittedCollectionsList);
       });
 
-      // Clean up the listeners when the component unmounts or when logUserID changes
+      // Reference the officers subcollection
+      const firestationOfficersRef = collection(db, 'firestationReportsOfficers', logUserID, 'officers');
+      const unsubscribeOfficers = onSnapshot(firestationOfficersRef, (snapshot) => {
+        const officersList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setFirestationOfficers(officersList); // Set officer data
+
+        const totalOfficersCount = snapshot.size; // Get total number of officers from snapshot size
+        setTotalOfficers(totalOfficersCount); // Update the state with the count of officers
+      });
+
       return () => {
         unsubscribeSubmitteddepositsDataRef();
         unsubscribeSubmittedcollectionsDataRef();
+        unsubscribeOfficers();
       };
     }
-  }, [logUserID]); // This effect runs only when logUserID changes
+  }, [logUserID]); // Runs only when logUserID changes
+
 
   useEffect(() => {
     // Calculate totalDeposits whenever firestationdeposit changes
@@ -170,8 +191,17 @@ const Dashboard = () => {
     setTotalCollections(total);
   }, [firestationCollections]); // This effect runs whenever firestationCollections changes
 
+  useEffect(() => {
+    // Calculate totalOfficers whenever fireStationOfficers changes
+    const officerCount = firestationOfficers.length; // Total count is simply the length of the array
+    setTotalOfficers(officerCount);
+  }, [firestationOfficers]); // This effect runs whenever fireStationOfficers changes
+
+
   console.log("Total Deposits: ", totalDeposits);
   console.log("Total Collections: ", totalCollections);
+  console.log("Total Officers: ", totalOfficers);
+
   // --------------------------- U S E R   I D   A N D   D A T A   F E T C H I N G ---------------------------
 
   // ----------------------------- F O R   D E P O S I T S   C H A R T   D A T A -----------------------------
@@ -261,32 +291,9 @@ const Dashboard = () => {
 
   // -------------------------- F O R   C O L L E C T I O N S   C H A R T   D A T A --------------------------
 
-  // State to store officers fetched from Firebase
-  const [recentlyAddedOfficers, setRecentlyAddedOfficers] = useState([]);
-
-  // Fetch officers data from Firebase
-  useEffect(() => {
-    const fetchOfficers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'fireStations'));
-        const officersData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        // Assuming officers are sorted by date added, we take the last 3 officers
-        const recentOfficers = officersData.slice(0, 3);
-        setRecentlyAddedOfficers(recentOfficers);
-      } catch (error) {
-        console.error('Error fetching officers data: ', error);
-      }
-    };
-    fetchOfficers();
-  }, []);
-
-  // Example data for recently submitted officers
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
+    <div className="bg-gray-100 min-h-screen p-2">
       <div className="container mx-auto">
         {/* Page Title */}
         <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
@@ -299,7 +306,10 @@ const Dashboard = () => {
             <p className="text-gray-700 mb-4">
               Total Deposits: ₱ {new Intl.NumberFormat('en-PH', { style: 'decimal' }).format(totalDeposits)}
             </p>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">View Details</button>
+            <ViewButton
+              onClick={() => navigate("/main/firestation/deposits/submitted")} // Pass appropriate ID
+              label="View Details"
+            />
           </div>
 
 
@@ -309,14 +319,20 @@ const Dashboard = () => {
             <p className="text-gray-700 mb-4">
               Total Collections: ₱ {new Intl.NumberFormat('en-PH', { style: 'decimal' }).format(totalCollections)}
             </p>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">View Details</button>
+            <ViewButton
+              onClick={() => navigate("/main/firestation/collections/submitted")} // Pass appropriate ID
+              label="View Details"
+            />
           </div>
 
           {/* Officers Card */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Officers</h2>
-            <p className="text-gray-700 mb-4">Active Officers: 10</p>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">View Details</button>
+            <p className="text-gray-700 mb-4">Active Officers: {totalOfficers || 0}</p>
+            <ViewButton
+             onClick={() => navigate("/main/firestation/officers")}// Pass appropriate ID
+              label="View Details"
+            />
           </div>
         </div>
 
@@ -332,28 +348,6 @@ const Dashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Collections Over Time</h2>
             <Bar data={collectionData} options={options} />
-          </div>
-
-
-
-          {/* Recently Added Officers */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">Recently Added Officers</h2>
-            <ul>
-              {recentlyAddedOfficers.map((officer, index) => (
-                <li key={index} className="border-b py-4">
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="text-lg font-semibold">{officer.officerName || 'Unknown'}</p>
-                      <p className="text-gray-600">{officer.stationName || 'Unknown Station'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Location: {officer.location || 'N/A'}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>
