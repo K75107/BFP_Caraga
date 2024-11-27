@@ -14,7 +14,7 @@ import { Navigate } from 'react-router-dom';
 
 import Login from './routes/Authentication/login';
 import Main from './routes/main';
-import Dashboard from './routes/Accounting/Admin/dashboard';
+import AdminDashboard from './routes/Accounting/Admin/dashboard';
 import Users from './routes/Accounting/Admin/users';
 import IncomeStatement from './routes/Accounting/Admin/IncomeStatement/incomeStatement';
 import IncomeStatementDetails from './routes/Accounting/Admin/IncomeStatement/incomeStatementDetails';
@@ -42,6 +42,7 @@ import TrialBalance from './routes/Accounting/Admin/TrialBalance/trialBalance';
 import TrialBalanceList from './routes/Accounting/Admin/TrialBalance/TrialBalanceList';
 import TrialBalanceDetails from './routes/Accounting/Admin/TrialBalance/TrialBalanceDetails';
 
+import AccountingDashboard from './routes/Accounting/accountingDashboard';
 
 import Deposits from './routes/Accounting/Admin/deposits';
 
@@ -85,8 +86,12 @@ const router = createBrowserRouter([
     element: <Main />,
     children: [
       {
-        path: 'dashboard',
-        element: <Dashboard />,
+        path: 'AdminDashboard',
+        element: <AdminDashboard />,
+      },
+      {
+        path: 'AccountingDashboard',
+        element: <AccountingDashboard />,
       },
       {
         path: 'users',
