@@ -147,7 +147,12 @@ export default function FireStationCollectionsUnsubmitted() {
             try {
               // Step 1: Query the 'users' collection for a document with a matching email
               const usersRef = collection(db, 'users');
-              const q = query(usersRef, where('email', '==', user.email));
+              const q = query(
+                usersRef,
+                where('email', '==', user.email),
+                where('usertype', '==', 'fire-stations')
+              );
+
               const querySnapshot = await getDocs(q);
 
               // Step 2: Check if any documents match and replicate them into the other collections
@@ -175,7 +180,7 @@ export default function FireStationCollectionsUnsubmitted() {
                   }
                 });
               } else {
-                console.log("No matching user document found in 'users' collection.");
+                console.log("No matching user document found in 'users' collection or the user is not a fire-station.");
               }
             } catch (error) {
               console.error("Error replicating document: ", error);
