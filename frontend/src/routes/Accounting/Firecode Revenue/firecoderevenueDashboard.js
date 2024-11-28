@@ -120,7 +120,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Deposits Card */}
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">Bookkeeper Deposits</h2>
+            <h2 className="text-xl font-bold mb-4">Deposits</h2>
             <p className="text-gray-700 mb-4">Total Deposits: $XX,XXX</p>
             <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">View Details</button>
           </div>
