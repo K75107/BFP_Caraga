@@ -480,7 +480,7 @@ export default function FireStationOfficers() {
                     borderRight: "5px solid transparent",
                     borderTop: "5px solid #fff", // The color of the popover
                     top: "53%", // Position below the popover
-                    left: "-10%",
+                    left: "-2%",
                     transform: "translateX(-50%)", // Center the arrow horizontally
                   }}
                 />
