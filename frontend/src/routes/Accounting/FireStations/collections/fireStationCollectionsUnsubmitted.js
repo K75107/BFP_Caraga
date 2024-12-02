@@ -125,8 +125,10 @@ export default function FireStationCollectionsUnsubmitted() {
         /*------------------------------------------------------------------------------------------------------------------ */
 
         // Fetch Collecting Officer data
+        // modified the code using query to only fetch data that are not soft deleted
         const officersSubcollectionRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
-        const officerSnapshot = await getDocs(officersSubcollectionRef);
+        const officersQuery = query(officersSubcollectionRef, where('isDeleted', '==', false));
+        const officerSnapshot = await getDocs(officersQuery);
 
         const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setOfficersData(officerDocs);
