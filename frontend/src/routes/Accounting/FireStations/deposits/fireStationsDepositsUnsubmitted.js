@@ -1,6 +1,6 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc, getDoc, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import { db } from "../../../../config/firebase-config";
 import Modal from "../../../../components/Modal"
 import { Dropdown, Checkbox } from 'flowbite-react'; // Use Flowbite's React components
@@ -132,8 +132,10 @@ export default function FireStationDepositsUnsubmitted() {
         /*------------------------------------------------------------------------------------------------------------------ */
 
         // Fetch Collecting Officer data
+        // modified the code using query to only fetch data that are not soft deleted
         const officersSubdepositRef = collection(db, 'firestationReportsOfficers', userFound.id, 'officers');
-        const officerSnapshot = await getDocs(officersSubdepositRef);
+        const officersQuery = query(officersSubdepositRef, where('isDeleted', '==', false));
+        const officerSnapshot = await getDocs(officersQuery);
 
         const officerDocs = officerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setOfficersData(officerDocs);

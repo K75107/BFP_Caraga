@@ -19,6 +19,10 @@ export default function FireStationOfficers() {
   const [newUserFirstname, setNewUserFirstname] = useState('');
   const [newUserLastname, setNewUserLastname] = useState('');
   const [newUserRank, setNewUserRank] = useState('');
+  const [officerRanks, setOfficerRanks] = useState(["Fire Marshal", "Senior Fire Officer", "Fire Officer I"]);
+  const [officerAddRank, setOfficerAddRank] = useState('');
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [editRank, setEditRank] = useState(null); // For editing rank
   const [user, setLoggedUser] = useState('');
 
   // Fetch Fire Station Data from Firebase
@@ -142,6 +146,26 @@ export default function FireStationOfficers() {
 
     } catch (error) {
       console.error('Error adding user:', error);
+    }
+  };
+
+
+  const handleDeleteRank = (rank) => {
+    setOfficerRanks((prevRanks) => prevRanks.filter((item) => item !== rank));
+  };
+
+  const handleEditRank = (rank) => {
+    setEditRank(rank); // Set the rank that is being edited
+    setOfficerAddRank(rank); // Pre-fill the input field with the current rank value
+  };
+
+  const handleSaveEdit = () => {
+    if (editRank) {
+      setOfficerRanks((prevRanks) =>
+        prevRanks.map((rank) => (rank === editRank ? officerAddRank : rank))
+      );
+      setOfficerAddRank('');
+      setEditRank(null); // Clear the edit state after saving
     }
   };
 
@@ -270,7 +294,7 @@ export default function FireStationOfficers() {
                 htmlFor="firstname"
                 className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 bg-white px-2"
               >
-                Firstname
+                First Name
               </label>
             </div>
 
@@ -288,7 +312,7 @@ export default function FireStationOfficers() {
                 htmlFor="lastname"
                 className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 bg-white px-2"
               >
-                Lastname
+                Last Name
               </label>
             </div>
 
@@ -307,26 +331,180 @@ export default function FireStationOfficers() {
                   value={newUserRank}
                   onChange={(e) => setNewUserRank(e.target.value)}
                 >
-                  <option value="Fire Marshal">Fire Marshal</option>
-                  <option value="Senior Fire Officer">Senior Fire Officer</option>
-                  <option value="Fire Officer I">Fire Officer I</option>
-                  {/* Add more rank options as needed */}
+                  <option value=""></option>
+                  {officerRanks.map((officerRanks, index) => (
+                    <option key={index} value={officerRanks}>
+                      {officerRanks}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <button
+              {/* <button
                 className="mt-6 ml-4 inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-500 bg-white hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
 
               >
                 Edit Ranks
+              </button> */}
+
+              {/* -------------------------------------- P O P O V E R   E D I T   R A N K S ----------------------------------- */}
+              {/* Button to trigger the popover */}
+              <button
+                type="button"
+                className="relative mt-6 ml-4 inline-flex items-center px-4 py-2 border border-blue-500 text-sm font-medium rounded-md text-blue-500 bg-white hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+                aria-expanded={isPopoverOpen}
+                aria-controls="popover-right"
+              >
+                Edit Ranks
               </button>
+
+              {/* Popover for editing ranks */}
+              <div
+                id="popover-right"
+                role="tooltip"
+                className={`absolute z-10 w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm ${isPopoverOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                  } dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800`}
+                style={{
+                  top: "55%", // Align vertically
+                  right: "20%", // Position it to the right
+                  transform: "translateY(-50%)", // Adjust for vertical centering
+                  marginLeft: "8px", // Add spacing between button and popover
+                }}
+              >
+                {/* Popover Header */}
+                <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Edit Ranks</h3>
+                </div>
+
+                {/* Popover Content */}
+                <div className="px-3 py-2 space-y-2">
+                  {/* Ranks List */}
+                  <div className="space-y-2 mt-3">
+                    {officerRanks.map((rank, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-gray-900 dark:text-white">{rank}</span>
+                        <div className="flex gap-2">
+                          <button
+                            className="text-blue-600 hover:underline text-sm"
+                            aria-label={`Edit ${rank}`}
+                            onClick={() => {
+                              setEditRank(rank); // Set the rank being edited
+                              setOfficerAddRank(rank); // Pre-fill the edit input with current rank
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="text-red-600 hover:underline text-sm"
+                            aria-label={`Delete ${rank}`}
+                            onClick={() => handleDeleteRank(rank)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Conditional Form Rendering */}
+                  {!editRank && (
+                    <div className="mt-3">
+                      {/* Add New Rank Form */}
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          setOfficerRanks((prevSelected) => [...prevSelected, officerAddRank]);
+                          console.log("New rank added: ", officerAddRank);
+                          setOfficerAddRank('');
+                          e.target.reset();
+                        }}
+                      >
+                        <input
+                          type="text"
+                          name="newRank"
+                          placeholder="Add new rank"
+                          className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                          onChange={(e) => setOfficerAddRank(e.target.value)}
+                          required
+                        />
+                        <button
+                          type="submit"
+                          className="mt-2 w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                        >
+                          Add Rank
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {editRank && (
+                    <div className="mt-3">
+                      {/* Edit Rank Form */}
+                      <input
+                        type="text"
+                        name="editRank"
+                        placeholder="Edit rank"
+                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        value={officerAddRank}
+                        onChange={(e) => setOfficerAddRank(e.target.value)}
+                        required
+                      />
+                      <button
+                        onClick={() => {
+                          handleSaveEdit(editRank);
+                          setEditRank(null); // Reset the edit state after saving
+                        }}
+                        className="mt-2 w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      >
+                        Save Edit
+                      </button>
+                      <button
+                        onClick={() => setEditRank(null)} // Cancel editing
+                        className="mt-2 w-full text-gray-600 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-3 py-1.5 text-center dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Popover Arrow */}
+                <div
+                  data-popper-arrow
+                  style={{
+                    position: "absolute",
+                    width: 0,
+                    height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: "5px solid #fff", // The color of the popover
+                    top: "53%", // Position below the popover
+                    left: "-2%",
+                    transform: "translateX(-50%)", // Center the arrow horizontally
+                  }}
+                />
+              </div>
+
+              {/* -------------------------------------- P O P O V E R   E D I T   R A N K S ----------------------------------- */}
+
+
             </div>
           </div>
 
           <div className="flex justify-end py-3 mt-10">
             <button
-              className="bg-[#2196F3] rounded text-white py-2.5 px-4 mt-4"
-              onClick={handleOfficer}
+              className={`${newUserFirstname && newUserLastname && newUserRank
+                ? ""
+                : "opacity-50 cursor-not-allowed"
+                } bg-blue-600 hover:bg-blue-700 rounded text-white py-2.5 px-4 mt-4`}
+              onClick={() => {
+                handleOfficer();
+                setNewUserFirstname('');
+                setNewUserLastname('');
+                setNewUserRank('');
+              }}
+              disabled={!newUserFirstname || !newUserLastname || !newUserRank}
             >
               Add
             </button>
