@@ -29,19 +29,18 @@ export default function LedgerList() {
     const [isSuccess, setIsSuccess] = useState(false);
     const [isError, setIsError] = useState(false);
 
-
     useEffect(() => {
         const currentYear = new Date().getFullYear();
         const startYear = 2020;
         const yearList = [];
-
         for (let year = currentYear; year >= startYear; year--) {
             yearList.push(year);
         }
-
         setYears(yearList);
+        setLedgerYear(currentYear.toString()); // Set default to current year
     }, []);
 
+    
     const navigate = useNavigate();
 
     // Fetch the Ledger Data
