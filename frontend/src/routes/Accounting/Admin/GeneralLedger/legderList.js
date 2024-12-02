@@ -37,10 +37,10 @@ export default function LedgerList() {
             yearList.push(year);
         }
         setYears(yearList);
-        setLedgerYear(currentYear.toString()); // Set default to current year
+        setLedgerYear(currentYear.toString());
     }, []);
 
-    
+
     const navigate = useNavigate();
 
     // Fetch the Ledger Data
@@ -64,42 +64,39 @@ export default function LedgerList() {
     // Add New Ledger to the Firestore
     const addNewLedger = async () => {
         try {
-            // Create the reference document
+            // Ensure ledgerYear and ledgerDescription are set
+            if (!ledgerDescription || !ledgerYear) {
+                console.error("Ledger description or year is missing.");
+                return;
+            }
+    
+            // Add to Firestore
             const collectionRef = collection(db, "ledger");
-
-            // Add the new ledger
             const docRef = await addDoc(collectionRef, {
                 description: ledgerDescription,
                 year: ledgerYear,
                 created_at: new Date(),
             });
-
-            // Fetch the newly added ledger using its document reference
+    
+            // Update local state with the new ledger
             const newLedger = {
                 id: docRef.id,
                 description: ledgerDescription,
                 year: ledgerYear,
                 created_at: new Date(),
             };
-
-            // Update the ledgerList state to include the new ledger
             setLedgerList((prevLedgerList) => [...prevLedgerList, newLedger]);
-
-            // Optionally, you might want to refresh the list or close the modal
-            setShowModal(false);
+    
+            // Reset inputs
             setLedgerDescription("");
-            setLedgerYear("");
-
-
-            {/**---------------------------------------------Alerts--------------------------------------- */ }
+            setLedgerYear(new Date().getFullYear().toString()); // Reset to current year
+    
+            // Optionally close modal
+            setShowModal(false);
+    
+            // Show success alert
             setIsSuccess(true);
-            const timer = setTimeout(() => {
-                setIsSuccess(false);
-            }, 2000)
-            return () => clearTimeout(timer);
-            {/**---------------------------------------------Alerts--------------------------------------- */ }
-
-
+            setTimeout(() => setIsSuccess(false), 2000);
         } catch (err) {
             console.error("Error adding document:", err);
         }
