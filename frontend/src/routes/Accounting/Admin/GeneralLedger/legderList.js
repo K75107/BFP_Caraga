@@ -65,7 +65,7 @@ export default function LedgerList() {
     const addNewLedger = async () => {
         try {
             // Ensure ledgerYear and ledgerDescription are set
-            if (!ledgerDescription || !ledgerYear) {
+            if (!ledgerYear) {
                 console.error("Ledger description or year is missing.");
                 return;
             }
