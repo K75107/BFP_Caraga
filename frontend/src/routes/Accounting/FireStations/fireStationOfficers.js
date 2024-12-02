@@ -289,7 +289,6 @@ export default function FireStationOfficers() {
                 placeholder=" "
                 value={newUserFirstname}
                 onChange={(e) => setNewUserFirstname(e.target.value)}
-                required
               />
               <label
                 htmlFor="firstname"
@@ -308,7 +307,6 @@ export default function FireStationOfficers() {
                 placeholder=" "
                 value={newUserLastname}
                 onChange={(e) => setNewUserLastname(e.target.value)}
-                required
               />
               <label
                 htmlFor="lastname"
@@ -332,7 +330,6 @@ export default function FireStationOfficers() {
                   className="block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   value={newUserRank}
                   onChange={(e) => setNewUserRank(e.target.value)}
-                  required
                 >
                   <option value=""></option>
                   {officerRanks.map((officerRanks, index) => (
@@ -497,8 +494,17 @@ export default function FireStationOfficers() {
 
           <div className="flex justify-end py-3 mt-10">
             <button
-              className="bg-blue-600 rounded text-white py-2.5 px-4 mt-4"
-              onClick={handleOfficer}
+              className={`${newUserFirstname && newUserLastname && newUserRank
+                ? ""
+                : "opacity-50 cursor-not-allowed"
+                } bg-blue-600 hover:bg-blue-700 rounded text-white py-2.5 px-4 mt-4`}
+              onClick={() => {
+                handleOfficer();
+                setNewUserFirstname('');
+                setNewUserLastname('');
+                setNewUserRank('');
+              }}
+              disabled={!newUserFirstname || !newUserLastname || !newUserRank}
             >
               Add
             </button>
