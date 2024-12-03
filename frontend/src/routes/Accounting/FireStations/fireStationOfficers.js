@@ -19,7 +19,7 @@ export default function FireStationOfficers() {
   const [newUserFirstname, setNewUserFirstname] = useState('');
   const [newUserLastname, setNewUserLastname] = useState('');
   const [newUserRank, setNewUserRank] = useState('');
-  const [officerRanks, setOfficerRanks] = useState(["Fire Marshal", "Senior Fire Officer", "Fire Officer I"]);
+  const [officerRanks, setOfficerRanks] = useState(["Fire Marshal", "Senior Fire Officer", "Fire Officer I"]); //["Fire Marshal", "Senior Fire Officer", "Fire Officer I"]
   const [officerAddRank, setOfficerAddRank] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [editRank, setEditRank] = useState(null); // For editing rank
@@ -491,27 +491,31 @@ export default function FireStationOfficers() {
                 <div className="px-3 py-2 space-y-2">
                   {/* Ranks List */}
                   <div className="space-y-2 mt-3">
-                    {officerRanks.map((rank, index) => (
-                      <div key={index} className="flex justify-between items-center">
-                        <span className="text-gray-900 dark:text-white">{rank}</span>
-                        <div className="flex gap-2">
-                          <button
-                            className="text-blue-600 hover:underline text-sm"
-                            aria-label={`Edit ${rank}`}
-                            onClick={() => handleEditRank(rank)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="text-red-600 hover:underline text-sm"
-                            aria-label={`Delete ${rank}`}
-                            onClick={() => handleDeleteRank(rank)}
-                          >
-                            Delete
-                          </button>
+                    {officerRanks.length === 0 ? (
+                      <div className="text-gray-500 dark:text-gray-400 pl-7">No available data for ranks</div>
+                    ) : (
+                      officerRanks.map((rank, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <span className="text-gray-900 dark:text-white">{rank}</span>
+                          <div className="flex gap-2">
+                            <button
+                              className="text-blue-600 hover:underline text-sm"
+                              aria-label={`Edit ${rank}`}
+                              onClick={() => handleEditRank(rank)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="text-red-600 hover:underline text-sm"
+                              aria-label={`Delete ${rank}`}
+                              onClick={() => handleDeleteRank(rank)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
 
                   {/* Conditional Form Rendering */}
