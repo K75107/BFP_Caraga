@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useRef } from "react";
 import Modal from "../../../components/Modal";
 import { collection, getDocs, onSnapshot, addDoc, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../config/firebase-config"; // Firebase setup
@@ -24,6 +24,7 @@ export default function FireStationOfficers() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [editRank, setEditRank] = useState(null); // For editing rank
   const [user, setLoggedUser] = useState('');
+  const [userID, setUserID] = useState('');
 
   // Fetch Fire Station Data from Firebase
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function FireStationOfficers() {
     const checkUserInCollections = async (userEmail, collections) => {
       // Find the user's document in the collections
       const userFound = collections.find((collection) => collection.email === userEmail)
+      setUserID(userFound.id);
 
       if (userFound) {
         // Access the document using userFound.id
@@ -150,8 +152,28 @@ export default function FireStationOfficers() {
   };
 
 
-  const handleDeleteRank = (rank) => {
-    setOfficerRanks((prevRanks) => prevRanks.filter((item) => item !== rank));
+  const handleDeleteRank = async (rank) => {
+    try {
+      // Firestore collection reference
+      const periodDataRef = collection(db, 'firestationReportsOfficers', userID, 'ranks');
+
+      // Query to find the rank to delete
+      const querySnapshot = await getDocs(periodDataRef);
+      const rankDoc = querySnapshot.docs.find(doc => doc.data()?.rankName === rank);
+
+      if (rankDoc) {
+        // Mark the rank as deleted in Firestore
+        await updateDoc(rankDoc.ref, {
+          isDeleted: true,
+          deletedAt: serverTimestamp()
+        });
+
+        // Fetch updated ranks
+        await fetchRankData(userID);
+      }
+    } catch (error) {
+      console.error("Error deleting rank:", error);
+    }
   };
 
   const handleEditRank = (rank) => {
@@ -159,15 +181,103 @@ export default function FireStationOfficers() {
     setOfficerAddRank(rank); // Pre-fill the input field with the current rank value
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editRank) {
-      setOfficerRanks((prevRanks) =>
-        prevRanks.map((rank) => (rank === editRank ? officerAddRank : rank))
-      );
-      setOfficerAddRank('');
-      setEditRank(null); // Clear the edit state after saving
+      try {
+        // Firestore collection reference
+        const periodDataRef = collection(db, 'firestationReportsOfficers', userID, 'ranks');
+
+        // Query to find the rank to edit
+        const querySnapshot = await getDocs(periodDataRef);
+        const rankDoc = querySnapshot.docs.find(doc => doc.data()?.rankName === editRank);
+
+        if (rankDoc) {
+          // Update Firestore document
+          await updateDoc(rankDoc.ref, {
+            rankName: officerAddRank,
+            editedAt: serverTimestamp()
+          });
+
+          // Fetch updated ranks
+          await fetchRankData(userID);
+        }
+      } catch (error) {
+        console.error("Error updating rank:", error);
+      } finally {
+        setOfficerAddRank('');
+        setEditRank(null); // Clear edit state
+      }
     }
   };
+
+
+  const addRankData = async (officerRanks, userID) => {
+    try {
+      // Firestore collection reference
+      const periodDataRef = collection(db, 'firestationReportsOfficers', userID, 'ranks');
+
+      // Fetch existing ranks from Firestore
+      const querySnapshot = await getDocs(periodDataRef);
+      const existingRanks = querySnapshot.docs.map(doc => doc.data()?.rankName || "");
+
+      // Determine new ranks to add (filter out existing ranks)
+      const newRanks = officerRanks.filter(rank => !existingRanks.includes(rank));
+
+      // Create an array of promises for adding new ranks
+      const addPromises = newRanks.map(rank => {
+        return addDoc(periodDataRef, {
+          rankName: rank,
+          createdAt: serverTimestamp(),  // Firestore server timestamp
+          editedAt: null,               // Explicitly set to null
+          isDeleted: false,
+          deletedAt: null               // Explicitly set to null
+        });
+      });
+
+      // Execute all add operations concurrently
+      await Promise.all(addPromises);
+      await fetchRankData();
+      console.log("New ranks added successfully!");
+    } catch (error) {
+      console.error("Error adding data to Firestore:", error);
+    }
+  };
+
+
+  const fetchRankData = async () => {
+    try {
+      // Firestore collection reference
+      const periodDataRef = collection(db, 'firestationReportsOfficers', userID, 'ranks');
+
+      // Fetch ranks from Firestore
+      const querySnapshot = await getDocs(periodDataRef);
+
+      // Filter out deleted ranks and map rankName
+      const ranks = querySnapshot.docs
+        .map(doc => doc.data())
+        .filter(rank => !rank.isDeleted)
+        .map(rank => rank.rankName);
+
+      setOfficerRanks(ranks);
+      console.log("Fetched active ranks:", ranks);
+      return ranks;
+    } catch (error) {
+      console.error("Error fetching ranks from Firestore:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    if (userID) {
+      addRankData(officerRanks, userID);
+    } else {
+      console.error("Error: UserID is missing or undefined.");
+    }
+  }, [userID]);
+
+  useEffect(() => {
+    fetchRankData();
+  }, []);
 
 
   const handleDeleteRow = async (station) => {
@@ -388,10 +498,7 @@ export default function FireStationOfficers() {
                           <button
                             className="text-blue-600 hover:underline text-sm"
                             aria-label={`Edit ${rank}`}
-                            onClick={() => {
-                              setEditRank(rank); // Set the rank being edited
-                              setOfficerAddRank(rank); // Pre-fill the edit input with current rank
-                            }}
+                            onClick={() => handleEditRank(rank)}
                           >
                             Edit
                           </button>
@@ -412,12 +519,13 @@ export default function FireStationOfficers() {
                     <div className="mt-3">
                       {/* Add New Rank Form */}
                       <form
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => { // Mark the function as async
                           e.preventDefault();
-                          setOfficerRanks((prevSelected) => [...prevSelected, officerAddRank]);
-                          console.log("New rank added: ", officerAddRank);
-                          setOfficerAddRank('');
-                          e.target.reset();
+                          if (officerAddRank.trim()) {
+                            await addRankData([officerAddRank], userID); // Now await works
+                            setOfficerAddRank(''); // Clear input
+                            e.target.reset();
+                          }
                         }}
                       >
                         <input
