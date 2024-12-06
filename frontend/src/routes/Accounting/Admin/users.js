@@ -16,6 +16,8 @@ import { db, realtimeDb } from "../../../config/firebase-config";
 import { doc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 import SuccessUnsuccessfulAlert from "../../../components/Alerts/SuccessUnsuccessfulALert";
 
+//Axios
+import axios from "axios";
 
 export default function Users() {
 
@@ -75,32 +77,37 @@ export default function Users() {
     }, [selectedUser]);
 
       // Function to delete a user
-      const deleteUser = async () => {
+      const deleteUser = async (userId) => {
         try {
-          // Delete user from Firestore
-          await deleteDoc(doc(db, "users", deleteUserID));
-      
-          // Delete user from Firebase Authentication
-          const user = await auth.getUser(deleteUserID); // Ensure the user exists
-          if (user) {
-            await deleteAuthUser(auth, user);
-            console.log("User deleted from Firebase Authentication");
+          if (!userId) {
+            console.error('User ID is missing!');
+            return;
           }
       
-          // Update UI
-          setUserList((prevUsersList) =>
-            prevUsersList.filter((user) => user.id !== deleteUserID)
-          );
+          // Log the user ID for debugging purposes
+          console.log('Deleting user with ID:', userId);
       
-          setIsSuccess(true);
-          setTimeout(() => setIsSuccess(false), 2000);
+          // Perform the delete operation
+          const response = await axios.delete(`http://localhost:5000/delete-user/${userId}`);
+          
+          if (response.status === 200) {
+            console.log('User deleted successfully:', response.data);
+            
+            // Update UI after deleting
+            setUserList((prevUsersList) => prevUsersList.filter((user) => user.id !== userId));
+            setIsSuccess(true);
+            setTimeout(() => setIsSuccess(false), 2000);
+          }
+      
         } catch (err) {
-          console.error("Error deleting user:", err);
+          console.error('Error deleting user:', err);
           setIsError(true);
           setTimeout(() => setIsError(false), 2000);
         }
       };
-    
+      
+      
+      
 
   useEffect(() => {
     const filteredUsers = usersList.filter((users) =>
@@ -158,83 +165,44 @@ console.log(usersList)
 
 const handleAddUser = async () => {
   try {
-      // Ensure required fields are not empty
-      if (!email || !password || !username || !usertype) {
-        setIsError(true);
-        console.error("Missing required fields.");
-        return;
+    if (!email || !password || !username || !usertype) {
+      setIsError(true);
+      console.error('Missing required fields.');
+      return;
     }
 
-      // Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
+    const userData = {
+      email,
+      password,
+      username,
+      region: selectedRegion,
+      province: selectedProvince,
+      municipalityCity: selectedCityMunicipality,
+      usertype,
+      isActive: false,
+    };
 
-      // Add user to Firestore
-      const userDocRef = doc(db, "users", userId);
-      await setDoc(userDocRef, {
-          email,
-          username,
-          region: selectedRegion,
-          province: selectedProvince,
-          municipalityCity: selectedCityMunicipality,
-          usertype,
-          isActive: false, // Default inactive status
-      });
+    const response = await axios.post('http://localhost:5000/add-user', userData);
 
-      // Add user to Firestore "firestationReports" (optional, based on usertype)
-      if (usertype === "fire-stations") {
-          const firestationDocRefs = [
-              doc(db, "firestationReportsDeposits", userId),
-              doc(db, "firestationReportsCollections", userId),
-              doc(db, "firestationReportsOfficers", userId),
-          ];
-
-          for (const ref of firestationDocRefs) {
-              await setDoc(ref, {
-                  email,
-                  username,
-                  region: selectedRegion,
-                  province: selectedProvince,
-                  municipalityCity: selectedCityMunicipality,
-              });
-          }
-      }
-
-      // Add user to Realtime Database
-      const userRef = ref(realtimeDb, `activeUsers/${userId}`);
-      await set(userRef, {
-          isActive: false,
-          lastActive: new Date().toISOString(),
-      });
-
-      // Success Alert
+    if (response.status === 200) {
       setIsSuccess(true);
-      const timer = setTimeout(() => {
-          setIsSuccess(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-
-  } catch (err) {
-      // Log the error and show an error alert
-      console.error("Error adding user: ", err.message);
-      setIsError(true);
-      const timer = setTimeout(() => {
-          setIsError(false);
-      }, 2000);
-      return () => clearTimeout(timer);
+      setTimeout(() => setIsSuccess(false), 2000);
+    }
+  } catch (error) {
+    console.error('Error adding user: ', error.message);
+    setIsError(true);
+    setTimeout(() => setIsError(false), 2000);
   } finally {
-      // Close the modal and reset input fields
-      setShowModal(false);
-      setEmail('');
-      setPassword('');
-      setUsername('');
-      setSelectedRegion('');
-      setSelectedProvince('');
-      setSelectedCityMunicipality('');
-      setUsertype('');
+    setShowModal(false);
+    setEmail('');
+    setPassword('');
+    setUsername('');
+    setSelectedRegion('');
+    setSelectedProvince('');
+    setSelectedCityMunicipality('');
+    setUsertype('');
   }
 };
-
 
   return (
     <Fragment>
@@ -698,7 +666,7 @@ const handleAddUser = async () => {
                             </svg>
                             <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this User?</h3>
                             <button data-modal-hide="popup-modal" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
-                                onClick={() => deleteUser() & setShowDeleteModal(false)}>
+                                onClick={() => deleteUser(deleteUserID) & setShowDeleteModal(false)}>
                                 Yes, I'm sure
                             </button>
                             <button data-modal-hide="popup-modal" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
