@@ -87,6 +87,7 @@ export default function FireStationCollectionsUnsubmitted() {
           const defaultDoc = {
             createdAt: serverTimestamp(),
             fireStationName: userFound.username,
+            province: userFound.province,
             collectingAgent: null,
             collectingOfficer: null,
             dateCollected: null,

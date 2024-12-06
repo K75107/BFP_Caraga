@@ -348,6 +348,7 @@ export default function FireStationDepositsUnsubmitted() {
       const newRowData = {
         createdAt: serverTimestamp(),
         fireStationName: logginUser.username,
+        province: logginUser.province,
         collectingAgent: null,
         accountCode: null,
         dateCollectedStart: null,
