@@ -4,6 +4,7 @@ const admin = require('firebase-admin');
 const cors = require('cors');
 const app = express();
 const port = 5000;
+const path = require('path'); 
 
 // Middleware
 app.use(cors());
@@ -151,7 +152,13 @@ app.delete('/delete-user/:userId', async (req, res) => {
   }
 });
 
+// Serve static files from the React app's 'build' directory
+app.use(express.static(path.join(__dirname, 'build')));
 
+// Catch-all route to serve React's index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 // Start the server
 app.listen(port, () => {
