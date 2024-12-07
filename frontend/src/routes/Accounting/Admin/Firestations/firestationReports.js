@@ -458,7 +458,7 @@ export default function FirestationReports() {
             "628-BFP-09", "628-BFP-10", "628-BFP-11"
         ];
 
-        
+
         filteredData.sort((a, b) => {
             if (a.provinceName !== b.provinceName) {
                 return a.province.localeCompare(b.province);
@@ -488,6 +488,7 @@ export default function FirestationReports() {
             if (!fireStationAggregateMap[stationKey]) {
                 fireStationAggregateMap[stationKey] = {
                     fireStationName: stationKey,
+                    province: data.province || "Unknown Province",// Add province here
                     collections: Array(validAccountCodes.length).fill(0),
                     totalCollections: 0,
                     totalDeposits: 0,
@@ -536,6 +537,7 @@ export default function FirestationReports() {
             if (!fireStationAggregateMap[stationKey]) {
                 fireStationAggregateMap[stationKey] = {
                     fireStationName: stationKey,
+                    province: data.province || "Unknown Province",// Add province here
                     collections: Array(validAccountCodes.length).fill(0),
                     totalCollections: 0,
                     totalDeposits: 0,
@@ -565,15 +567,67 @@ export default function FirestationReports() {
 
         // Filtering and sorting Caraga data
         const caragaAggregatedData = Object.values(fireStationAggregateMap)
-        .sort((a, b) => a.fireStationName.localeCompare(b.fireStationName));
+            .sort((a, b) => {
+                if (a.province !== b.province) {
+                    return a.province.localeCompare(b.province); // Sort by province first
+                }
+                return a.fireStationName.localeCompare(b.fireStationName); // Then by station name
+            });
+
+        // Define a style for the province headers
+        const provinceHeaderStyle = {
+            font: { bold: true, size: 12 },
+            alignment: { horizontal: "center" },
+            fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCC" } }, // Light yellow background
+            border: {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            },
+        };
+
+        const currentTotalsStyle = {
+            font: { bold: true, color: { argb: "FF0000" } }, // Bold red text
+            alignment: { horizontal: "right" },
+            border: {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            },
+        };
+
 
         let currentRow = 21; // Start from row 21 as in your original code
         let currentProvince = ""; // To track the previous city
-        let citySubtotal = Array(21).fill(0); // Array to store subtotals for relevant columns (adjust based on your columns)
-
+        let currentTotals = {}; // Array to store subtotals for relevant columns (adjust based on your columns)
+        let subtotalRows = []; // Store rows for subtotals of each province
+        // Initialize totals for each column
+        for (let colIndex = 3; colIndex <= 23; colIndex++) {
+            currentTotals[colIndex] = 0;
+        }
         // Iterate through officer data
         caragaAggregatedData.forEach((stationData) => {
+            if (stationData.province !== currentProvince) {
+                // Add subtotal for the previous province, if applicable
+                if (currentProvince !== "") {
+                    currentRow++; // Move to next row for empty space
+                    addSubtotalRow(worksheet, currentRow, currentTotals, currentProvince);
+                    subtotalRows.push(currentRow); // Store the row where subtotal is added
+                    currentRow++;
+                    currentRow++; // Move to next row for empty space after subtotal
+                    resetTotals(currentTotals); // Reset totals for the new province
+                }
 
+                // Add a province header
+                currentProvince = stationData.province;
+
+                worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+                worksheet.getCell(`A${currentRow}`).value = `${currentProvince}`;
+                worksheet.getCell(`A${currentRow}`).style = provinceHeaderStyle;
+                currentRow++;
+            }
 
 
             // Populate fire station data for the current province
@@ -581,24 +635,20 @@ export default function FirestationReports() {
             worksheet.getCell(currentRow, 2).value = stationData.latestOfficer || "Unknown Officer"; // Use the latest officer
 
 
-            // Populate collection data in columns
-            stationData.collections.forEach((amount, index) => {
-                const colIndex = 4 + index; // Adjust index to match columns
-                worksheet.getCell(currentRow, colIndex).value = amount > 0 ? amount : "";
+            // Populate collection columns
+            stationData.collections.forEach((amount, colIndex) => {
+                const cell = worksheet.getCell(currentRow, 3 + colIndex); // Collection starts at column C (index 3)
+                cell.value = amount > 0 ? amount : null;
+
+                // Update running totals
+                currentTotals[3 + colIndex] += amount;
             });
 
-            // Populate columns with consolidated amounts
-            stationData.collections.forEach((amount, index) => {
-                const colIndex = 3 + index; // Columns 3–13
-                worksheet.getCell(currentRow, colIndex).value = amount > 0 ? amount : "";
-                worksheet.getCell(currentRow, colIndex).border = {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    bottom: { style: "thin" },
-                    right: { style: "thin" },
-                };
-                citySubtotal[colIndex] += amount;
-            });
+            // Add total collections and deposits
+            worksheet.getCell(currentRow, 14).value = stationData.totalCollections;
+            worksheet.getCell(currentRow, 17).value = stationData.totalDeposits;
+
+
 
             // Populate the rest of the columns for officer data (as in your original logic)
             worksheet.getCell(currentRow, 14).value = stationData.totalCollections;
@@ -608,7 +658,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[14] += stationData.totalCollections;
+            currentTotals[14] += stationData.totalCollections;
 
             const twentyPercent = stationData.totalCollections * 0.2;
             worksheet.getCell(currentRow, 15).value = twentyPercent > 0 ? twentyPercent : ""; // Leave blank if 0
@@ -619,9 +669,9 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[15] += stationData.totalCollections * 0.2;
+            currentTotals[15] += stationData.totalCollections * 0.2;
             worksheet.getCell(currentRow, 16).value = ""; // Set it to empty
-            citySubtotal[16] += "-";
+            currentTotals[16] += "-";
             worksheet.getCell(currentRow, 17).value = stationData.totalDeposits;
             worksheet.getCell(currentRow, 17).border = {
                 top: { style: "thin" },
@@ -629,7 +679,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[17] += stationData.totalDeposits;
+            currentTotals[17] += stationData.totalDeposits;
             worksheet.getCell(currentRow, 18).value = stationData.totalundepositedCollection;
             worksheet.getCell(currentRow, 18).border = {
                 top: { style: "thin" },
@@ -637,7 +687,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[18] += stationData.totalundepositedCollection;
+            currentTotals[18] += stationData.totalundepositedCollection;
             worksheet.getCell(currentRow, 19).value = stationData.priorYearCollections;
             worksheet.getCell(currentRow, 19).border = {
                 top: { style: "thin" },
@@ -645,7 +695,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[19] += stationData.priorYearCollections;
+            currentTotals[19] += stationData.priorYearCollections;
             worksheet.getCell(currentRow, 20).value = stationData.priorYearDeposits;
             worksheet.getCell(currentRow, 20).border = {
                 top: { style: "thin" },
@@ -653,7 +703,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[20] += stationData.priorYearDeposits;
+            currentTotals[20] += stationData.priorYearDeposits;
             worksheet.getCell(currentRow, 21).value = stationData.priorYearUndepositedCollection;
             worksheet.getCell(currentRow, 21).border = {
                 top: { style: "thin" },
@@ -661,7 +711,7 @@ export default function FirestationReports() {
                 bottom: { style: "thin" },
                 right: { style: "thin" },
             };
-            citySubtotal[21] += stationData.priorYearUndepositedCollection;
+            currentTotals[21] += stationData.priorYearUndepositedCollection;
 
 
             worksheet.getCell(currentRow, 22).value = stationData.priorYearUndepositedCollection + stationData.totalundepositedCollection;
@@ -693,6 +743,8 @@ export default function FirestationReports() {
             currentRow++;
         });
 
+
+
         // Add an empty row after the last data row
         worksheet.getRow(currentRow).values = [];
         worksheet.getRow(currentRow).eachCell((cell) => {
@@ -704,6 +756,43 @@ export default function FirestationReports() {
             };
             currentRow++;
         });
+        // Add a final subtotal for the last province
+        if (currentProvince !== "") {
+            currentRow++; // Add empty row before the last subtotal
+            addSubtotalRow(worksheet, currentRow, currentTotals, currentProvince);
+            subtotalRows.push(currentRow);
+            currentRow++;
+        }
+        // Function to add subtotal row
+        function addSubtotalRow(worksheet, currentRow, totals, provinceName) {
+            // Merge cells for subtotal label
+            worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+            worksheet.mergeCells(`V${currentRow}:W${currentRow}`);
+            worksheet.getCell(`A${currentRow}`).value = `Subtotal for ${provinceName}`;
+            worksheet.getCell(`A${currentRow}`).font = { bold: true };
+            worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center" };
+
+           
+            // Add subtotals in collection columns
+            for (let colIndex = 3; colIndex <= 23; colIndex++) {
+                const subtotalCell = worksheet.getCell(currentRow, colIndex);
+                subtotalCell.value = totals[colIndex] > 0 ? totals[colIndex] : "-";
+                subtotalCell.font = { bold: true };
+                subtotalCell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" },
+                };
+            }
+        }
+
+        // Function to reset totals
+        function resetTotals(totals) {
+            for (let key in totals) {
+                totals[key] = 0;
+            }
+        }
 
         currentRow++;
         worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
@@ -713,17 +802,15 @@ export default function FirestationReports() {
         worksheet.mergeCells(`V${currentRow}:W${currentRow}`);
         worksheet.getCell(`V${currentRow}`).alignment = { horizontal: "center" };
 
-        // Populate Subtotal row for columns 3–23
         for (let colIndex = 3; colIndex <= 23; colIndex++) {
             const subtotalCell = worksheet.getCell(currentRow, colIndex);
-            const formula = `SUM(${String.fromCharCode(64 + colIndex)}21:${String.fromCharCode(64 + colIndex)}${currentRow - 1})`;
-
-            // Set formula to calculate subtotal
+            const subtotalFormula = subtotalRows.map(row => `${String.fromCharCode(64 + colIndex)}${row}`).join(",");
+            const formula = `SUM(${subtotalFormula})`; // Sum only the rows with subtotals for each province
+    
             subtotalCell.value = { formula };
-
-            // Apply conditional formula to display dash if result is 0, else show the sum
+    
             subtotalCell.value = {
-                formula: `IF(${formula}=0, "-", ${formula})`, // Formula to check if sum is 0 and display "-"
+                formula: `IF(${formula}=0, "-", ${formula})`, // Show dash if result is 0
             };
 
             subtotalCell.font = { bold: true };
