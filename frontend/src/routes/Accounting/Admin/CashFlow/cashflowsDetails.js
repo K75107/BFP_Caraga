@@ -6,6 +6,7 @@ import { DndContext, closestCorners, useDroppable, useDraggable, PointerSensor }
 import Modal from '../../../../components/Modal';
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import ExcelJS from 'exceljs';
+import { useNavigate } from "react-router-dom";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities"
@@ -13,6 +14,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { debounce } from 'lodash'; // Import debounce
 import AddButton from "../../../../components/addButton";
 import ExportButton from "../../../../components/exportButton";
+import { PiMoneyWavy, PiMoneyWavyFill } from "react-icons/pi";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { FaLongArrowAltUp } from "react-icons/fa";
@@ -32,7 +34,7 @@ export default function CashflowsDetails() {
     const [showRightClickModal, setShowRightClickModal] = useState(false);
     const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
     const [overIdLevel, setOverIdLevel] = useState();
-
+    const navigate = useNavigate();
     //For input
     const [editingCell, setEditingCell] = useState(null); // To track which cell is being edited
     const [editValue, setEditValue] = useState({ field: '', value: '' });
@@ -1667,6 +1669,28 @@ export default function CashflowsDetails() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Error occurred'} icon={'wrong'} />
                 </div>
             )}
+
+             {/**Breadcrumbs */}
+             <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li className="inline-flex classNameitems-center">
+                        <button onClick={() => navigate("/main/cashflowStatement/cashflows")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                            <PiMoneyWavyFill className="mr-2"></PiMoneyWavyFill>
+                            Cashflow Statement
+                        </button>
+                    </li>
+                    <li aria-current="page">
+                        <div className="flex items-center">
+                            <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
+                            </svg>
+                            <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{currentCashflow?.description}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
             <div className="px-6">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">

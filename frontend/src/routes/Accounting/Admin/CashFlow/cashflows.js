@@ -5,7 +5,7 @@ import { collection, getDocs, addDoc, getDoc, deleteDoc, doc } from "firebase/fi
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../../components/addButton";
-
+import { PiMoneyWavy, PiMoneyWavyFill } from "react-icons/pi";
 export default function Cashflows() {
     const navigate = useNavigate();
 
@@ -122,6 +122,22 @@ export default function Cashflows() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Cashflow Statement Deleted'} icon={'wrong'} />
                 </div>
             )}
+
+                {/**Breadcrumbs */}
+                <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                                <PiMoneyWavyFill className="mr-2"></PiMoneyWavyFill>
+                                Cashflow Statement 
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
             <div className="px-6">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">

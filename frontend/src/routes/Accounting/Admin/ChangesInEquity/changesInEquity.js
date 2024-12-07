@@ -6,6 +6,7 @@ import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuc
 import { useNavigate } from "react-router-dom";
 import { setYear } from "date-fns";
 import AddButton from "../../../../components/addButton";
+import { PiEqualizer, PiEqualizerFill } from "react-icons/pi";
 
 
 export default function ChangesInEquity() {
@@ -145,7 +146,20 @@ export default function ChangesInEquity() {
                     <SuccessUnsuccessfulAlert isError={isError} message={'Changes in Equity Statement Deleted'} icon={'wrong'} />
                 </div>
             )}
-
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <div class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 ">
+                                <PiEqualizerFill className="mr-2"></PiEqualizerFill>
+                                Changes in Equity
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
             <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
                 <div className="flex justify-between w-full">
                     <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Changes in Equity</h1>
