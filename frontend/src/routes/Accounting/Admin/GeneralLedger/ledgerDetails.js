@@ -186,19 +186,24 @@ useEffect(() => {
       );
     });
 
-    // Add the account title if it has any transactions left after filtering
-    if (filteredTransactions.length > 0) {
-      result.push({
-        ...title,
-        transactions: filteredTransactions, // Add only the filtered transactions
-      });
-    }
+        // Check if the title matches the search query
+        const matchesSearchQuery = title.accountTitle
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase());
 
-    return result;
+        // Add the account title if it matches the search query and has valid transactions
+        if (matchesSearchQuery && filteredTransactions.length > 0) {
+            result.push({
+                ...title,
+                transactions: filteredTransactions, // Add only the filtered transactions
+            });
+        }
+
+        return result;
   }, []);
 
   setFilteredAccountTitles(filteredTitles);
-}, [accountTitles, accountsData, startDate, endDate]);
+}, [accountTitles, accountsData, startDate, endDate, searchQuery]);
 
 
 
