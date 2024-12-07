@@ -262,10 +262,6 @@ const handleAddUser = async () => {
                             className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${
                               user.usertype === 'admin' ? 'cursor-default' : 'cursor-default'
                             }`}
-                          onClick={() => {
-                            if (user.usertype === "admin") return; // Prevent editing admin
-                            setSelectedUser(user);
-                          }}
                         >
                             <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
                               <div
