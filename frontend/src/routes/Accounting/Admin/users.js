@@ -88,7 +88,7 @@ export default function Users() {
           console.log('Deleting user with ID:', userId);
       
           // Perform the delete operation
-          const response = await axios.delete(`http://localhost:5000/delete-user/${userId}`);
+          const response = await axios.delete(`https://bfp-caraga-1.onrender.com/delete-user/${userId}`);
           
           if (response.status === 200) {
             console.log('User deleted successfully:', response.data);
@@ -182,7 +182,7 @@ const handleAddUser = async () => {
       isActive: false,
     };
 
-    const response = await axios.post('http://localhost:5000/add-user', userData);
+    const response = await axios.post('https://bfp-caraga-1.onrender.com/add-user', userData);
 
     if (response.status === 200) {
       setIsSuccess(true);
