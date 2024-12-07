@@ -34,17 +34,25 @@ export default function Accounts() {
             try {
                 const accountsDataCollectionRef = collection(db, 'accountTitle');
                 const accountsSnapshot = await getDocs(accountsDataCollectionRef);
-
+    
                 const titles = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setAccountsData(titles);
-
+    
+                // Sort the data by AccountCode
+                titles.sort((a, b) => {
+                    const codeA = parseInt((a.AccountCode || "").replace(/\s+/g, ""), 10); // Remove spaces and convert to number
+                    const codeB = parseInt((b.AccountCode || "").replace(/\s+/g, ""), 10); // Remove spaces and convert to number
+                    return codeA - codeB; // Sort in ascending order
+                });
+    
+                setAccountsData(titles); // Update state with sorted data
             } catch (error) {
                 console.error('Error fetching account data:', error);
             }
         };
-
+    
         fetchAccountsData();
     }, []);
+    
 
     const handleEdit = (id, field, value) => {
         setEditing({ id, field, value });
