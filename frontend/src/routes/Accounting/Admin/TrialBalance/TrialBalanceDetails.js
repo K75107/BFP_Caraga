@@ -121,7 +121,13 @@ export default function TrialBalanceDetails() {
                 }
 
                 // Update state with the summarized trial balance data
-                setTrialBalanceData(trialData);
+                setTrialBalanceData(
+                    trialData.sort((a, b) => {
+                        const codeA = parseInt(a.accountCode.replace(/\s+/g, ""), 10);
+                        const codeB = parseInt(b.accountCode.replace(/\s+/g, ""), 10);
+                        return codeA - codeB;
+                    })
+                );
                 setTrialBalanceDescription(trialBalanceData.description || 'Trial Balance');
                 setTotalDebit(debitSum); // Set total debit state
                 setTotalCredit(creditSum); // Set total credit state
