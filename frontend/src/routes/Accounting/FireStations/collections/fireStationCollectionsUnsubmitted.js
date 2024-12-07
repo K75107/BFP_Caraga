@@ -329,6 +329,7 @@ export default function FireStationCollectionsUnsubmitted() {
       const newRowData = {
         createdAt: serverTimestamp(),
         fireStationName: logginUser.username,
+        province: logginUser.province,
         collectingOfficer: null,
         collectingAgent: null,
         dateCollected: null,
@@ -400,6 +401,7 @@ export default function FireStationCollectionsUnsubmitted() {
       const newRowData = {
         createdAt: serverTimestamp(),
         fireStationName: logginUser.username,
+        province: logginUser.province,
         collectingOfficer: null,
         collectingAgent: null,
         dateCollected: null,
@@ -547,6 +549,7 @@ export default function FireStationCollectionsUnsubmitted() {
       const newBlankRow = {
         createdAt: serverTimestamp(),
         fireStationName: logginUser.username,
+        province: logginUser.province,
         collectingOfficer: null,
         collectingAgent: null,
         dateCollected: null,
