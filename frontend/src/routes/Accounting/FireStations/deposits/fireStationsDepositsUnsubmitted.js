@@ -472,7 +472,10 @@ export default function FireStationDepositsUnsubmitted() {
       await setDoc(userDocRef, {
         email: logginUser.email,
         username: logginUser.username,
-        date_created: serverTimestamp(), // Optional: track when this document was created
+        date_created: serverTimestamp(), 
+        province: logginUser.province,
+        municipalityCity: logginUser.municipalityCity,
+        region: logginUser.region,
       });
 
       console.log('User document created successfully with email and username.');

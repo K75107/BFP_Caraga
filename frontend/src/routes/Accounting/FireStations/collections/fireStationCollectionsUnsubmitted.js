@@ -148,7 +148,7 @@ export default function FireStationCollectionsUnsubmitted() {
             console.log("The logged-in user is: ", user);
 
             try {
-              // Step 1: Query the 'users' collection for a document with a matching email
+              //Query the 'users' collection for a document with a matching email
               const usersRef = collection(db, 'users');
               const q = query(
                 usersRef,
@@ -158,21 +158,21 @@ export default function FireStationCollectionsUnsubmitted() {
 
               const querySnapshot = await getDocs(q);
 
-              // Step 2: Check if any documents match and replicate them into the other collections
+              //Check if any documents match and replicate them into the other collections
               if (!querySnapshot.empty) {
                 querySnapshot.forEach(async (docSnapshot) => {
                   const userData = docSnapshot.data(); // Get the data of the matched document
                   const userId = docSnapshot.id; // Get the specific document ID
                   console.log("Matched user document: ", userData, "Document ID: ", userId);
 
-                  // Step 3: Define the collections to replicate the document into
+                  //Define the collections to replicate the document into
                   const collectionsToReplicate = [
                     'firestationReportsCollections',
                     'firestationReportsDeposits',
                     'firestationReportsOfficers',
                   ];
 
-                  // Step 4: Copy the document (with its ID) to the other collections
+                  //Copy the document (with its ID) to the other collections
                   for (const collectionName of collectionsToReplicate) {
                     const targetDocRef = doc(db, collectionName, userId); // Use the same document ID
                     await setDoc(targetDocRef, {
@@ -459,20 +459,23 @@ export default function FireStationCollectionsUnsubmitted() {
 
   const handleSubmitDataToRegion = async () => {
     try {
-      // Reference to the submittedReportsCollections (without logginUser.id initially)
+      // Reference to the submittedReportsCollections
       const submittedReportsCollectionRef = collection(db, 'submittedReportsCollections');
 
-      // First, create a document for the logginUser.id with email and username
+      // Create a document for the logginUser.id with email and username
       const userDocRef = doc(submittedReportsCollectionRef, logginUser.id);
       await setDoc(userDocRef, {
         email: logginUser.email,
         username: logginUser.username,
-        date_created: serverTimestamp(), // Optional: track when this document was created
+        date_created: serverTimestamp(),
+        province: logginUser.province,
+        municipalityCity: logginUser.municipalityCity,
+        region: logginUser.region,
       });
 
       console.log('User document created successfully with email and username.');
 
-      // Now, reference the specific subcollection under the newly created logginUser.id document
+      // Reference the specific subcollection under the newly created logginUser.id document
       const collectionsSubCollectionRef = collection(
         db,
         'firestationReportsCollections',
