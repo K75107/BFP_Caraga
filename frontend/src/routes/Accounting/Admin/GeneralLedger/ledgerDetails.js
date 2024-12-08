@@ -74,139 +74,133 @@ export default function LedgerDetails() {
       console.error('ledgerId is not provided.');
       return;
     }
-
+  
     const ledgerDocRef = doc(db, 'ledger', ledgerId);
-    setLoading(true); // Start loading before fetching data
-
-    // Fetch ledger description from Firestore
-    const fetchLedgerDescription = async () => {
-      const docSnap = await getDoc(ledgerDocRef);
-
-      if (docSnap.exists()) {
-        setLedgerDescription(docSnap.data().description || 'No Description');
-      } else {
-        console.error('No such document!');
-      }
-    };
-
-    fetchLedgerDescription();
-
-    // Fetch ledger data with onSnapshot for real-time updates
     const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
-
+    const listAccountTitlesRef = collection(db, 'accountTitle');
+  
     let unsubscribeLedger;
     let unsubscribeAccountTitles;
-
-    // Function to fetch accounts for each account title
-    const fetchAccounts = async (accountTitleId) => {
-      const accountsSubcollectionRef = collection(ledgerDocRef, `accounttitles/${accountTitleId}/accounts`);
-      const accountsSnapshot = await getDocs(accountsSubcollectionRef);
-
-      return accountsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => a.position - b.position);
+  
+    const fetchLedgerDescription = async () => {
+      try {
+        const docSnap = await getDoc(ledgerDocRef);
+        setLedgerDescription(docSnap.exists() ? docSnap.data().description || 'No Description' : 'No Description');
+      } catch (error) {
+        console.error('Error fetching ledger description:', error);
+      }
     };
-
-    // Fetch account titles and their subcollection accounts
-    unsubscribeLedger = onSnapshot(
-      query(accountTitlesCollectionRef, orderBy('position', 'asc')), // Sort accountTitles by position ascending
-      async (snapshot) => {
-        if (snapshot.empty) {
-          console.log('No account titles found');
-          setAccountTitles([]); // Clear state if no titles
-          setLoading(false); // Stop loading after fetching data
-          return;
-        }
-
+  
+    const fetchAccounts = async (accountTitleId) => {
+      try {
+        const accountsSubcollectionRef = collection(ledgerDocRef, `accounttitles/${accountTitleId}/accounts`);
+        const accountsSnapshot = await getDocs(accountsSubcollectionRef);
+        return accountsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => a.position - b.position);
+      } catch (error) {
+        console.error(`Error fetching accounts for ${accountTitleId}:`, error);
+        return [];
+      }
+    };
+  
+    const fetchAccountTitlesAndAccounts = async (snapshot) => {
+      try {
         const fetchedAccountTitles = [];
         const fetchedAccounts = {};
-
-        // Loop through each account title and fetch its accounts
-        for (const accountTitleDoc of snapshot.docs) {
-          const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
-          fetchedAccountTitles.push(accountTitleData);
-
-          // Fetch accounts for this account title
-          const accounts = await fetchAccounts(accountTitleDoc.id);
-          fetchedAccounts[accountTitleDoc.id] = accounts;
-        }
-
-        // Set sorted account titles and accounts
+  
+        await Promise.all(
+          snapshot.docs.map(async (accountTitleDoc) => {
+            const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
+            fetchedAccountTitles.push(accountTitleData);
+  
+            const accounts = await fetchAccounts(accountTitleDoc.id);
+            fetchedAccounts[accountTitleDoc.id] = accounts;
+          })
+        );
+  
         setAccountTitles(fetchedAccountTitles);
         setSelectedAccountsData(fetchedAccounts);
         setLoading(false); // Stop loading after fetching data
+      } catch (error) {
+        console.error('Error fetching account titles and accounts:', error);
+        setLoading(false);
+      }
+    };
+  
+    setLoading(true);
+    fetchLedgerDescription();
+  
+    unsubscribeLedger = onSnapshot(
+      query(accountTitlesCollectionRef, orderBy('position', 'asc')),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          console.log('No account titles found');
+          setAccountTitles([]);
+          setSelectedAccountsData({});
+          setLoading(false);
+          return;
+        }
+        await fetchAccountTitlesAndAccounts(snapshot);
       },
       (error) => {
         console.error('Error fetching ledger data:', error);
-        setLoading(false); // Stop loading on error
+        setLoading(false);
       }
     );
-
-    // Fetch list of all account titles (assuming these are used elsewhere)
-    const listAccountTitlesRef = collection(db, 'accountTitle');
-    unsubscribeAccountTitles = onSnapshot(listAccountTitlesRef, (snapshot) => {
-      const listTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setListAccountTitles(listTitles);
-    }, (error) => {
-      console.error('Error fetching account titles:', error);
-    });
-
-    // Clean up the snapshot listeners
+  
+    unsubscribeAccountTitles = onSnapshot(
+      listAccountTitlesRef,
+      (snapshot) => {
+        const listTitles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setListAccountTitles(listTitles);
+      },
+      (error) => {
+        console.error('Error fetching account titles:', error);
+      }
+    );
+  
     return () => {
       if (unsubscribeLedger) unsubscribeLedger();
       if (unsubscribeAccountTitles) unsubscribeAccountTitles();
     };
   }, [ledgerId]);
-
-
-  // Filter account titles based on searchQuery and date range
+  
   useEffect(() => {
     if (!accountTitles.length || !accountsData) {
-      setFilteredAccountTitles([]); // No data to filter
+      setFilteredAccountTitles([]);
       return;
     }
-
+  
     const filteredTitles = accountTitles.reduce((result, title) => {
       const transactions = accountsData[title.id] || [];
-
+  
       const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
       const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-
-      // Filter transactions, include rows without dates if no filters are applied
+  
       const filteredTransactions = transactions.filter((transaction) => {
-        if (!transaction.date) {
-          // Include rows without a date if no start or end date filters are applied
-          return !start && !end;
-        }
-
+        if (!transaction.date) return !start && !end;
+  
         const transactionDate = new Date(transaction.date);
-        return (
-          (!start || transactionDate >= start) &&
-          (!end || transactionDate <= end)
-        );
+        return (!start || transactionDate >= start) && (!end || transactionDate <= end);
       });
-
-        // Check if the title matches the search query
-        const matchesSearchQuery = title.accountTitle
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase());
-
-        // Add the account title if it matches the search query and has valid transactions
-        if (matchesSearchQuery && filteredTransactions.length > 0) {
-            result.push({
-                ...title,
-                transactions: filteredTransactions, // Add only the filtered transactions
-            });
-        }
-
-        return result;
+  
+      if (
+        title.accountTitle?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        filteredTransactions.length > 0
+      ) {
+        result.push({
+          ...title,
+          transactions: filteredTransactions,
+        });
+      }
+  
+      return result;
     }, []);
-
+  
     setFilteredAccountTitles(filteredTitles);
   }, [accountTitles, accountsData, startDate, endDate, searchQuery]);
-
-
-
+  
 
   //Right Click Functions
 
