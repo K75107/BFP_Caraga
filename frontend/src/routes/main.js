@@ -1,6 +1,7 @@
 import React, { Fragment, useState, useEffect } from "react";
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/sidebar';
+import RoleBasedAccess from '../components/roleBasedAccess';
 import { TransparentModal } from '../components/Modal';
 import { AiOutlineSetting } from "react-icons/ai";
 import { MdArrowForwardIos, MdOutlineHelpOutline, MdLogout } from "react-icons/md";
@@ -17,6 +18,8 @@ const Main = () => {
   const user = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const [userType, setUserType] = useState(null)
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [logUserData, setLogUserData] = useState({});
@@ -40,6 +43,29 @@ const Main = () => {
       console.error("Error signing out: ", error);
     }
   };
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            setUserType(userDoc.data().userType);
+          } else {
+            console.error("No user data found");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user type:", error);
+      }
+    };
+
+    fetchUserType();
+  }, []);
+
+  // Apply role-based access control
+  RoleBasedAccess(userType);
 
   useEffect(() => {
     const usersRef = collection(db, 'users');
@@ -77,92 +103,92 @@ const Main = () => {
   };
   return (
     <Fragment>
-    <div className="bg-color-lighter-gray flex h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col bg-gray-100 overflow-hidden">
-        <header className="px-4 py-2 flex items-center justify-between">
-          <div></div>
-          <div className="flex items-center space-x-3">
-            <div
-                    className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold hover:cursor-pointer"
-                    onClick={() => setShowUserModal(true)}
-                    style={{
-                      backgroundColor: 
-                      logUserData?.province === 'Agusan del Norte' ? 'blue' : 
-                      logUserData?.province === 'Agusan del Sur' ? 'red' : 
-                      logUserData?.province === 'Dinagat Islands' ? 'brown' :
-                      logUserData?.province === 'Surigao del Norte' ? 'orange' :
-                      logUserData?.province === 'Surigao del Sur' ? 'violet' :   
-                        'gray' // Default color
-                    }}
-                  >
-                    {logUserData?.username?.charAt(0).toUpperCase()}
+      <div className="bg-color-lighter-gray flex h-screen">
+        <Sidebar />
+        <div className="flex-1 flex flex-col bg-gray-100 overflow-hidden">
+          <header className="px-4 py-2 flex items-center justify-between">
+            <div></div>
+            <div className="flex items-center space-x-3">
+              <div
+                className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold hover:cursor-pointer"
+                onClick={() => setShowUserModal(true)}
+                style={{
+                  backgroundColor:
+                    logUserData?.province === 'Agusan del Norte' ? 'blue' :
+                      logUserData?.province === 'Agusan del Sur' ? 'red' :
+                        logUserData?.province === 'Dinagat Islands' ? 'brown' :
+                          logUserData?.province === 'Surigao del Norte' ? 'orange' :
+                            logUserData?.province === 'Surigao del Sur' ? 'violet' :
+                              'gray' // Default color
+                }}
+              >
+                {logUserData?.username?.charAt(0).toUpperCase()}
               </div>
+            </div>
+          </header>
+          <div className="px-3 py-1.5 flex-1 h-screen">
+            <Outlet /> {/* Renders nested routes */}
           </div>
-        </header>
-        <div className="px-3 py-1.5 flex-1 h-screen">
-          <Outlet /> {/* Renders nested routes */}
         </div>
       </div>
-    </div>
-  
-    {/* User Profile Modal */}
-    {showUserModal && (
-      <TransparentModal isVisible={showUserModal}>
-        <div
-          id="user-modal-overlay"
-          className="fixed inset-0 flex justify-center items-center"
-          onClick={closeModalOnOutsideClick}
-        >
-          <div className="bg-white w-[240px] rounded-lg shadow-lg p-3 fixed right-1 top-16">
-            
-            {/* USER DETAILS */}
-            <div className="text-center">
-              <h3 className="text-base font-medium">{logUserData?.username || 'Username'}</h3>
-              <p className="text-gray-600 text-sm">{logUserData?.email || 'Email'}</p>
+
+      {/* User Profile Modal */}
+      {showUserModal && (
+        <TransparentModal isVisible={showUserModal}>
+          <div
+            id="user-modal-overlay"
+            className="fixed inset-0 flex justify-center items-center"
+            onClick={closeModalOnOutsideClick}
+          >
+            <div className="bg-white w-[240px] rounded-lg shadow-lg p-3 fixed right-1 top-16">
+
+              {/* USER DETAILS */}
+              <div className="text-center">
+                <h3 className="text-base font-medium">{logUserData?.username || 'Username'}</h3>
+                <p className="text-gray-600 text-sm">{logUserData?.email || 'Email'}</p>
+              </div>
+
+              {/* BUTTON */}
+              {/* Account Settings */}
+              <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-2 mr-2">
+                    <AiOutlineSetting className="text-gray-700" />
+                  </div>
+                  <span className="text-sm font-semibold">Account Settings</span>
+                </div>
+                <MdArrowForwardIos />
+              </label>
+
+              {/* Help & Support */}
+              <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-2 mr-2">
+                    <MdOutlineHelpOutline className="text-gray-700" />
+                  </div>
+                  <span className="text-sm font-semibold">Help & Support</span>
+                </div>
+                <MdArrowForwardIos />
+              </label>
+
+              {/* Logout */}
+              <button
+                className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                <div className="flex items-center">
+                  <div className="bg-gray-100 rounded-full p-2 mr-2">
+                    <MdLogout className="text-gray-700" />
+                  </div>
+                  <span className="text-sm font-semibold">Logout</span>
+                </div>
+              </button>
+
             </div>
-            
-            {/* BUTTON */}
-            {/* Account Settings */}
-            <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
-              <div className="flex items-center">
-                <div className="bg-gray-100 rounded-full p-2 mr-2">
-                  <AiOutlineSetting className="text-gray-700" />
-                </div>
-                <span className="text-sm font-semibold">Account Settings</span>
-              </div>
-              <MdArrowForwardIos />
-            </label>
-  
-            {/* Help & Support */}
-            <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
-              <div className="flex items-center">
-                <div className="bg-gray-100 rounded-full p-2 mr-2">
-                  <MdOutlineHelpOutline className="text-gray-700" />
-                </div>
-                <span className="text-sm font-semibold">Help & Support</span>
-              </div>
-              <MdArrowForwardIos />
-            </label>
-  
-            {/* Logout */}
-            <button 
-              className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100"
-              onClick={handleLogout}
-            >
-              <div className="flex items-center">
-                <div className="bg-gray-100 rounded-full p-2 mr-2">
-                  <MdLogout className="text-gray-700" />
-                </div>
-                <span className="text-sm font-semibold">Logout</span>
-              </div>
-            </button>
-  
           </div>
-        </div>
-      </TransparentModal>
-    )}
-  </Fragment>
+        </TransparentModal>
+      )}
+    </Fragment>
   );
 };
 
