@@ -44,28 +44,12 @@ const Main = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUserType = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            setUserType(userDoc.data().userType);
-          } else {
-            console.error("No user data found");
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user type:", error);
-      }
-    };
-
-    fetchUserType();
-  }, []);
-
-  // Apply role-based access control
-  RoleBasedAccess(userType);
+  // // Apply role-based access control
+  // useEffect(() => {
+  //   if (logUserData.userType) {
+  //     RoleBasedAccess(logUserData.userType);
+  //   }
+  // }, [logUserData.userType, location.pathname]);
 
   useEffect(() => {
     const usersRef = collection(db, 'users');
