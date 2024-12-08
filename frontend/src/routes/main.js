@@ -11,7 +11,7 @@ import { logout } from './Authentication/authActions';
 
 import { auth, db } from "../config/firebase-config";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, getDoc, doc } from "firebase/firestore";
 import { getDatabase, ref, set, onDisconnect, serverTimestamp } from "firebase/database";
 
 const Main = () => {
