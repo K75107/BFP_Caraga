@@ -250,66 +250,68 @@ export default function DepositsPerStation() {
             </nav>
             {/**Breadcrumbs */}
 
-            <div className="flex flex-col space-y-6 w-full mb-2">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-semibold text-gray-800">
-                        {firestationUsername}
-                    </h1>
+            <div className="px-2">
+                <div className="bg-white h-30 px-2 rounded-lg">
+                    <div className="flex flex-col space-y-6 w-full px-4 pt-4">
+                        <div className="flex justify-between items-center">
+                            <h1 className="text-2xl font-semibold text-gray-800">
+                                {firestationUsername}
+                            </h1>
+                        </div>
+                    </div>
+                    {/* Unsubmitted and Submitted */}
+                    <div className="mb-4 border-b border-gray-200 dark:border-gray-700 px-2 py-2">
+                        <ul
+                            className="flex flex-wrap -mb-px text-sm font-medium text-center"
+                            id="default-styled-tab"
+                            role="tablist"
+                        >
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/overview/${userId}`)}
+                                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                                    id="profile-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="profile"
+                                    aria-selected="false"
+                                >
+                                    Overview
+                                </button>
+                            </li>
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/collections/${userId}`)}
+                                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                                    id="profile-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="profile"
+                                    aria-selected="false"
+                                >
+                                    Collections
+                                </button>
+                            </li>
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/deposits/${userId}`)}
+                                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+                                    id="dashboard-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="dashboard"
+                                    aria-selected="false"
+                                >
+                                    Deposits
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            {/* Unsubmitted and Submitted */}
-            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                <ul
-                    className="flex flex-wrap -mb-px text-sm font-medium text-center"
-                    id="default-styled-tab"
-                    role="tablist"
-                >
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/overview/${userId}`)}
-                            className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                            id="profile-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="profile"
-                            aria-selected="false"
-                        >
-                            Overview
-                        </button>
-                    </li>
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/collections/${userId}`)}
-                            className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                            id="profile-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="profile"
-                            aria-selected="false"
-                        >
-                            Collections
-                        </button>
-                    </li>
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/deposits/${userId}`)}
-                            className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                            id="dashboard-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="dashboard"
-                            aria-selected="false"
-                        >
-                            Deposits
-                        </button>
-                    </li>
-                </ul>
-            </div>
-
-
             {/* Table Header */}
 
-            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
+            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-28 right-10">
                 {/* Search Form */}
                 <SearchBar
                     placeholder="Search Depositor"
@@ -379,106 +381,107 @@ export default function DepositsPerStation() {
                 </div>
             </div>
 
-            {/* TABLE */}
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg h-[500px]">
+            <div className="px-2">
+                <div className="relative overflow-x-auto shadow-md sm:rounded-lg ">
 
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
-                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
-                        <tr className="text-[12px]">
-                            <th scope="col" className="px-2 py-4 w-40">Date Submitted</th>
-                            <th scope="col" className="px-1 py-4 w-40">Collecting Agent</th>
-                            <th scope="col" className="px-1 py-4 w-36">Date Collected</th>
-                            <th scope="col" className="px-1 py-4 w-36">Date Deposited</th>
-                            <th scope="col" className="px-1 py-4 w-36">OR Number</th>
-                            <th scope="col" className="px-1 py-4 w-36">LC Number</th>
-                            <th scope="col" className="px-1 py-4 w-36">Particulars</th>
-                            <th scope="col" className="px-1 py-4 w-36">Depositor</th>
-                            <th scope="col" className="px-1 py-4 w-36">Amount</th>
-                            <th scope="col" className="w-4"></th>
-                        </tr>
-                    </thead>
-                </table>
-
-                <div className="w-full overflow-y-scroll h-[calc(96vh-240px)]">
-                    <table className="w-full overflow-x-visible">
-                        <tbody>
-                            {/* Iterate over grouped deposits by date_submitted date */}
-                            {Object.keys(filteredGroupedDeposits).map((date) => {
-                                // Calculate the total amount for each date group
-                                const totalAmount = filteredGroupedDeposits[date].reduce(
-                                    (sum, deposit) => sum + parseFloat(deposit.depositAmount || 0),
-                                    0
-                                );
-
-                                return (
-                                    <React.Fragment key={date}>
-                                        {/* Render clickable header row for the date */}
-                                        <tr
-                                            className="text-[12px] bg-gray-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                                            onClick={() => toggleGroup(date)}
-                                        >
-                                            <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative">
-                                                {date}
-                                                <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                                    {expandedGroups[date] ? (
-                                                        <MdKeyboardArrowDown size={20} style={{ display: 'inline' }} />
-                                                    ) : (
-                                                        <MdKeyboardArrowRight size={20} style={{ display: 'inline' }} />
-                                                    )}
-                                                </span>
-                                            </td>
-
-                                            {/* Empty cells for alignment */}
-                                            <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
-                                            <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
-                                                {/* Display the total amount */}
-                                                {totalAmount.toFixed(2)}
-                                            </td>
-                                        </tr>
-
-                                        {/* Conditionally render rows under the current date header */}
-                                        {expandedGroups[date] &&
-                                            filteredGroupedDeposits[date].map((deposit) => {
-                                                const submittedDate = deposit.date_submitted?.toDate();
-                                                let formattedDate;
-
-                                                if (selectedCategory === 'year') {
-                                                    formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                                                } else if (selectedCategory === 'month') {
-                                                    formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
-                                                } else {
-                                                    formattedDate = '';
-                                                }
-
-                                                return (
-                                                    <tr
-                                                        key={deposit.id}
-                                                        className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                                                    >
-                                                        <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
-                                                        <td className="table-cell px-2 py-2 w-40 text-[12px]">{deposit.collectingAgent}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateCollected}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateDeposited}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.orNumber}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.lcNumber}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.particulars}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.nameofDepositor}</td>
-                                                        <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.depositAmount}</td>
-                                                    </tr>
-                                                );
-                                            })}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </tbody>
-
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 overflow-x-visible">
+                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
+                            <tr className="text-[12px]">
+                                <th scope="col" className="px-2 py-4 w-40">Date Submitted</th>
+                                <th scope="col" className="px-1 py-4 w-40">Collecting Agent</th>
+                                <th scope="col" className="px-1 py-4 w-36">Date Collected</th>
+                                <th scope="col" className="px-1 py-4 w-36">Date Deposited</th>
+                                <th scope="col" className="px-1 py-4 w-36">OR Number</th>
+                                <th scope="col" className="px-1 py-4 w-36">LC Number</th>
+                                <th scope="col" className="px-1 py-4 w-36">Particulars</th>
+                                <th scope="col" className="px-1 py-4 w-36">Depositor</th>
+                                <th scope="col" className="px-1 py-4 w-36">Amount</th>
+                                <th scope="col" className="w-4"></th>
+                            </tr>
+                        </thead>
                     </table>
+
+                    <div className="w-full overflow-y-auto max-h-[calc(96vh-240px)]">
+                        <table className="w-full overflow-x-visible">
+                            <tbody>
+                                {/* Iterate over grouped deposits by date_submitted date */}
+                                {Object.keys(filteredGroupedDeposits).map((date) => {
+                                    // Calculate the total amount for each date group
+                                    const totalAmount = filteredGroupedDeposits[date].reduce(
+                                        (sum, deposit) => sum + parseFloat(deposit.depositAmount || 0),
+                                        0
+                                    );
+
+                                    return (
+                                        <React.Fragment key={date}>
+                                            {/* Render clickable header row for the date */}
+                                            <tr
+                                                className="text-[12px] bg-blue-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                                onClick={() => toggleGroup(date)}
+                                            >
+                                                <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative">
+                                                    {date}
+                                                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                                        {expandedGroups[date] ? (
+                                                            <MdKeyboardArrowDown size={20} style={{ display: 'inline' }} />
+                                                        ) : (
+                                                            <MdKeyboardArrowRight size={20} style={{ display: 'inline' }} />
+                                                        )}
+                                                    </span>
+                                                </td>
+
+                                                {/* Empty cells for alignment */}
+                                                <td className="table-cell px-2 py-2 w-40 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300"></td>
+                                                <td className="table-cell px-2 py-2 w-36 text-[12px] font-semibold text-gray-700 dark:text-gray-300">
+                                                    {/* Display the total amount */}
+                                                    {totalAmount.toFixed(2)}
+                                                </td>
+                                            </tr>
+
+                                            {/* Conditionally render rows under the current date header */}
+                                            {expandedGroups[date] &&
+                                                filteredGroupedDeposits[date].map((deposit) => {
+                                                    const submittedDate = deposit.date_submitted?.toDate();
+                                                    let formattedDate;
+
+                                                    if (selectedCategory === 'year') {
+                                                        formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                                    } else if (selectedCategory === 'month') {
+                                                        formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
+                                                    } else {
+                                                        formattedDate = '';
+                                                    }
+
+                                                    return (
+                                                        <tr
+                                                            key={deposit.id}
+                                                            className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                                                        >
+                                                            <td className="table-cell px-2 py-2 w-40 text-[12px] pl-10">{formattedDate}</td>
+                                                            <td className="table-cell px-2 py-2 w-40 text-[12px]">{deposit.collectingAgent}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateCollected}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.dateDeposited}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.orNumber}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.lcNumber}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.particulars}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.nameofDepositor}</td>
+                                                            <td className="table-cell px-2 py-2 w-36 text-[12px]">{deposit.depositAmount}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+
+                        </table>
+                    </div>
                 </div>
             </div>
 

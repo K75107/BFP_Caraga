@@ -1321,7 +1321,7 @@ export default function IncomeStatement() {
                 </div>
             )}
             {/**Breadcrumbs */}
-            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li className="inline-flex classNameitems-center">
                         <button onClick={() => navigate("/main/incomeStatement/incomeStatementList")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
@@ -1340,57 +1340,59 @@ export default function IncomeStatement() {
                 </ol>
             </nav>
             {/**Breadcrumbs */}
-
-            <div className="flex justify-between w-full">
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
-                    {incomeStatement.description}
-                </h1>
-                <div className="flex space-x-4">
-                    <AddButton
-                        onClick={() => setFirstSubcategoryModal(true)}
-                        label="ADD SUBCATEGORY"
-                    />
-                    <AddButton
-                        onClick={() => {
-                            setIsClicked(true);
-                            setCurrentModal(1);
-                            setShowModal(true);
-                        }}
-                        label="ADD PERIOD"
-                    />
-                    {/* Button to export to Excel */}
-                    <ExportButton
-                        onClick={exportToExcel}
-                        label="EXPORT AS SPREADSHEET"
-                    />
+            <div className="px-2">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">
+                            {incomeStatement.description}
+                        </h1>
+                        <div className="flex space-x-4">
+                            <AddButton
+                                onClick={() => setFirstSubcategoryModal(true)}
+                                label="ADD SUBCATEGORY"
+                            />
+                            <AddButton
+                                onClick={() => {
+                                    setIsClicked(true);
+                                    setCurrentModal(1);
+                                    setShowModal(true);
+                                }}
+                                label="ADD PERIOD"
+                            />
+                            {/* Button to export to Excel */}
+                            <ExportButton
+                                onClick={exportToExcel}
+                                label="EXPORT AS SPREADSHEET"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-4" />
-
-            {/* TABLE */}
-            <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
-                        <tr>
-                            <th scope="col" className="px-6 py-3">Account Description</th>
-                            <th scope="col" className="px-6 py-3 text-right">{`Period - ${incomeStatement?.ledgerYear || "N/A"}`}</th>
-                            {!currentShowPeriodColumn ? (
-                                <th scope="col" className="px-6 py-3"></th>
-                            ) : (
-                                <th scope="col" className="px-6 py-3 text-right">
-                                    {fireLedgerYear ? `Period - ${fireLedgerYear}` : "Period - ××××"}
-                                </th>
-                            )}
-                            <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {incomeStatementDetailsData.map((item, index) => (
-                            <Row key={index} item={item} depth={1} handleRightClick={handleRightClick} /> // Start with depth 1 for main categories
-                        ))}
-                    </tbody>
-                </table>
+            <div className="px-2 py-4">
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto relative overflow-x-auto shadow-md sm:rounded-lg">
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
+                            <tr>
+                                <th scope="col" className="px-6 py-3">Account Description</th>
+                                <th scope="col" className="px-6 py-3 text-right">{`Period - ${incomeStatement?.ledgerYear || "N/A"}`}</th>
+                                {!currentShowPeriodColumn ? (
+                                    <th scope="col" className="px-6 py-3"></th>
+                                ) : (
+                                    <th scope="col" className="px-6 py-3 text-right">
+                                        {fireLedgerYear ? `Period - ${fireLedgerYear}` : "Period - ××××"}
+                                    </th>
+                                )}
+                                <th scope="col" className="px-6 py-3 text-right"><span className="sr-only">View</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {incomeStatementDetailsData.map((item, index) => (
+                                <Row key={index} item={item} depth={1} handleRightClick={handleRightClick} /> // Start with depth 1 for main categories
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Group Data Cards */}

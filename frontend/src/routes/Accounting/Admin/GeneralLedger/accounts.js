@@ -34,25 +34,25 @@ export default function Accounts() {
             try {
                 const accountsDataCollectionRef = collection(db, 'accountTitle');
                 const accountsSnapshot = await getDocs(accountsDataCollectionRef);
-    
+
                 const titles = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
+
                 // Sort the data by AccountCode
                 titles.sort((a, b) => {
                     const codeA = parseInt((a.AccountCode || "").replace(/\s+/g, ""), 10); // Remove spaces and convert to number
                     const codeB = parseInt((b.AccountCode || "").replace(/\s+/g, ""), 10); // Remove spaces and convert to number
                     return codeA - codeB; // Sort in ascending order
                 });
-    
+
                 setAccountsData(titles); // Update state with sorted data
             } catch (error) {
                 console.error('Error fetching account data:', error);
             }
         };
-    
+
         fetchAccountsData();
     }, []);
-    
+
 
     const handleEdit = (id, field, value) => {
         setEditing({ id, field, value });
@@ -129,7 +129,7 @@ export default function Accounts() {
             const id = deleteAccountID;
             const accountDocRef = doc(db, 'accountTitle', id);
             await deleteDoc(accountDocRef);
-    
+
             // Update the local state by filtering out the removed account
             setAccountsData((prev) => prev.filter((account) => account.id !== id));
         } catch (error) {
@@ -140,136 +140,142 @@ export default function Accounts() {
 
     return (
         <Fragment>
-            <div className="bg-white h-[calc(92vh)] py-8 px-8 w-full rounded-lg">
-                <div className="flex justify-between w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Saved Account Titles</h1>
-                    <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search Account Title"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            listSource={filteredAccountsData}
-                        />
-                        <AddButton
-                            onClick={() => setShowModal(true)}
-                            label="ADD ACCOUNT"
-                        />
+            <div className=" w-full h-full ">
+                <div className="px-2">
+                    <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                        <div className="flex justify-between w-full">
+                            <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Saved Account Titles</h1>
+                            <div class="flex space-x-4">
+                                <SearchBar
+                                    placeholder="Search Account Title"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    listSource={filteredAccountsData}
+                                />
+                                <AddButton
+                                    onClick={() => setShowModal(true)}
+                                    label="ADD ACCOUNT"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <hr className="border-t border-[#7694D4] my-2 mb-4" />
-                <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-                            <tr>
-                                <th scope="col" className="px-6 py-4 w-72">ACCOUNT TITLE</th>
-                                <th scope="col" className="px-5 py-4 w-48">ACCOUNT CODE</th>
-                                <th scope="col" className="px-4 py-4 w-72">ACCOUNT TYPE</th>
-                                <th scope="col" className="px-6 py-4 w-72"></th>
-                                <th scope="col" className="px-6 py-4 w-48"></th>
-                            </tr>
-                        </thead>
-                    </table>
-                    <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                        <table className='w-full overflow-x-visible text-[14px]'>
 
-                            <tbody>
-                                {filteredAccountsData.map((account) => (
-                                    <tr
-                                        key={account.id}
-                                        className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                                    >
-                                        {/*ACCOUNT TITLE*/}
-                                        <td
-                                            className="table-cell px-6 py-3 w-72"
-                                        >
-                                            {account["AccountTitle"] || "No Title"}
-                                        </td>
-
-                                        {/* Editable Account Code */}
-                                        <td className="table-cell px-6 py-3 w-48">
-                                            {editing.id === account.id && editing.field === "AccountCode" ? (
-                                                <input
-                                                    type="text"
-                                                    value={editing.value}
-                                                    onChange={handleInputChange}
-                                                    className="w-[100px] px-1 py-1 border rounded"
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <span
-                                                    onClick={() => handleEdit(account.id, "AccountCode", account["AccountCode"])}
-                                                    className="cursor-pointer"
-                                                >
-                                                    {account["AccountCode"] || "Not Set"}
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        {/* Editable Account Type */}
-                                        <td className="table-cell px-6 py-3 w-72">
-                                            {editing.id === account.id && editing.field === "AccountType" ? (
-                                                <select
-                                                    value={editing.value}
-                                                    onChange={handleInputChange}
-                                                    className="w-[200px] px-6 py-1 border rounded"
-                                                >
-                                                    <option value="Assets">Assets</option>
-                                                    <option value="Liabilities">Liabilities</option>
-                                                    <option value="Equity">Equity</option>
-                                                    <option value="Revenue">Revenue</option>
-                                                    <option value="Expenses">Expenses</option>
-                                                    <option value="Contra Assets">Contra Assets</option>
-                                                    <option value="Subsidy">Subsidy</option>
-                                                </select>
-                                            ) : (
-                                                <span
-                                                    onClick={() => handleEdit(account.id, "AccountType", account["AccountType"])}
-                                                    className="cursor-pointer"
-                                                >
-                                                    {account["AccountType"] || "Not Set"}
-                                                </span>
-                                            )}
-                                        </td>
-                                        {/* Action buttons */}
-                                        <td className="table-cell px-6 py-3 w-72">
-                                            {editing.id === account.id ? (
-                                                <Fragment>
-                                                    <button
-                                                        onClick={handleSave}
-                                                        className="mr-2 px-4 py-1 bg-blue-500 text-white rounded"
-                                                    >
-                                                        Save
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancel}
-                                                        className="px-4 py-1 bg-red-500 text-white rounded"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </Fragment>
-                                            ) : (
-                                                <span></span>
-                                            )}
-                                        </td>
-
-                                        {/*REMOVE*/}
-                                        <td className="px-6 py-4 text-right w-48">
-                                            <span
-                                                className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Prevent row click event
-                                                    setDeleteAccountID(account.id);
-                                                    setShowDeleteModal(true);
-                                                }}
-                                            >
-                                                Remove
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-
+                <div className="px-2 py-4">
+                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                                <tr>
+                                    <th scope="col" className="px-6 py-4 w-72">ACCOUNT TITLE</th>
+                                    <th scope="col" className="px-5 py-4 w-48">ACCOUNT CODE</th>
+                                    <th scope="col" className="px-4 py-4 w-72">ACCOUNT TYPE</th>
+                                    <th scope="col" className="px-6 py-4 w-72"></th>
+                                    <th scope="col" className="px-6 py-4 w-48"></th>
+                                </tr>
+                            </thead>
                         </table>
+                        <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
+                            <table className='w-full overflow-x-visible text-[14px]'>
+
+                                <tbody>
+                                    {filteredAccountsData.map((account) => (
+                                        <tr
+                                            key={account.id}
+                                            className="w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                        >
+                                            {/*ACCOUNT TITLE*/}
+                                            <td
+                                                className="table-cell px-6 py-3 w-72"
+                                            >
+                                                {account["AccountTitle"] || "No Title"}
+                                            </td>
+
+                                            {/* Editable Account Code */}
+                                            <td className="table-cell px-6 py-3 w-48">
+                                                {editing.id === account.id && editing.field === "AccountCode" ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editing.value}
+                                                        onChange={handleInputChange}
+                                                        className="w-[100px] px-1 py-1 border rounded"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        onClick={() => handleEdit(account.id, "AccountCode", account["AccountCode"])}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {account["AccountCode"] || "Not Set"}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Editable Account Type */}
+                                            <td className="table-cell px-6 py-3 w-72">
+                                                {editing.id === account.id && editing.field === "AccountType" ? (
+                                                    <select
+                                                        value={editing.value}
+                                                        onChange={handleInputChange}
+                                                        className="w-[200px] px-6 py-1 border rounded"
+                                                    >
+                                                        <option value="Assets">Assets</option>
+                                                        <option value="Liabilities">Liabilities</option>
+                                                        <option value="Equity">Equity</option>
+                                                        <option value="Revenue">Revenue</option>
+                                                        <option value="Expenses">Expenses</option>
+                                                        <option value="Contra Assets">Contra Assets</option>
+                                                        <option value="Subsidy">Subsidy</option>
+                                                    </select>
+                                                ) : (
+                                                    <span
+                                                        onClick={() => handleEdit(account.id, "AccountType", account["AccountType"])}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {account["AccountType"] || "Not Set"}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            {/* Action buttons */}
+                                            <td className="table-cell px-6 py-3 w-72">
+                                                {editing.id === account.id ? (
+                                                    <Fragment>
+                                                        <button
+                                                            onClick={handleSave}
+                                                            className="mr-2 px-4 py-1 bg-blue-500 text-white rounded"
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            onClick={handleCancel}
+                                                            className="px-4 py-1 bg-red-500 text-white rounded"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </Fragment>
+                                                ) : (
+                                                    <span></span>
+                                                )}
+                                            </td>
+
+                                            {/*REMOVE*/}
+                                            <td className="px-6 py-4 text-right w-48">
+                                                <span
+                                                    className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent row click event
+                                                        setDeleteAccountID(account.id);
+                                                        setShowDeleteModal(true);
+                                                    }}
+                                                >
+                                                    Remove
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -371,8 +377,8 @@ export default function Accounts() {
             </Modal>
 
 
-                        {/*DELETE MODAL*/}
-                        <Modal isVisible={showDeleteModal}>
+            {/*DELETE MODAL*/}
+            <Modal isVisible={showDeleteModal}>
                 <div class="relative p-4 w-full max-w-md max-h-full">
                     <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
                         <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="popup-modal"

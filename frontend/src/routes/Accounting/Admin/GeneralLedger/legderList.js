@@ -69,7 +69,7 @@ export default function LedgerList() {
                 console.error("Ledger description or year is missing.");
                 return;
             }
-    
+
             // Add to Firestore
             const collectionRef = collection(db, "ledger");
             const docRef = await addDoc(collectionRef, {
@@ -77,7 +77,7 @@ export default function LedgerList() {
                 year: ledgerYear,
                 created_at: new Date(),
             });
-    
+
             // Update local state with the new ledger
             const newLedger = {
                 id: docRef.id,
@@ -86,14 +86,14 @@ export default function LedgerList() {
                 created_at: new Date(),
             };
             setLedgerList((prevLedgerList) => [...prevLedgerList, newLedger]);
-    
+
             // Reset inputs
             setLedgerDescription("");
             setLedgerYear(new Date().getFullYear().toString()); // Reset to current year
-    
+
             // Optionally close modal
             setShowModal(false);
-    
+
             // Show success alert
             setIsSuccess(true);
             setTimeout(() => setIsSuccess(false), 2000);
@@ -141,7 +141,7 @@ export default function LedgerList() {
             {/**---------------------------------------------Alerts--------------------------------------- */}
 
             {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div class="flex items-center">
@@ -157,73 +157,72 @@ export default function LedgerList() {
 
 
 
-
-            <div className="flex justify-between w-full align-middle">
-
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
-                <div class="flex space-x-4">
-                    <AddButton
-                        onClick={() => setShowModal(true)}
-                        label="ADD LEDGER"
-                    />
-
-
-
+            <div className="px-2">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full align-middle">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">General Ledger</h1>
+                        <div class="flex space-x-4">
+                            <AddButton
+                                onClick={() => setShowModal(true)}
+                                label="ADD LEDGER"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
 
-            <hr className="border-t border-[#7694D4] my-2 mb-4" />
-
-            {/*TABLE*/}
-            <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-                        <tr>
-                            <th scope="col" className="px-6 py-4 w-96">DESCRIPTION</th>
-                            <th scope="col" className="px-4 py-4 w-72">Year</th>
-                            <th scope="col" className="pr-6 py-4 w-72 text-center">Actions
-                                <span className="sr-only">View</span>
-                            </th>
-                        </tr>
-                    </thead>
-                </table>
-                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                    <table className='text-[14px]  w-full overflow-x-visible'>
-                        <tbody>
-                            {ledgerList.map((ledger) => (
-                                <tr
-                                    key={ledger.id}
-                                    className=" w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                    onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
-                                >
-                                    <td
-                                        className="table-cell px-6 py-3 w-96 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                    >
-                                        {ledger.description || "No Description"}
-                                    </td>
-                                    <td className="table-cell px-6 py-3 w-72">
-                                        {ledger.year || "N/A"}
-                                    </td>
-                                    <td className="table-cell px-6 py-3 w-72 text-center">
-                                        <span
-                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent row click event
-                                                //deleteLedger(ledger.id); 
-                                                setDeleteLedgerID(ledger.id)// Call delete function
-                                                setShowDeleteModal(true);
-                                            }}
-                                        >
-                                            Remove
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+            <div className="px-2 py-4">
+                <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                            <tr>
+                                <th scope="col" className="px-6 py-4 w-96">DESCRIPTION</th>
+                                <th scope="col" className="px-4 py-4 w-72">Year</th>
+                                <th scope="col" className="pr-6 py-4 w-72 text-center">Actions
+                                    <span className="sr-only">View</span>
+                                </th>
+                            </tr>
+                        </thead>
                     </table>
+                    <div className=' w-full overflow-y-auto max-h-[calc(100vh-240px)]'>
+                        <table className='text-[14px]  w-full overflow-x-visible'>
+                            <tbody>
+                                {ledgerList.map((ledger) => (
+                                    <tr
+                                        key={ledger.id}
+                                        className=" w-full bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                        onClick={() => navigate(`/main/generalLedger/ledgerDetails/${ledger.id}`)}
+                                    >
+                                        <td
+                                            className="table-cell px-6 py-3 w-96 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                        >
+                                            {ledger.description || "No Description"}
+                                        </td>
+                                        <td className="table-cell px-6 py-3 w-72">
+                                            {ledger.year || "N/A"}
+                                        </td>
+                                        <td className="table-cell px-6 py-3 w-72 text-center">
+                                            <span
+                                                className="font-medium text-red-600 dark:text-blue-500 hover:underline"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent row click event
+                                                    //deleteLedger(ledger.id); 
+                                                    setDeleteLedgerID(ledger.id)// Call delete function
+                                                    setShowDeleteModal(true);
+                                                }}
+                                            >
+                                                Remove
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
             {/*MODAL*/}
             <Modal isVisible={showModal}>
                 <div className="bg-white w-[600px] h-60 rounded py-2 px-4">

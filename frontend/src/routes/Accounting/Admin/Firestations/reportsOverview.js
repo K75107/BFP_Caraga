@@ -97,26 +97,26 @@ export default function ReportsOverview() {
     if (userId) {
       // Fetch deposits instead of relying solely on collections
       const submittedDepositsRef = collection(db, 'submittedReportsDeposits', userId, 'deposits');
-  
+
       const unsubscribeDeposits = onSnapshot(submittedDepositsRef, (snapshot) => {
         const depositsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
+
         // Calculate the total deposited amount
         const totalDepositedAmount = depositsList.reduce(
           (acc, deposit) => acc + parseFloat(deposit.depositAmount || 0),
           0
         );
-  
+
         // Update the state for deposited amount
         setTotalDepositedAmount(totalDepositedAmount);
       });
-  
+
       return () => {
         unsubscribeDeposits();
       };
     }
   }, [userId]);
-  
+
 
   const processMonthlyData = (data, amountField, type) => {
     const monthlyTotals = {};
@@ -203,7 +203,7 @@ export default function ReportsOverview() {
   return (
     <Fragment>
       {/**Breadcrumbs */}
-      <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+      <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
           <li class="inline-flex items-center">
             <button onClick={() => navigate("/main/reports/firestationReports")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
@@ -231,61 +231,66 @@ export default function ReportsOverview() {
       </nav>
       {/**Breadcrumbs */}
 
-      <div className="flex flex-col space-y-6 w-full mb-2">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-800">
-            {firestationUsername}
-          </h1>
+      <div className="px-2">
+        <div className="bg-white h-30 px-2 rounded-lg">
+          <div className="flex flex-col space-y-6 w-full px-4 pt-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                {firestationUsername}
+              </h1>
+            </div>
+          </div>
+
+
+          {/* Navigations */}
+          <div className="mb-4 border-b border-gray-200 dark:border-gray-700 bg-white px-2 py-2">
+            <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
+              <li className="me-2" role="presentation">
+                <button
+                  onClick={() => navigate(`/main/reports/overview/${userId}`)}
+                  className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+                  type="button"
+                  role="tab"
+                  aria-controls="profile"
+                  aria-selected="false"
+                >
+                  Overview
+                </button>
+              </li>
+              <li className="me-2" role="presentation">
+                <button
+                  onClick={() => navigate(`/main/reports/collections/${userId}`)}
+                  className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                  type="button"
+                  role="tab"
+                  aria-controls="profile"
+                  aria-selected="false"
+                >
+                  Collections
+                </button>
+              </li>
+              <li className="me-2" role="presentation">
+                <button
+                  onClick={() => navigate(`/main/reports/deposits/${userId}`)}
+                  className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                  type="button"
+                  role="tab"
+                  aria-controls="dashboard"
+                  aria-selected="false"
+                >
+                  Deposits
+                </button>
+              </li>
+              {/* Generate Report Button Inline */}
+              <li className="ml-auto">
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      {/* Navigations */}
-      <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-        <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-styled-tab" role="tablist">
-          <li className="me-2" role="presentation">
-            <button
-              onClick={() => navigate(`/main/reports/overview/${userId}`)}
-              className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-              type="button"
-              role="tab"
-              aria-controls="profile"
-              aria-selected="false"
-            >
-              Overview
-            </button>
-          </li>
-          <li className="me-2" role="presentation">
-            <button
-              onClick={() => navigate(`/main/reports/collections/${userId}`)}
-              className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-              type="button"
-              role="tab"
-              aria-controls="profile"
-              aria-selected="false"
-            >
-              Collections
-            </button>
-          </li>
-          <li className="me-2" role="presentation">
-            <button
-              onClick={() => navigate(`/main/reports/deposits/${userId}`)}
-              className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-              type="button"
-              role="tab"
-              aria-controls="dashboard"
-              aria-selected="false"
-            >
-              Deposits
-            </button>
-          </li>
-          {/* Generate Report Button Inline */}
-          <li className="ml-auto">
-          </li>
-        </ul>
-      </div>
-      <hr className="border-t border-[#7694D4] my-4" />
 
-      <div className="container mx-auto">
+      <div className="container mx-auto px-2 mt-2">
         <div className="grid grid-cols-4">
           <div className="grid gap-6 mb-8">
             {/* Deposits Card */}

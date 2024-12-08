@@ -1156,7 +1156,7 @@ export default function ChangesInEquityDetails() {
             const subHeaderStyle = {
                 font: { bold: true, size: 12, name: 'Times New Roman' },
                 alignment: { horizontal: 'center', vertical: 'middle' },
-                border: { bottom: 'thin'},
+                border: { bottom: 'thin' },
             };
 
             const balanceDataStyle = {
@@ -1261,7 +1261,7 @@ export default function ChangesInEquityDetails() {
                 // Style the row based on its level
                 if (level === 0) {
                     row.getCell(1).style = mainCategoryStyle; // Main category style
-            
+
                     // Add top and bottom borders for main categories
                     [2, 4].forEach((col) => {
                         const cell = row.getCell(col);
@@ -1276,7 +1276,7 @@ export default function ChangesInEquityDetails() {
                     row.getCell(1).style = subCategoryStyle; // Subcategory style
                     [2, 4].forEach((col) => row.getCell(col).style = dataStyle);
                 }
-            
+
 
 
                 // Process child categories
@@ -1340,29 +1340,30 @@ export default function ChangesInEquityDetails() {
                 </div>
             )}
             {/**Breadcrumbs */}
-            <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
-               <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                   <li className="inline-flex classNameitems-center">
-                       <button onClick={() => navigate("/main/changesInEquityMain/changesInEquity")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                           <PiEqualizerFill className="mr-2"></PiEqualizerFill>
-                           Changes in Equity
-                       </button>
-                   </li>
-                   <li aria-current="page">
-                       <div className="flex items-center">
-                           <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                               <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
-                           </svg>
-                           <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{currentcEquity?.description}</span>
-                       </div>
-                   </li>
-               </ol>
-           </nav>
-           {/**Breadcrumbs */}
-            <div className="px-6">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                    <li className="inline-flex classNameitems-center">
+                        <button onClick={() => navigate("/main/changesInEquityMain/changesInEquity")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                            <PiEqualizerFill className="mr-2"></PiEqualizerFill>
+                            Changes in Equity
+                        </button>
+                    </li>
+                    <li aria-current="page">
+                        <div className="flex items-center">
+                            <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
+                            </svg>
+                            <span className="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{currentcEquity?.description}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            {/**Breadcrumbs */}
+
+            <div className="px-2">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
-                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentcEquity?.description || ""}</h1>
                         <div class="flex space-x-4">
                             <AddButton
                                 onClick={() => setShowModal(true)}
@@ -1381,11 +1382,11 @@ export default function ChangesInEquityDetails() {
                     </div>
                 </div>
             </div>
-            <div className="px-6 py-8">
+            <div className="px-2 py-4">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="relative overflow-y-auto sm:rounded-lg bg-white">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
+                    <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
                                 <tr>
                                     <th scope="col" className="py-4 px-6 text-start">Account Description</th>
                                     <th scope="col" className="py-4 ml-6 w-56 text-start">{currentcEquity?.year || ''}</th>
@@ -1394,39 +1395,43 @@ export default function ChangesInEquityDetails() {
                                 </tr>
                             </thead>
                         </table>
-                    </div>
-                    <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
-                    <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
-                            <tbody>
-                                {/* Sortable rows for other categories */}
-                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                    {visibleCategories.map((category) => (
-                                        <SortableRow
-                                            key={category.id}
-                                            category={category}
-                                            handleRightClick={handleRightClick}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </tbody>
-                            <tfoot className="font-bold text-gray-700 dark:bg-gray-800">
-                                {/* Fixed row for Surplus/Deficit */}
-                                <tr className="border-b">
-                                    <td className="px-2 py-3 font-bold text-gray-700">
-                                        Surplus/(Deficit) for the period
-                                    </td>
-                                    <td className="px-2 py-3 font-bold text-gray-700">
-                                        {totalSurplusDeficit?.toLocaleString() || '-'}
-                                    </td>
 
-                                </tr>
-                                <tr>
-                                    <td className="px-2 py-3">Balance</td>
-                                    <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
+                        <div className="w-full overflow-y-auto max-h-[calc(96vh-200px)]">
+                            <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
+                                <tbody>
+                                    {/* Sortable rows for other categories */}
+                                    <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                        {visibleCategories.map((category) => (
+                                            <SortableRow
+                                                key={category.id}
+                                                category={category}
+                                                handleRightClick={handleRightClick}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </tbody>
+                                <tfoot className="font-bold text-gray-700 bg-white">
+                                    {/* Fixed row for Surplus/Deficit */}
+                                    <tr className="border-b">
+                                        <td className="px-2 py-3 font-bold text-gray-700">
+                                            Surplus/(Deficit) for the period
+                                        </td>
+                                        <td className="px-2 py-3 font-bold text-gray-700">
+                                            {totalSurplusDeficit?.toLocaleString() || '-'}
+                                        </td>
+                                        <td className="px-2 py-3">
 
-                                </tr>
-                            </tfoot>
+                                        </td>
+
+                                    </tr>
+                                    <tr>
+                                        <td className="px-2 py-3">Balance</td>
+                                        <td className="px-2 py-3 font-bold text-gray-700">{periodTotal.toLocaleString()}</td>
+                                        <td className="px-2 py-3"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
+                        </div>
                     </div>
                 </DndContext>
             </div>

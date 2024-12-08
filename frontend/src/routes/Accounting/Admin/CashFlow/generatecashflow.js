@@ -5,7 +5,7 @@ export default function CashflowStatement() {
         <Fragment>
             <div className="bg-white h-full py-6 px-8 w-full rounded-lg">
                 <div className="flex justify-between items-center w-full">
-                    <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
+                    <h1 className="text-[25px] text-[#1E1E1E] font-poppins">Cashflow Statement</h1>
                     <div className="flex space-x-3">
                         <button className="bg-[#2196F3] rounded-lg text-white font-poppins py-2 px-3 text-[11px] font-medium">EXPORT</button>
                         <button className="bg-gray-200 rounded-lg text-gray-800 font-poppins py-2 px-3 text-[11px] font-medium">ADD ANOTHER PERIOD</button>

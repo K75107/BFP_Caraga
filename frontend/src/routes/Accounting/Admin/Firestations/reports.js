@@ -6,7 +6,7 @@ export default function Reports() {
 
     return (
         <Fragment>
-            <div className="bg-white h-screen py-8 px-8 w-full rounded-lg">
+            <div className="h-full w-full">
                 <Outlet/>
             </div>
         </Fragment>

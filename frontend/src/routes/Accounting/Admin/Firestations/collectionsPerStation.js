@@ -260,23 +260,23 @@ export default function CollectionsPerStation() {
     // Function to filter the grouped collections based on search query
     const filterGroupedCollections = (groupedCollections, searchQuery) => {
         const filteredGroups = {};
-      
+
         Object.keys(groupedCollections).forEach((groupKey) => {
-          const collections = groupedCollections[groupKey];
-      
-          // Filter collections based on the `nameOfPayor` search query
-          const filteredRows = collections.filter((collection) => {
-            const payorName = collection.nameOfPayor?.toLowerCase() || '';
-            return payorName.includes(searchQuery.toLowerCase());
-          });
-      
-          if (filteredRows.length > 0) {
-            filteredGroups[groupKey] = filteredRows;
-          }
+            const collections = groupedCollections[groupKey];
+
+            // Filter collections based on the `nameOfPayor` search query
+            const filteredRows = collections.filter((collection) => {
+                const payorName = collection.nameOfPayor?.toLowerCase() || '';
+                return payorName.includes(searchQuery.toLowerCase());
+            });
+
+            if (filteredRows.length > 0) {
+                filteredGroups[groupKey] = filteredRows;
+            }
         });
-      
+
         return filteredGroups;
-      };
+    };
 
     // Update filteredGroupedCollections when searchQuery or groupedCollections change
     useEffect(() => {
@@ -294,7 +294,7 @@ export default function CollectionsPerStation() {
         <Fragment>
             {/**Breadcrumbs */}
 
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li class="inline-flex items-center">
                         <button onClick={() => navigate("/main/reports/firestationReports")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
@@ -322,64 +322,68 @@ export default function CollectionsPerStation() {
             </nav>
             {/**Breadcrumbs */}
 
-            <div className="flex flex-col space-y-6 w-full mb-2">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-semibold text-gray-800">
-                        {firestationUsername}
-                    </h1>
+            <div className="px-2">
+                <div className="bg-white h-30 px-2 rounded-lg">
+                    <div className="flex flex-col space-y-6 w-full px-4 pt-4">
+                        <div className="flex justify-between items-center">
+                            <h1 className="text-2xl font-semibold text-gray-800">
+                                {firestationUsername}
+                            </h1>
+                        </div>
+                    </div>
+
+                    {/* Unsubmitted and Submitted */}
+                    <div className="mb-4 border-b border-gray-200  px-2 py-2">
+                        <ul
+                            className="flex flex-wrap -mb-px text-sm font-medium text-center"
+                            id="default-styled-tab"
+                            role="tablist"
+                        >
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/overview/${userId}`)}
+                                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
+                                    id="profile-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="profile"
+                                    aria-selected="false"
+                                >
+                                    Overview
+                                </button>
+                            </li>
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/collections/${userId}`)}
+                                    className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
+                                    id="profile-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="profile"
+                                    aria-selected="false"
+                                >
+                                    Collections
+                                </button>
+                            </li>
+                            <li className="me-2" role="presentation">
+                                <button
+                                    onClick={() => navigate(`/main/reports/deposits/${userId}`)} s
+                                    className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
+                                    id="dashboard-styled-tab"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="dashboard"
+                                    aria-selected="false"
+                                >
+                                    Deposits
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            {/* Unsubmitted and Submitted */}
-            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                <ul
-                    className="flex flex-wrap -mb-px text-sm font-medium text-center"
-                    id="default-styled-tab"
-                    role="tablist"
-                >
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/overview/${userId}`)}
-                            className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100"
-                            id="profile-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="profile"
-                            aria-selected="false"
-                        >
-                            Overview
-                        </button>
-                    </li>
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/collections/${userId}`)}
-                            className="inline-block p-3 border-b-4 text-blue-700 border-blue-700 hover:bg-blue-100"
-                            id="profile-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="profile"
-                            aria-selected="false"
-                        >
-                            Collections
-                        </button>
-                    </li>
-                    <li className="me-2" role="presentation">
-                        <button
-                            onClick={() => navigate(`/main/reports/deposits/${userId}`)} s
-                            className="inline-block p-3 border-b-0 text-black border-blue-700 hover:bg-blue-100 "
-                            id="dashboard-styled-tab"
-                            type="button"
-                            role="tab"
-                            aria-controls="dashboard"
-                            aria-selected="false"
-                        >
-                            Deposits
-                        </button>
-                    </li>
-                </ul>
-            </div>
 
-
-            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-32 right-10">
+            <div className="flex flex-col items-center justify-between  space-y-3 md:flex-row md:space-y-0 md:space-x-4 absolute top-28 right-10">
                 <SearchBar
                     placeholder="Search Payor Name"
                     value={searchQuery}
@@ -497,116 +501,116 @@ export default function CollectionsPerStation() {
 
 
             {/* TABLE */}
-            <div className="flex flex-row">
+            <div className="flex flex-row px-2">
                 <div className="grow bg-white">
                     <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
-                <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
-                        <tr className="text-[12px] h-10">
-                            {columns.map((col) => (
-                                <th key={col.id} scope="col" className={`px-2 py-2 w-[${col.width}]`}>
-                                    {col.label}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {Object.keys(filteredGroupedCollections).map((date) => {
-                            const totalAmount = filteredGroupedCollections[date].reduce(
-                                (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
-                                0
-                            );
-
-                            return (
-                                <React.Fragment key={date}>
-                                    <tr
-                                        className="text-[12px] bg-gray-50 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                                        onClick={() => toggleGroup(date)}
-                                    >
+                        <div className="w-full overflow-y-auto max-h-[calc(96vh-160px)]">
+                            <table className=" w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                                <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky" style={{ zIndex: 1 }}>
+                                    <tr className="text-[12px] h-10">
                                         {columns.map((col) => (
-                                            <td
-                                                key={col.id}
-                                                className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative`}
-                                            >
-                                                {selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection'
-                                                    ? filteredGroupedCollections[date][0]?.natureOfCollection
-                                                    : selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted'
-                                                        ? date
-                                                        : ''}
-                                                {(selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted') ||
-                                                    (selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection') ? (
-                                                    <span className="absolute right-[-15px] top-1/2 transform -translate-y-1/2">
-                                                        {expandedGroups[date] ? (
-                                                            <MdKeyboardArrowDown size={20} />
-                                                        ) : (
-                                                            <MdKeyboardArrowRight size={20} />
-                                                        )}
-                                                    </span>
-                                                ) : null}
-                                                {col.id === 'collectionAmount' && (
-                                                    <span>{totalAmount.toFixed(2)}
-                                                    </span>
-                                                )}
-                                            </td>
+                                            <th key={col.id} scope="col" className={`px-2 py-2 w-[${col.width}]`}>
+                                                {col.label}
+                                            </th>
                                         ))}
                                     </tr>
+                                </thead>
 
-                                    {expandedGroups[date] &&
-                                        filteredGroupedCollections[date]
-                                            // Apply the deposit status filter before mapping
-                                            .filter((collection) => {
-                                                if (selectedDepositFilter === 'all') return true;
-                                                if (selectedDepositFilter === 'deposited') return collection.depositStatus;
-                                                if (selectedDepositFilter === 'undeposited') return !collection.depositStatus;
-                                            })
-                                            .map((collection) => {
-                                                const submittedDate = collection.date_submitted?.toDate();
-                                                let formattedDate;
+                                <tbody>
+                                    {Object.keys(filteredGroupedCollections).map((date) => {
+                                        const totalAmount = filteredGroupedCollections[date].reduce(
+                                            (sum, collection) => sum + parseFloat(collection.collectionAmount || 0),
+                                            0
+                                        );
 
-                                                if (selectedCategory === 'year') {
-                                                    formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                                                } else if (selectedCategory === 'month') {
-                                                    formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
-                                                } else if (selectedCategory === 'natureOfCollection') {
-                                                    formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                                                } else {
-                                                    formattedDate = '';
-                                                }
+                                        return (
+                                            <React.Fragment key={date}>
+                                                <tr
+                                                    className="text-[12px] bg-blue-100 h-8 border-b w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                                    onClick={() => toggleGroup(date)}
+                                                >
+                                                    {columns.map((col) => (
+                                                        <td
+                                                            key={col.id}
+                                                            className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] font-semibold text-gray-700 dark:text-gray-300 relative`}
+                                                        >
+                                                            {selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection'
+                                                                ? filteredGroupedCollections[date][0]?.natureOfCollection
+                                                                : selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted'
+                                                                    ? date
+                                                                    : ''}
+                                                            {(selectedCategory !== 'natureOfCollection' && col.id === 'dateSubmitted') ||
+                                                                (selectedCategory === 'natureOfCollection' && col.id === 'natureOfCollection') ? (
+                                                                <span className="absolute right-[-15px] top-1/2 transform -translate-y-1/2">
+                                                                    {expandedGroups[date] ? (
+                                                                        <MdKeyboardArrowDown size={20} />
+                                                                    ) : (
+                                                                        <MdKeyboardArrowRight size={20} />
+                                                                    )}
+                                                                </span>
+                                                            ) : null}
+                                                            {col.id === 'collectionAmount' && (
+                                                                <span>{totalAmount.toFixed(2)}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    ))}
+                                                </tr>
 
-                                                return (
-                                                    <tr
-                                                        key={collection.id}
-                                                        className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
-                                                    >
-                                                        {columns.map((col) => (
-                                                            <td
-                                                                key={col.id}
-                                                                className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] ${col.id === 'collectionAmount' || col.id === 'dateSubmitted' || col.id === 'natureOfCollection' ? 'pl-5' : ''
-                                                                    }`}
-                                                            >
-                                                                {col.id === 'natureOfCollection' && selectedCategory === 'natureOfCollection'
-                                                                    ? '' // Show empty string if col.id is 'natureOfCollection'
-                                                                    : col.id === 'dateSubmitted'
-                                                                        ? formattedDate
-                                                                        : col.id === 'depositStatus'
-                                                                            ? (
-                                                                                <span className={collection.depositStatus ? 'text-green-600' : 'text-red-600'}>
-                                                                                    {collection.depositStatus ? 'Deposited' : 'Undeposited'}
-                                                                                </span>
-                                                                            )
-                                                                            : collection[col.id] || ''} {/* Show the value or empty string */}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                );
-                                            })}
-                                </React.Fragment>
-                            );
-                        })}
-                    </tbody>
-                    </table>
+                                                {expandedGroups[date] &&
+                                                    filteredGroupedCollections[date]
+                                                        // Apply the deposit status filter before mapping
+                                                        .filter((collection) => {
+                                                            if (selectedDepositFilter === 'all') return true;
+                                                            if (selectedDepositFilter === 'deposited') return collection.depositStatus;
+                                                            if (selectedDepositFilter === 'undeposited') return !collection.depositStatus;
+                                                        })
+                                                        .map((collection) => {
+                                                            const submittedDate = collection.date_submitted?.toDate();
+                                                            let formattedDate;
+
+                                                            if (selectedCategory === 'year') {
+                                                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                                            } else if (selectedCategory === 'month') {
+                                                                formattedDate = submittedDate.toLocaleDateString('en-US', { day: 'numeric' });
+                                                            } else if (selectedCategory === 'natureOfCollection') {
+                                                                formattedDate = submittedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                                                            } else {
+                                                                formattedDate = '';
+                                                            }
+
+                                                            return (
+                                                                <tr
+                                                                    key={collection.id}
+                                                                    className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                                                                >
+                                                                    {columns.map((col) => (
+                                                                        <td
+                                                                            key={col.id}
+                                                                            className={`table-cell px-2 py-2 w-[${col.width}] text-[12px] ${col.id === 'collectionAmount' || col.id === 'dateSubmitted' || col.id === 'natureOfCollection' ? 'pl-5' : ''
+                                                                                }`}
+                                                                        >
+                                                                            {col.id === 'natureOfCollection' && selectedCategory === 'natureOfCollection'
+                                                                                ? '' // Show empty string if col.id is 'natureOfCollection'
+                                                                                : col.id === 'dateSubmitted'
+                                                                                    ? formattedDate
+                                                                                    : col.id === 'depositStatus'
+                                                                                        ? (
+                                                                                            <span className={collection.depositStatus ? 'text-green-600' : 'text-red-600'}>
+                                                                                                {collection.depositStatus ? 'Deposited' : 'Undeposited'}
+                                                                                            </span>
+                                                                                        )
+                                                                                        : collection[col.id] || ''} {/* Show the value or empty string */}
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            );
+                                                        })}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

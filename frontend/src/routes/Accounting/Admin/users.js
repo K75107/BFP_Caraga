@@ -64,7 +64,7 @@ export default function Users() {
   const [selectedCityMunicipality, setSelectedCityMunicipality] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
-    useEffect(() => {
+  useEffect(() => {
     if (selectedUser) {
       setEmail(selectedUser.email || '');
       setUsername(selectedUser.username || '');
@@ -72,48 +72,48 @@ export default function Users() {
       setSelectedRegion(selectedUser.region || '');
       setSelectedProvince(selectedUser.province || '');
       setSelectedCityMunicipality(selectedUser.municipalityCity || '');
-      }
-    }, [selectedUser]);
+    }
+  }, [selectedUser]);
 
-      // Function to delete a user
-      const deleteUser = async (userId) => {
-        try {
-          if (!userId) {
-            console.error('User ID is missing!');
-            return;
-          }
-      
-          // Log the user ID for debugging purposes
-          console.log('Deleting user with ID:', userId);
-      
-          // Perform the delete operation
-          const response = await axios.delete(`https://bfp-caraga-2.onrender.com/delete-user/${userId}`);
-          
-          if (response.status === 200) {
-            console.log('User deleted successfully:', response.data);
-            
-            // Update UI after deleting
-            setUserList((prevUsersList) => prevUsersList.filter((user) => user.id !== userId));
-            setIsSuccess(true);
-            setTimeout(() => setIsSuccess(false), 2000);
-          }
-      
-        } catch (err) {
-          console.error('Error deleting user:', err);
-          setIsError(true);
-          setTimeout(() => setIsError(false), 2000);
-        }
-      };
-      
-      
-      
+  // Function to delete a user
+  const deleteUser = async (userId) => {
+    try {
+      if (!userId) {
+        console.error('User ID is missing!');
+        return;
+      }
+
+      // Log the user ID for debugging purposes
+      console.log('Deleting user with ID:', userId);
+
+      // Perform the delete operation
+      const response = await axios.delete(`https://bfp-caraga-2.onrender.com/delete-user/${userId}`);
+
+      if (response.status === 200) {
+        console.log('User deleted successfully:', response.data);
+
+        // Update UI after deleting
+        setUserList((prevUsersList) => prevUsersList.filter((user) => user.id !== userId));
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 2000);
+      }
+
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setIsError(true);
+      setTimeout(() => setIsError(false), 2000);
+    }
+  };
+
+
+
 
   useEffect(() => {
     const filteredUsers = usersList.filter((users) =>
-        users.username.toLowerCase().includes(searchQuery.toLowerCase())
+      users.username.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredUsersList(filteredUsers);
-}, [searchQuery, usersList]);
+  }, [searchQuery, usersList]);
 
 
   //Get User Data from firebase
@@ -127,23 +127,23 @@ export default function Users() {
           id: doc.id,
           ...doc.data(),
         }));
-        
+
         // Set the initial user list from Firestore
         setUserList(usersData);
-  
+
         // Retrieve active users from Realtime Database
         const usersRef = ref(realtimeDb, "status");
         onValue(usersRef, (snapshot) => {
           const data = snapshot.val();
-          
+
           if (data) {
             // Format active users from Realtime Database as an object for easier lookup
             const activeUsersMap = Object.fromEntries(
               Object.entries(data).map(([key, value]) => [key, { ...value, id: key }])
             );
-  
+
             // Merge Firestore users with status from Realtime Database
-            setUserList(prevList => 
+            setUserList(prevList =>
               prevList.map(user => ({
                 ...user,
                 isActive: activeUsersMap[user.id]?.isActive || false
@@ -155,53 +155,53 @@ export default function Users() {
         console.error("Error retrieving user data:", err);
       }
     };
-  
+
     getUserList();
   }, []);
-  
-console.log(usersList)
-  
 
-const handleAddUser = async () => {
-  try {
-    if (!email || !password || !username || !usertype) {
+  console.log(usersList)
+
+
+  const handleAddUser = async () => {
+    try {
+      if (!email || !password || !username || !usertype) {
+        setIsError(true);
+        console.error('Missing required fields.');
+        return;
+      }
+
+      const userData = {
+        email,
+        password,
+        username,
+        region: selectedRegion,
+        province: selectedProvince,
+        municipalityCity: selectedCityMunicipality,
+        usertype,
+        isActive: false,
+      };
+
+      const response = await axios.post('https://bfp-caraga-2.onrender.com/add-user', userData);
+
+      if (response.status === 200) {
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error adding user: ', error.message);
       setIsError(true);
-      console.error('Missing required fields.');
-      return;
+      setTimeout(() => setIsError(false), 2000);
+    } finally {
+      setShowModal(false);
+      setEmail('');
+      setPassword('');
+      setUsername('');
+      setSelectedRegion('');
+      setSelectedProvince('');
+      setSelectedCityMunicipality('');
+      setUsertype('');
     }
-
-    const userData = {
-      email,
-      password,
-      username,
-      region: selectedRegion,
-      province: selectedProvince,
-      municipalityCity: selectedCityMunicipality,
-      usertype,
-      isActive: false,
-    };
-
-    const response = await axios.post('https://bfp-caraga-2.onrender.com/add-user', userData);
-
-    if (response.status === 200) {
-      setIsSuccess(true);
-      setTimeout(() => setIsSuccess(false), 2000);
-    }
-  } catch (error) {
-    console.error('Error adding user: ', error.message);
-    setIsError(true);
-    setTimeout(() => setIsError(false), 2000);
-  } finally {
-    setShowModal(false);
-    setEmail('');
-    setPassword('');
-    setUsername('');
-    setSelectedRegion('');
-    setSelectedProvince('');
-    setSelectedCityMunicipality('');
-    setUsertype('');
-  }
-};
+  };
 
   return (
     <Fragment>
@@ -218,107 +218,110 @@ const handleAddUser = async () => {
       )}
       {/**---------------------------------------------Alerts--------------------------------------- */}
 
-      <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
-        <div className="flex justify-between w-full">
-          <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Manage Users</h1>
-          <div class="flex space-x-4">
-          <SearchBar
-              placeholder="Search User"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              listSource={filteredUsersList}
-              />
-            <AddButton
-              onClick={() => setShowModal(true)}
-              label="ADD USER"
-            />
+      <div className="h-full w-full">
+        <div className="px-2">
+          <div className="bg-white h-30 py-6 px-8 rounded-lg">
+            <div className="flex justify-between w-full">
+              <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Manage Users</h1>
+              <div class="flex space-x-4">
+                <SearchBar
+                  placeholder="Search User"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  listSource={filteredUsersList}
+                />
+                <AddButton
+                  onClick={() => setShowModal(true)}
+                  label="ADD USER"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <hr className="border-t border-[#7694D4] my-2 mb-4" />
 
-        {/* TABLE */}
-        <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-              <tr>
-                <th scope="col" className="px-6 py-4 ">USER</th>
-                <th scope="col" className="px-6 py-4">LOCATION</th>
-                <th scope="col" className="px-6 py-4">EMAIL</th>
-                <th scope="col" className="px-6 py-4">USERTYPE</th>
-                <th scope="col" className="px-6 py-4">ACTIVE</th>
-                <th scope="col" className="px-6 py-4"></th>
-              </tr>
-            </thead>
-          </table>
-              <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                  <table className='text-[14px]  w-full overflow-x-visible'>
-                      <tbody>
-                      {filteredUsersList
-                        .sort((a, b) => (a.usertype === 'admin' ? -1 : b.usertype === 'admin' ? 1 : 0)) // Admins first
-                        .map((user, index) => (
-                          <tr
-                            key={index}
-                            className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${
-                              user.usertype === 'admin' ? 'cursor-default' : 'cursor-default'
-                            }`}
-                        >
-                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
-                              <div
-                                className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
-                                style={{
-                                  backgroundColor:
-                                    user?.province === 'Agusan del Norte'
-                                      ? 'blue'
-                                      : user?.province === 'Agusan del Sur'
-                                      ? 'red'
-                                      : user?.province === 'Dinagat Islands'
+        <div className="px-2 py-4">
+          <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+              <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                <tr>
+                  <th scope="col" className="px-6 py-4 w-80 ">USER</th>
+                  <th scope="col" className="px-6 py-4 w-72">LOCATION</th>
+                  <th scope="col" className="px-6 py-4 w-72">EMAIL</th>
+                  <th scope="col" className="px-6 py-4 w-72">USERTYPE</th>
+                  <th scope="col" className="px-6 py-4 w-32">ACTIVE</th>
+                  <th scope="col" className="px-6 py-4 w-32"></th>
+                </tr>
+              </thead>
+            </table>
+
+            <div className=' w-full overflow-y-auto max-h-[calc(100vh-240px)]'>
+              <table className='text-[14px]  w-full overflow-x-visible'>
+                <tbody>
+                  {filteredUsersList
+                    .sort((a, b) => (a.usertype === 'admin' ? -1 : b.usertype === 'admin' ? 1 : 0)) // Admins first
+                    .map((user, index) => (
+                      <tr
+                        key={index}
+                        className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${user.usertype === 'admin' ? 'cursor-default' : 'cursor-default'
+                          }`}
+                      >
+                        <td className="px-6 py-2 w-80 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
+                          <div
+                            className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
+                            style={{
+                              backgroundColor:
+                                user?.province === 'Agusan del Norte'
+                                  ? 'blue'
+                                  : user?.province === 'Agusan del Sur'
+                                    ? 'red'
+                                    : user?.province === 'Dinagat Islands'
                                       ? 'brown'
                                       : user?.province === 'Surigao del Norte'
-                                      ? 'orange'
-                                      : user?.province === 'Surigao del Sur'
-                                      ? 'violet'
-                                      : 'gray', // Default color
-                                }}
-                              >
-                                {user?.username?.charAt(0).toUpperCase()}
-                              </div>
-                              {user?.username || 'Unknown'}
-                            </td>
-                            <td className="px-6 py-2">{user.region + ', ' + user.province + ', ' + user.municipalityCity}</td>
-                            <td className="px-6 py-2">{user?.email || 'N/A'}</td>
-                            <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                              {user?.usertype || 'N/A'}
-                            </td>
-                            <td className="px-6 py-2">
-                              <span
-                                className={`inline-block w-3 h-3 rounded-full ${
-                                  user?.isActive ? 'bg-green-500' : 'bg-red-500'
-                                }`}
-                              ></span>
-                            </td>
-                            <td className="table-cell px-6 py-3 w-72 text-center">
-                            {user.usertype !== 'admin' && (
-                              <span
-                                className="font-medium text-red-600 hover:underline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteUserID(user.id);
-                                  setShowDeleteModal(true);
-                                }}
-                              >
-                                Remove
-                              </span>
-                            )}
+                                        ? 'orange'
+                                        : user?.province === 'Surigao del Sur'
+                                          ? 'violet'
+                                          : 'gray', // Default color
+                            }}
+                          >
+                            {user?.username?.charAt(0).toUpperCase()}
+                          </div>
+                          {user?.username || 'Unknown'}
+                        </td>
+                        <td className="px-6 py-2 w-72">{user.region + ', ' + user.province + ', ' + user.municipalityCity || ''}</td>
+                        <td className="px-6 py-2 w-72">{user?.email || 'N/A'}</td>
+                        <td className="px-6 py-2 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                          {user?.usertype || 'N/A'}
+                        </td>
+                        <td className="px-6 py-2 w-32">
+                          <span
+                            className={`inline-block w-3 h-3 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'
+                              }`}
+                          ></span>
+                        </td>
+                        <td className="table-cell px-6 py-3 w-32 text-center">
+                          {user.usertype !== 'admin' && (
+                            <span
+                              className="font-medium text-red-600 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteUserID(user.id);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              Remove
+                            </span>
+                          )}
 
-                          </td>
-                        </tr>
-                      ))}
-                        </tbody>
-                    </table>
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
-            </div>
+          </div>
+        </div>
+      </div>
       {/* MODAL */}
       <Modal isVisible={showModal}>
         <div className="bg-white w-[450px] h-auto rounded py-4 px-6">
@@ -480,32 +483,32 @@ const handleAddUser = async () => {
         </div>
       </Modal>
 
-            {/*DELETE MODAL*/}
-            <Modal isVisible={showDeleteModal}>
-                <div class="relative p-4 w-full max-w-md max-h-full">
-                    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                        <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="popup-modal"
-                            onClick={() => setShowDeleteModal(false)}>
-                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                            </svg>
-                            <span class="sr-only">Close modal</span>
-                        </button>
-                        <div class="p-4 md:p-5 text-center">
-                            <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                            <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this User?</h3>
-                            <button data-modal-hide="popup-modal" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
-                                onClick={() => deleteUser(deleteUserID) & setShowDeleteModal(false)}>
-                                Yes, I'm sure
-                            </button>
-                            <button data-modal-hide="popup-modal" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-                                onClick={() => setShowDeleteModal(false)}>No, cancel</button>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
+      {/*DELETE MODAL*/}
+      <Modal isVisible={showDeleteModal}>
+        <div class="relative p-4 w-full max-w-md max-h-full">
+          <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <button type="button" class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="popup-modal"
+              onClick={() => setShowDeleteModal(false)}>
+              <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+              </svg>
+              <span class="sr-only">Close modal</span>
+            </button>
+            <div class="p-4 md:p-5 text-center">
+              <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Are you sure you want to delete this User?</h3>
+              <button data-modal-hide="popup-modal" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center"
+                onClick={() => deleteUser(deleteUserID) & setShowDeleteModal(false)}>
+                Yes, I'm sure
+              </button>
+              <button data-modal-hide="popup-modal" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                onClick={() => setShowDeleteModal(false)}>No, cancel</button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </Fragment>
   );
 }

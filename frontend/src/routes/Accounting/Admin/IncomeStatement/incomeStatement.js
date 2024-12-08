@@ -6,7 +6,7 @@ export default function IncomeStatement() {
 
     return (
         <Fragment>
-            <div className="bg-white h-full py-8 px-8 w-full rounded-lg">
+            <div className="h-full w-full ">
                 <Outlet/>
             </div>
         </Fragment>

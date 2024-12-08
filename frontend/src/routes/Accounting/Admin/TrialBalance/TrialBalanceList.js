@@ -120,7 +120,7 @@ export default function TrialBalanceList() {
     return (
         <Fragment>
             {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div class="flex items-center">
@@ -134,78 +134,83 @@ export default function TrialBalanceList() {
             </nav>
             {/**Breadcrumbs */}
 
-
-            <div className="flex justify-between w-full">
-                <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Trial Balance</h1>
-                <div class="flex space-x-4">
-                    <AddButton
-                        onClick={() => {
-                            setCurrentModal(1);
-                            setShowModal(true);
-                        }}
-                        label="GENERATE TRIAL BALANCE"
-                    />
+            <div className="px-2">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex justify-between w-full">
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Trial Balance</h1>
+                        <div class="flex space-x-4">
+                            <AddButton
+                                onClick={() => {
+                                    setCurrentModal(1);
+                                    setShowModal(true);
+                                }}
+                                label="GENERATE TRIAL BALANCE"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <hr className="border-t border-[#7694D4] my-2 mb-4" />
-            <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                {/* TABLE */}
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-                        <tr>
-                            <th scope="col" className="px-6 py-4 w-72">
-                                DESCRIPTION
-                            </th>
-                            <th scope="col" className="px-5 py-4 w-72">
-                                Start Date
-                            </th>
-                            <th scope="col" className="px-4 py-4 w-72">
-                                End Date
-                            </th>
-                            <th scope="col" className="pr-8 py-4 w-72 text-center">
-                                ACTIONS
-                            </th>
-                        </tr>
-                    </thead>
-                </table>
-                <div className=' w-full overflow-y-scroll h-[calc(100vh-240px)]'>
-                    <table className='w-full overflow-x-visible text-[14px]'>
-                        <tbody>
-                            {trialBalanceList.map((trialbalance) => (
-                                <tr
-                                    key={trialbalance.id}
-                                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
-                                    // Uncomment and implement navigation if needed
-                                    onClick={() => navigate(`/main/TrialBalance/TrialBalanceDetails/${trialbalance.id}`)}
-                                >
-                                    <td
-                                        className="table-cell px-6 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                                    >
-                                        {trialbalance.description || "No Description"}
-                                    </td>
-                                    <td className="table-cell px-6 py-3 w-72">
-                                        {trialbalance.start_date ? new Date(trialbalance.start_date.seconds * 1000).toLocaleDateString() : "N/A"}
-                                    </td>
-                                    <td className="table-cell px-6 py-3 w-72">
-                                        {trialbalance.end_date ? new Date(trialbalance.end_date.seconds * 1000).toLocaleDateString() : "N/A"}
-                                    </td>
-                                    <td className="table-cell px-6 py-3 w-72 text-center">
-                                        <span
-                                            className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent row click event
-                                                setDeleteTrialBalanceID(trialbalance.id); // Set ID to delete
-                                                setShowDeleteModal(true);
-                                            }}
-                                        >
-                                            Remove
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+
+            <div className="px-2 py-4">
+                <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                    <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                            <tr>
+                                <th scope="col" className="px-6 py-4 w-72">
+                                    DESCRIPTION
+                                </th>
+                                <th scope="col" className="px-5 py-4 w-72">
+                                    Start Date
+                                </th>
+                                <th scope="col" className="px-4 py-4 w-72">
+                                    End Date
+                                </th>
+                                <th scope="col" className="pr-8 py-4 w-72 text-center">
+                                    ACTIONS
+                                </th>
+                            </tr>
+                        </thead>
                     </table>
+
+                    <div className=' w-full overflow-y-auto max-h-[calc(100vh-240px)]'>
+                        <table className='w-full overflow-x-visible text-[14px]'>
+                            <tbody>
+                                {trialBalanceList.map((trialbalance) => (
+                                    <tr
+                                        key={trialbalance.id}
+                                        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+                                        // Uncomment and implement navigation if needed
+                                        onClick={() => navigate(`/main/TrialBalance/TrialBalanceDetails/${trialbalance.id}`)}
+                                    >
+                                        <td
+                                            className="table-cell px-6 py-3 w-72 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                        >
+                                            {trialbalance.description || "No Description"}
+                                        </td>
+                                        <td className="table-cell px-6 py-3 w-72">
+                                            {trialbalance.start_date ? new Date(trialbalance.start_date.seconds * 1000).toLocaleDateString() : "N/A"}
+                                        </td>
+                                        <td className="table-cell px-6 py-3 w-72">
+                                            {trialbalance.end_date ? new Date(trialbalance.end_date.seconds * 1000).toLocaleDateString() : "N/A"}
+                                        </td>
+                                        <td className="table-cell px-6 py-3 w-72 text-center">
+                                            <span
+                                                className="font-medium text-red-600 dark:text-blue-500 hover:underline cursor-pointer"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent row click event
+                                                    setDeleteTrialBalanceID(trialbalance.id); // Set ID to delete
+                                                    setShowDeleteModal(true);
+                                                }}
+                                            >
+                                                Remove
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

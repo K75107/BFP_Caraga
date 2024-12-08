@@ -772,7 +772,7 @@ export default function FirestationReports() {
             worksheet.getCell(`A${currentRow}`).font = { bold: true };
             worksheet.getCell(`A${currentRow}`).alignment = { horizontal: "center" };
 
-           
+
             // Add subtotals in collection columns
             for (let colIndex = 3; colIndex <= 23; colIndex++) {
                 const subtotalCell = worksheet.getCell(currentRow, colIndex);
@@ -806,9 +806,9 @@ export default function FirestationReports() {
             const subtotalCell = worksheet.getCell(currentRow, colIndex);
             const subtotalFormula = subtotalRows.map(row => `${String.fromCharCode(64 + colIndex)}${row}`).join(",");
             const formula = `SUM(${subtotalFormula})`; // Sum only the rows with subtotals for each province
-    
+
             subtotalCell.value = { formula };
-    
+
             subtotalCell.value = {
                 formula: `IF(${formula}=0, "-", ${formula})`, // Show dash if result is 0
             };
@@ -915,7 +915,7 @@ export default function FirestationReports() {
     return (
         <Fragment>
             {/**Breadcrumbs */}
-            <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div class="flex items-center">
@@ -928,151 +928,141 @@ export default function FirestationReports() {
                 </ol>
             </nav>
             {/**Breadcrumbs */}
+            <div className="px-2">
+                <div className="bg-white h-30 py-6 px-8 rounded-lg">
+                    <div className="flex flex-col space-y-6 w-full mb-2">
+                        <div className="flex justify-between items-center">
+                            <h1 className="text-2xl font-semibold text-gray-800">
+                                Fire Station Reports
+                            </h1>
+                            <div class="flex space-x-4">
+                                <SearchBar
+                                    placeholder="Search Firestation"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    listSource={filteredUsersData}
+                                />
 
-            <div className="flex flex-col space-y-6 w-full mb-2">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-semibold text-gray-800">
-                        Fire Station Reports
-                    </h1>
-                    <div class="flex space-x-4">
-                        <SearchBar
-                            placeholder="Search Firestation"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            listSource={filteredUsersData}
-                        />
+                                {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
+                                {/* Export Dropdown */}
+                                <Dropdown
+                                    label={
+                                        <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                                            <BiExport className="mr-2 text-[15px] font-bold" />
+                                            <span className="mr-2 font-medium">Export</span>
+                                            <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                                        </div>
+                                    }
+                                    dismissOnClick={false}
+                                    inline={true}
+                                    arrowIcon={false} // Disabled default arrow icon
+                                    className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                                >
+                                    <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                                        Export by Date
+                                    </h6>
+                                    <hr className="border-t bordergray-50 my-1" />
 
-                        {/**FOR FILTERS ------------------------------------------------------------------------------------------- */}
-                        {/* Export Dropdown */}
-                        <Dropdown
-                            label={
-                                <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
-                                    <BiExport className="mr-2 text-[15px] font-bold" />
-                                    <span className="mr-2 font-medium">Export</span>
-                                    <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
-                                </div>
-                            }
-                            dismissOnClick={false}
-                            inline={true}
-                            arrowIcon={false} // Disabled default arrow icon
-                            className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-                        >
-                            <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
-                                Export by Date
-                            </h6>
-                            <hr className="border-t bordergray-50 my-1" />
+                                    <div className="px-3 py-1 flex flex-row justify-between">
+                                        <div className='px-3 py-1'>
+                                            <DatePicker
+                                                selected={startExportDate}
+                                                onChange={(date) => setStartExportDate(date)}
+                                                placeholderText="Start Date"
+                                                dateFormat="yyyy-MM-dd"
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                                className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                                            />
+                                        </div>
+                                        <div className='px-3 py-1'>
+                                            <DatePicker
+                                                selected={endExportDate}
+                                                onChange={(date) => setEndExportDate(date)}
+                                                placeholderText="End Date"
+                                                dateFormat="yyyy-MM-dd"
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                                className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                                            />
+                                        </div>
 
-                            <div className="px-3 py-1 flex flex-row justify-between">
-                                <div className='px-3 py-1'>
-                                    <DatePicker
-                                        selected={startExportDate}
-                                        onChange={(date) => setStartExportDate(date)}
-                                        placeholderText="Start Date"
-                                        dateFormat="yyyy-MM-dd"
-                                        onKeyDown={(e) => e.stopPropagation()}
-                                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                                    />
-                                </div>
-                                <div className='px-3 py-1'>
-                                    <DatePicker
-                                        selected={endExportDate}
-                                        onChange={(date) => setEndExportDate(date)}
-                                        placeholderText="End Date"
-                                        dateFormat="yyyy-MM-dd"
-                                        onKeyDown={(e) => e.stopPropagation()}
-                                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                                    />
-                                </div>
+                                        <div className='px-3 py-1'>
+                                            <ExportButton
+                                                label="EXPORT"
+                                                onClick={exportToExcel}
+                                            />
+                                        </div>
+                                    </div>
+                                </Dropdown>
 
-                                <div className='px-3 py-1'>
-                                    <ExportButton
-                                        label="EXPORT"
-                                        onClick={exportToExcel}
-                                    />
-                                </div>
                             </div>
-                        </Dropdown>
-
+                        </div>
                     </div>
                 </div>
             </div>
+            <div className="px-2 py-4">
+                <div className="flex flex-row">
+                    <div className="grow bg-white">
+                        <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
+                            <div className=' w-full overflow-y-auto max-h-[calc(100vh-240px)]'>
+                                <table className="w-full text-left text-black-700 ">
+                                    <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-4 w-[140px]">Province</th>
+                                            <th scope="col" className="px-6 py-4 w-[120px]">Firestation</th>
+                                            <th scope="col" className="px-6 py-4 w-[170px]">Location</th>
+                                            <th scope="col" className="px-6 py-4 w-[130px]">Total Collections</th>
+                                            <th scope="col" className="px-6 py-4 w-[130px]">Total Deposits</th>
 
-
-
-
-
-
-
-
-
-
-
-            <hr className="border-t border-[#7694D4] my-2 mb-4" />
-
-
-
-            <div className="flex flex-row">
-                <div className="grow bg-white">
-                    <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
-                        <div className="w-full overflow-y-scroll h-[calc(96vh-160px)]">
-                            <table className="w-full text-left text-black-700 ">
-                                <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-4 w-[140px]">Province</th>
-                                        <th scope="col" className="px-6 py-4 w-[120px]">Firestation</th>
-                                        <th scope="col" className="px-6 py-4 w-[170px]">Location</th>
-                                        <th scope="col" className="px-6 py-4 w-[130px]">Total Collections</th>
-                                        <th scope="col" className="px-6 py-4 w-[130px]">Total Deposits</th>
-                                        <th scope="col" className="px-6 py-4 w-[130px]">Submission Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {Object.entries(filteredGroupedData).map(([province, collections]) => (
-                                        <Fragment key={province}>
-                                            <tr
-                                                className=" text-[14px] bg-gray-100 h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
-                                                onClick={() => toggleProvince(province)}
-                                            >
-                                                <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2">
-                                                    {province}
-
-                                                    {toggledRows[province] ? (
-                                                        <MdKeyboardArrowDown size={20} style={{ display: "inline" }} />
-                                                    ) : (
-                                                        <MdKeyboardArrowRight size={20} style={{ display: "inline" }} />
-                                                    )}
-
-                                                </td>
-                                                <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-                                                <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
-
-                                            </tr>
-
-                                            {toggledRows[province] && collections.map((collection) => (
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {Object.entries(filteredGroupedData).map(([province, collections]) => (
+                                            <Fragment key={province}>
                                                 <tr
-                                                    key={collection.id}
-                                                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer h-8"
-                                                    onClick={() => navigate(`/main/reports/overview/${collection.id}`)}
+                                                    className=" text-[14px] bg-white h-8 border-b  w-full dark:bg-gray-700 dark:border-gray-700 cursor-pointer"
+                                                    onClick={() => toggleProvince(province)}
                                                 >
-                                                    <td className="text-[14px] px-6 py-2 w-[120px]"></td>
-                                                    <td className="text-[14px] px-6 py-2 w-[120px]">
-                                                        {collection.username}
+                                                    <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2">
+                                                        {province}
+
+                                                        {toggledRows[province] ? (
+                                                            <MdKeyboardArrowDown size={20} style={{ display: "inline" }} />
+                                                        ) : (
+                                                            <MdKeyboardArrowRight size={20} style={{ display: "inline" }} />
+                                                        )}
+
                                                     </td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]">
-                                                        {collection.province + ', ' + collection.municipalityCity}
-                                                    </td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalCollections(collection.username).toLocaleString()}</td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalDeposits(collection.username).toLocaleString()}</td>
-                                                    <td className="text-[14px] px-6 py-2 w-[150px]"></td>
+                                                    <td className=" table-cell px-6 py-2 w-[120px] text-[14px] h-8 px-2"></td>
+                                                    <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                    <td className=" table-cell px-2 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+                                                    <td className=" table-cell px-6 py-2 w-[150px] text-[14px] h-8 px-2"></td>
+
+
                                                 </tr>
-                                            ))}
-                                        </Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                                                {toggledRows[province] && collections.map((collection) => (
+                                                    <tr
+                                                        key={collection.id}
+                                                        className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer h-8"
+                                                        onClick={() => navigate(`/main/reports/overview/${collection.id}`)}
+                                                    >
+                                                        <td className="text-[14px] px-6 py-2 w-[120px]"></td>
+                                                        <td className="text-[14px] px-6 py-2 w-[120px]">
+                                                            {collection.username}
+                                                        </td>
+                                                        <td className="text-[14px] px-6 py-2 w-[150px]">
+                                                            {collection.province + ', ' + collection.municipalityCity}
+                                                        </td>
+                                                        <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalCollections(collection.username).toLocaleString()}</td>
+                                                        <td className="text-[14px] px-6 py-2 w-[150px]">₱{getTotalDeposits(collection.username).toLocaleString()}</td>
+
+                                                    </tr>
+                                                ))}
+                                            </Fragment>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -152,7 +152,7 @@ export default function BalanceSheet() {
             )}
             {/**---------------------------------------------Alerts--------------------------------------- */}
             {/**Breadcrumbs */}
-            <nav className="flex absolute top-[20px] ml-8" aria-label="Breadcrumb">
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li aria-current="page">
                         <div className="flex items-center">
@@ -165,7 +165,7 @@ export default function BalanceSheet() {
                 </ol>
             </nav>
             
-            <div className="px-6">
+            <div className="px-2">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
                         <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">Balance Sheet</h1>
@@ -180,7 +180,7 @@ export default function BalanceSheet() {
             </div>
 
 
-            <div className="px-6 py-8">
+            <div className="px-2 py-4">
                 <div className="relative overflow-x-auto shadow-lg sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                         <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">

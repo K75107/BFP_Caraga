@@ -74,14 +74,14 @@ export default function LedgerDetails() {
       console.error('ledgerId is not provided.');
       return;
     }
-  
+
     const ledgerDocRef = doc(db, 'ledger', ledgerId);
     const accountTitlesCollectionRef = collection(ledgerDocRef, 'accounttitles');
     const listAccountTitlesRef = collection(db, 'accountTitle');
-  
+
     let unsubscribeLedger;
     let unsubscribeAccountTitles;
-  
+
     const fetchLedgerDescription = async () => {
       try {
         const docSnap = await getDoc(ledgerDocRef);
@@ -90,7 +90,7 @@ export default function LedgerDetails() {
         console.error('Error fetching ledger description:', error);
       }
     };
-  
+
     const fetchAccounts = async (accountTitleId) => {
       try {
         const accountsSubcollectionRef = collection(ledgerDocRef, `accounttitles/${accountTitleId}/accounts`);
@@ -103,22 +103,22 @@ export default function LedgerDetails() {
         return [];
       }
     };
-  
+
     const fetchAccountTitlesAndAccounts = async (snapshot) => {
       try {
         const fetchedAccountTitles = [];
         const fetchedAccounts = {};
-  
+
         await Promise.all(
           snapshot.docs.map(async (accountTitleDoc) => {
             const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
             fetchedAccountTitles.push(accountTitleData);
-  
+
             const accounts = await fetchAccounts(accountTitleDoc.id);
             fetchedAccounts[accountTitleDoc.id] = accounts;
           })
         );
-  
+
         setAccountTitles(fetchedAccountTitles);
         setSelectedAccountsData(fetchedAccounts);
         setLoading(false); // Stop loading after fetching data
@@ -127,10 +127,10 @@ export default function LedgerDetails() {
         setLoading(false);
       }
     };
-  
+
     setLoading(true);
     fetchLedgerDescription();
-  
+
     unsubscribeLedger = onSnapshot(
       query(accountTitlesCollectionRef, orderBy('position', 'asc')),
       async (snapshot) => {
@@ -148,7 +148,7 @@ export default function LedgerDetails() {
         setLoading(false);
       }
     );
-  
+
     unsubscribeAccountTitles = onSnapshot(
       listAccountTitlesRef,
       (snapshot) => {
@@ -159,32 +159,32 @@ export default function LedgerDetails() {
         console.error('Error fetching account titles:', error);
       }
     );
-  
+
     return () => {
       if (unsubscribeLedger) unsubscribeLedger();
       if (unsubscribeAccountTitles) unsubscribeAccountTitles();
     };
   }, [ledgerId]);
-  
+
   useEffect(() => {
     if (!accountTitles.length || !accountsData) {
       setFilteredAccountTitles([]);
       return;
     }
-  
+
     const filteredTitles = accountTitles.reduce((result, title) => {
       const transactions = accountsData[title.id] || [];
-  
+
       const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
       const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
-  
+
       const filteredTransactions = transactions.filter((transaction) => {
         if (!transaction.date) return !start && !end;
-  
+
         const transactionDate = new Date(transaction.date);
         return (!start || transactionDate >= start) && (!end || transactionDate <= end);
       });
-  
+
       if (
         title.accountTitle?.toLowerCase().includes(searchQuery.toLowerCase()) &&
         filteredTransactions.length > 0
@@ -194,13 +194,13 @@ export default function LedgerDetails() {
           transactions: filteredTransactions,
         });
       }
-  
+
       return result;
     }, []);
-  
+
     setFilteredAccountTitles(filteredTitles);
   }, [accountTitles, accountsData, startDate, endDate, searchQuery]);
-  
+
 
   //Right Click Functions
 
@@ -708,12 +708,12 @@ export default function LedgerDetails() {
     const worksheet = workbook.addWorksheet('General Ledger');
 
     worksheet.pageSetup.margins = {
-      top: 0.5,      
-      bottom: 0.5, 
-      left: 0.45,   
-      right: 0.25,    
-      header: 0.3,   
-      footer: 0.3,   
+      top: 0.5,
+      bottom: 0.5,
+      left: 0.45,
+      right: 0.25,
+      header: 0.3,
+      footer: 0.3,
     };
     worksheet.views = [
       {
@@ -852,530 +852,533 @@ export default function LedgerDetails() {
         row.getCell(6).alignment = { horizontal: 'right' }; // Credit
         row.getCell(7).alignment = { horizontal: 'right' }; // Balance
 
-      currentRowNumber += 1;
+        currentRowNumber += 1;
+      });
+
+      // Set column widths for readability
+      worksheet.getColumn(1).width = 10; // Date
+      worksheet.getColumn(2).width = 25; // Particulars
+      worksheet.getColumn(3).width = 10; // Ref.
+      worksheet.getColumn(5).width = 15; // Debit
+      worksheet.getColumn(6).width = 15; // Credit
+      worksheet.getColumn(7).width = 15; // Balance
     });
 
-    // Set column widths for readability
-    worksheet.getColumn(1).width = 10; // Date
-    worksheet.getColumn(2).width = 25; // Particulars
-    worksheet.getColumn(3).width = 10; // Ref.
-    worksheet.getColumn(5).width = 15; // Debit
-    worksheet.getColumn(6).width = 15; // Credit
-    worksheet.getColumn(7).width = 15; // Balance
-  });
-
-  // Export file as Excel
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'GeneralLedger.xlsx';
-  link.click();
-};
+    // Export file as Excel
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'GeneralLedger.xlsx';
+    link.click();
+  };
 
 
 
-return (
-  <Fragment>
-    {/**Breadcrumbs */}
-    <nav class="flex absolute top-[20px]" aria-label="Breadcrumb">
-      <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-        <li class="inline-flex items-center">
-          <button onClick={() => navigate("/main/generalLedger/")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-            <RiBook2Fill className="mr-2"></RiBook2Fill>
-            General Ledger
-          </button>
-        </li>
-        <li aria-current="page">
-          <div class="flex items-center">
-            <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
-            </svg>
-            <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{ledgerDescription}</span>
-          </div>
-        </li>
-      </ol>
-    </nav>
-    {/**Breadcrumbs */}
-
-    <div className="flex justify-between w-full">
-      <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{ledgerDescription}</h1>
-      <div class="flex space-x-4">
-        <SearchBar
-          placeholder="Search Account Title"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          listSource={filteredAccountTitles}
-        />
-
-
-        <AddButton
-          label={"ADD ACCOUNT"}
-          onClick={() => setShowModal(true)}
-        />
-
-        {/* Buttons and Dropdowns */}
-        <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
-
-
-          {/* Filter Dropdown */}
-          <Dropdown
-            label={
-              <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
-                <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
-                <span className="mr-2 font-medium">Filter</span>
-                <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
-              </div>
-            }
-            dismissOnClick={false}
-            inline={true}
-            arrowIcon={false} // Disabled default arrow icon
-            className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
-              Filter by Date
-            </h6>
-            <hr className="border-t bordergray-50 my-1" />
-
-            <div className="px-3 py-1 flex flex-row justify-between">
-              <div className='px-3 py-1'>
-                <h6 className="mb-2 text-xs text-gray-700 dark:text-white text-left font-medium">
-                  Start Date
-                </h6>
-                <DatePicker
-                  selected={startDate}
-                  onChange={(date) => setStartDate(date)}
-                  placeholderText="Start Date"
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                  dateFormat="yyyy-MM-dd"
-                  onKeyDown={(e) => e.stopPropagation()}
-                />
-              </div>
-
-              <div className='px-3 py-1'>
-                <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
-                  End Date
-                </h6>
-                <DatePicker
-                  selected={endDate}
-                  onChange={(date) => setEndDate(date)}
-                  placeholderText="End Date"
-                  dateFormat="yyyy-MM-dd"
-                  onKeyDown={(e) => e.stopPropagation()}
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
-              </div>
-
+  return (
+    <Fragment>
+      {/**Breadcrumbs */}
+      <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+          <li class="inline-flex items-center">
+            <button onClick={() => navigate("/main/generalLedger/")} class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+              <RiBook2Fill className="mr-2"></RiBook2Fill>
+              General Ledger
+            </button>
+          </li>
+          <li aria-current="page">
+            <div class="flex items-center">
+              <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+              </svg>
+              <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">{ledgerDescription}</span>
             </div>
-          </Dropdown>
+          </li>
+        </ol>
+      </nav>
+      {/**Breadcrumbs */}
 
-          {/* Export Dropdown */}
-          <Dropdown
-            label={
-              <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
-                <BiExport className="mr-2 text-[15px] font-bold" />
-                <span className="mr-2 font-medium">Export</span>
-                <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
-              </div>
-            }
-            dismissOnClick={false}
-            inline={true}
-            arrowIcon={false} // Disabled default arrow icon
-            className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
-              Export by Date
-            </h6>
-            <hr className="border-t bordergray-50 my-1" />
-
-            <div className="px-3 py-1 flex flex-row justify-between">
-              <div className='px-3 py-1'>
-                <DatePicker
-                  selected={startExportDate}
-                  onChange={(date) => setStartExportDate(date)}
-                  placeholderText="Start Date"
-                  dateFormat="yyyy-MM-dd"
-                  onKeyDown={(e) => e.stopPropagation()}
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
-              </div>
-              <div className='px-3 py-1'>
-                <DatePicker
-                  selected={endExportDate}
-                  onChange={(date) => setEndExportDate(date)}
-                  placeholderText="End Date"
-                  dateFormat="yyyy-MM-dd"
-                  onKeyDown={(e) => e.stopPropagation()}
-                  className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
-                />
-              </div>
-
-              <div className='px-3 py-1'>
-                <ExportButton
-                  label="EXPORT"
-                  onClick={exportToExcel}
-                />
-              </div>
-            </div>
-          </Dropdown>
-
-        </div>
-      </div>
-    </div>
-
-    <hr className="border-t border-[#7694D4] my-2 mb-4" />
+      <div className="px-2">
+        <div className="bg-white h-30 py-6 px-8 rounded-lg">
+          <div className="flex justify-between w-full">
+            <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{ledgerDescription}</h1>
+            <div class="flex space-x-4">
+              <SearchBar
+                placeholder="Search Account Title"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                listSource={filteredAccountTitles}
+              />
 
 
-    {/*TABLE*/}
-    <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-      <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
-          <tr>
+              <AddButton
+                label={"ADD ACCOUNT"}
+                onClick={() => setShowModal(true)}
+              />
 
-            <th scope="col" className="px-6 py-4 w-72 ">ACCOUNT TITLE</th>
-            <th scope="col" className="px-6 py-4 w-48">ACCOUNT CODE</th>
-            <th scope="col" className="px-6 py-4 w-32">DATE</th>
-            <th scope="col" className="px-6 py-4 w-80">PARTICULARS</th>
-            <th scope="col" className="px-6 py-4 w-48">DEBIT</th>
-            <th scope="col" className="px-6 py-4 w-48">CREDIT</th>
-            <th scope="col" className="px-6 py-4 w-48 text-center">BALANCE</th>
-            <th scope="col" className=" w-[20px] "></th>
-            <td className="table-cell py-4 w-10"></td>
+              {/* Buttons and Dropdowns */}
+              <div className="flex flex-col items-stretch justify-end flex-shrink-0 w-full space-y-2 md:w-auto md:flex-row md:space-y-0 md:items-center md:space-x-3">
 
-          </tr>
-        </thead>
-      </table>
-      <div className="w-full overflow-y-scroll h-[calc(96vh-200px)]">
-        <table className="w-full">
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="7" className="text-center py-6">
-                  <div className="flex justify-center items-center h-96">
-                    <div role="status">
-                      <svg
-                        aria-hidden="true"
-                        className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-                        viewBox="0 0 100 101"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                          fill="currentColor"
-                        />
-                        <path
-                          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                          fill="currentFill"
-                        />
-                      </svg>
-                      <span className="sr-only">Loading...</span>
+
+                {/* Filter Dropdown */}
+                <Dropdown
+                  label={
+                    <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                      <CiFilter className="w-5 h-5 mr-2" aria-hidden="true" />
+                      <span className="mr-2 font-medium">Filter</span>
+                      <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                    </div>
+                  }
+                  dismissOnClick={false}
+                  inline={true}
+                  arrowIcon={false} // Disabled default arrow icon
+                  className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                >
+                  <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                    Filter by Date
+                  </h6>
+                  <hr className="border-t bordergray-50 my-1" />
+
+                  <div className="px-3 py-1 flex flex-row justify-between">
+                    <div className='px-3 py-1'>
+                      <h6 className="mb-2 text-xs text-gray-700 dark:text-white text-left font-medium">
+                        Start Date
+                      </h6>
+                      <DatePicker
+                        selected={startDate}
+                        onChange={(date) => setStartDate(date)}
+                        placeholderText="Start Date"
+                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                        dateFormat="yyyy-MM-dd"
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className='px-3 py-1'>
+                      <h6 className="mb-2 text-xs  text-gray-700 dark:text-white text-left font-medium ">
+                        End Date
+                      </h6>
+                      <DatePicker
+                        selected={endDate}
+                        onChange={(date) => setEndDate(date)}
+                        placeholderText="End Date"
+                        dateFormat="yyyy-MM-dd"
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                      />
+                    </div>
+
+                  </div>
+                </Dropdown>
+
+                {/* Export Dropdown */}
+                <Dropdown
+                  label={
+                    <div className="flex items-center bg-gray-50 py-1 px-2 text-xs h-10 ring-1 ring-blue-700 text-blue-700 rounded-lg hover:bg-white focus:ring-4 focus:ring-blue-300 transition">
+                      <BiExport className="mr-2 text-[15px] font-bold" />
+                      <span className="mr-2 font-medium">Export</span>
+                      <BiChevronDown className="w-5 h-5" /> {/* Chevron Down Icon */}
+                    </div>
+                  }
+                  dismissOnClick={false}
+                  inline={true}
+                  arrowIcon={false} // Disabled default arrow icon
+                  className=" w-70 text-gray-900 bg-white border border-gray-200 rounded-lg  focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                >
+                  <h6 className=" text-sm font-medium text-gray-700 dark:text-white p-1 text-center">
+                    Export by Date
+                  </h6>
+                  <hr className="border-t bordergray-50 my-1" />
+
+                  <div className="px-3 py-1 flex flex-row justify-between">
+                    <div className='px-3 py-1'>
+                      <DatePicker
+                        selected={startExportDate}
+                        onChange={(date) => setStartExportDate(date)}
+                        placeholderText="Start Date"
+                        dateFormat="yyyy-MM-dd"
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                      />
+                    </div>
+                    <div className='px-3 py-1'>
+                      <DatePicker
+                        selected={endExportDate}
+                        onChange={(date) => setEndExportDate(date)}
+                        placeholderText="End Date"
+                        dateFormat="yyyy-MM-dd"
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="rounded-date-input w-24 text-xs rounded-md h-10 bg-gray-50"
+                      />
+                    </div>
+
+                    <div className='px-3 py-1'>
+                      <ExportButton
+                        label="EXPORT"
+                        onClick={exportToExcel}
+                      />
                     </div>
                   </div>
-                </td>
+                </Dropdown>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div className="px-2 py-4">
+        <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
+              <tr>
+
+                <th scope="col" className="px-6 py-4 w-72 ">ACCOUNT TITLE</th>
+                <th scope="col" className="px-6 py-4 w-48">ACCOUNT CODE</th>
+                <th scope="col" className="px-6 py-4 w-32">DATE</th>
+                <th scope="col" className="px-6 py-4 w-80">PARTICULARS</th>
+                <th scope="col" className="px-6 py-4 w-48">DEBIT</th>
+                <th scope="col" className="px-6 py-4 w-48">CREDIT</th>
+                <th scope="col" className="px-6 py-4 w-48 text-center">BALANCE</th>
+                <th scope="col" className=" w-[20px] "></th>
+                <td className="table-cell py-4 w-10"></td>
+
               </tr>
-            ) : (
-              filteredAccountTitles.map((accountTitle) => {
-                let runningBalance = 0;
+            </thead>
+          </table>
+          <div className="w-full overflow-y-scroll max-h-[calc(96vh-200px)]">
+            <table className="w-full">
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-6">
+                      <div className="flex justify-center items-center h-96">
+                        <div role="status">
+                          <svg
+                            aria-hidden="true"
+                            className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                            viewBox="0 0 100 101"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                              fill="currentColor"
+                            />
+                            <path
+                              d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                              fill="currentFill"
+                            />
+                          </svg>
+                          <span className="sr-only">Loading...</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAccountTitles.map((accountTitle) => {
+                    let runningBalance = 0;
 
-                const finalRunningBalance = accountTitle.transactions?.reduce((balance, account) => {
-                  return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
-                }, 0);
+                    const finalRunningBalance = accountTitle.transactions?.reduce((balance, account) => {
+                      return calculateBalance(accountTitle.accountType, account.debit, account.credit, balance);
+                    }, 0);
 
-                return (
-                  <Fragment key={accountTitle.id}>
-                    <tr className=" text-[12px] bg-white border-b w-full font-bold bg-blue-50"
-                      onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
-                    >
-                      <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
-                      <td className="table-cell px-6 py-3 w-48">{accountTitle.accountCode}</td>
-                      <td className="table-cell px-6 py-3 w-32"></td>
-                      <td className="table-cell px-6 py-3 w-80"></td>
-                      <td className="table-cell px-6 py-3 w-48"></td>
-                      <td className="table-cell px-6 py-3 w-48"></td>
-                      <td className="table-cell px-6 py-3 w-[20px] text-center">
-                        {formatBalance(finalRunningBalance)}
-                      </td>
-                      <td className="table-cell py-3 "></td>
-                    </tr>
-
-                    {/* Render filtered transactions */}
-                    {accountTitle.transactions?.map((account) => {
-                      runningBalance = calculateBalance(
-                        accountTitle.accountType,
-                        account.debit,
-                        account.credit,
-                        runningBalance
-                      );
-
-                      return (
-                        <tr
-                          key={account.id}
-                          onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
-                          onMouseEnter={() => {
-                            setHoveredRowId(account.id);
-                            handleHoverData(account, accountTitle);
-                          }}
-                          onMouseLeave={() => setHoveredRowId(null)}
-                          className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                    return (
+                      <Fragment key={accountTitle.id}>
+                        <tr className=" text-[12px] bg-white border-b w-full font-bold bg-blue-50"
+                          onContextMenu={(e) => handleMainAccountRightClick(e, accountTitle.id)}
                         >
-                          <td className="px-6 py-2 w-72"></td>
-                          <td className="px-6 py-2 w-48"></td>
-
-                          <td className="px-2 py-2 w-32 h-6 text-[12px]">
-                            {editingCell === account.id && editValue.field === 'date' ? (
-                              <DatePicker
-                                selected={editValue.value ? new Date(editValue.value) : null}
-                                onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
-                                dateFormat="yyyy-MM-dd"
-                                className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
-                                placeholderText="Select date"
-                                onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
-                                autoFocus
-                                style={{ fontSize: '12px' }}
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 h-full w-full px-2 py-2"
-                              >
-                                {account.date || '-'}
-                              </span>
-                            )}
+                          <td className="table-cell px-6 py-3 w-72">{accountTitle.accountTitle}</td>
+                          <td className="table-cell px-6 py-3 w-48">{accountTitle.accountCode}</td>
+                          <td className="table-cell px-6 py-3 w-32"></td>
+                          <td className="table-cell px-6 py-3 w-80"></td>
+                          <td className="table-cell px-6 py-3 w-48"></td>
+                          <td className="table-cell px-6 py-3 w-48"></td>
+                          <td className="table-cell px-6 py-3 w-[20px] text-center">
+                            {formatBalance(finalRunningBalance)}
                           </td>
-
-                          <td className="px-2 py-2 w-80 h-6">
-                            {editingCell === account.id && editValue.field === 'particulars' ? (
-                              <input
-                                type="text"
-                                className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
-                              >
-                                {account.particulars || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-2 w-48 h-6">
-                            {editingCell === account.id && editValue.field === 'debit' ? (
-                              <input
-                                type="number"
-                                className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2 py-2"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
-                              >
-                                {formatNumber(account.debit) || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-2 w-48 h-6">
-                            {editingCell === account.id && editValue.field === 'credit' ? (
-                              <input
-                                type="number"
-                                className=" text-[12px] border border-gray-400 focus:outline-none w-full px-2 h-8"
-                                value={editValue.value}
-                                onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
-                                onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
-                                autoFocus
-                              />
-                            ) : (
-                              <span
-                                onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
-                                className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
-                              >
-                                {formatNumber(account.credit) || '-'}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-2 py-4 text-center w-48">
-                            {formatBalance(runningBalance) || '-'}
-                          </td>
-
-                          <td className="px-2 py-6 w-0 relative z-10">
-                            {hoveredRowId === account.id && (
-                              <button
-                                className=" absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
-                                onClick={handleAddRowBelow}
-                              >
-                                <IoMdAddCircleOutline />
-                              </button>
-                            )}
-                          </td>
+                          <td className="table-cell py-3 "></td>
                         </tr>
-                      );
-                    })}
-                  </Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+
+                        {/* Render filtered transactions */}
+                        {accountTitle.transactions?.map((account) => {
+                          runningBalance = calculateBalance(
+                            accountTitle.accountType,
+                            account.debit,
+                            account.credit,
+                            runningBalance
+                          );
+
+                          return (
+                            <tr
+                              key={account.id}
+                              onContextMenu={(e) => handleRightClick(e, account, accountTitle)}
+                              onMouseEnter={() => {
+                                setHoveredRowId(account.id);
+                                handleHoverData(account, accountTitle);
+                              }}
+                              onMouseLeave={() => setHoveredRowId(null)}
+                              className="text-[12px] bg-white border-b w-full dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50"
+                            >
+                              <td className="px-6 py-2 w-72"></td>
+                              <td className="px-6 py-2 w-48"></td>
+
+                              <td className="px-2 py-2 w-32 h-6 text-[12px]">
+                                {editingCell === account.id && editValue.field === 'date' ? (
+                                  <DatePicker
+                                    selected={editValue.value ? new Date(editValue.value) : null}
+                                    onChange={(date) => setEditValue({ field: 'date', value: date ? date.toISOString().split('T')[0] : '' })}
+                                    dateFormat="yyyy-MM-dd"
+                                    className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
+                                    placeholderText="Select date"
+                                    onBlur={() => handleCellChange(account.id, 'date', editValue.value)}
+                                    autoFocus
+                                    style={{ fontSize: '12px' }}
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => { setEditingCell(account.id); setEditValue({ field: 'date', value: account.date || '' }) }}
+                                    className="block border border-gray-300 hover:bg-gray-100 h-full w-full px-2 py-2"
+                                  >
+                                    {account.date || '-'}
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-2 py-2 w-80 h-6">
+                                {editingCell === account.id && editValue.field === 'particulars' ? (
+                                  <input
+                                    type="text"
+                                    className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2"
+                                    value={editValue.value}
+                                    onChange={(e) => setEditValue({ field: 'particulars', value: e.target.value })}
+                                    onBlur={() => handleCellChange(account.id, 'particulars', editValue.value)}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => { setEditingCell(account.id); setEditValue({ field: 'particulars', value: account.particulars || '' }) }}
+                                    className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                  >
+                                    {account.particulars || '-'}
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-2 py-2 w-48 h-6">
+                                {editingCell === account.id && editValue.field === 'debit' ? (
+                                  <input
+                                    type="number"
+                                    className="text-[12px] border border-gray-400 focus:outline-none h-8 w-full px-2 py-2"
+                                    value={editValue.value}
+                                    onChange={(e) => setEditValue({ field: 'debit', value: e.target.value })}
+                                    onBlur={() => handleCellChange(account.id, 'debit', editValue.value)}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => { setEditingCell(account.id); setEditValue({ field: 'debit', value: account.debit || '' }) }}
+                                    className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                  >
+                                    {formatNumber(account.debit) || '-'}
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-2 py-2 w-48 h-6">
+                                {editingCell === account.id && editValue.field === 'credit' ? (
+                                  <input
+                                    type="number"
+                                    className=" text-[12px] border border-gray-400 focus:outline-none w-full px-2 h-8"
+                                    value={editValue.value}
+                                    onChange={(e) => setEditValue({ field: 'credit', value: e.target.value })}
+                                    onBlur={() => handleCellChange(account.id, 'credit', editValue.value)}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => { setEditingCell(account.id); setEditValue({ field: 'credit', value: account.credit || '' }) }}
+                                    className="block border border-gray-300 hover:bg-gray-100 w-full h-full px-2 py-2"
+                                  >
+                                    {formatNumber(account.credit) || '-'}
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-2 py-4 text-center w-48">
+                                {formatBalance(runningBalance) || '-'}
+                              </td>
+
+                              <td className="px-2 py-6 w-0 relative z-10">
+                                {hoveredRowId === account.id && (
+                                  <button
+                                    className=" absolute left-[-10px] top-[49px] transform -translate-y-1/2 bg-blue-500 text-white px-1 py-1 text-lg rounded-full shadow-md transition hover:bg-blue-600"
+                                    onClick={handleAddRowBelow}
+                                  >
+                                    <IoMdAddCircleOutline />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
 
 
-    {/*MODAL*/}
-    <Modal isVisible={showModal}>
-      <div className="bg-white w-[600px] h-[420px] rounded py-2 px-4">
-        <div className="flex justify-between">
-          <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-            Add Account
-          </h1>
-          <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
-            ×
-          </button>
-        </div>
-
-        <hr className="border-t border-[#7694D4] my-3" />
-
-        <div className="py-4 px-4">
-          <label className="block text-sm font-medium text-gray-700">Account Title</label>
-          <select
-            value={selectedAccountTitle}
-            onChange={(e) => {
-              const selectedTitle = e.target.value;
-              setSelectedAccountTitle(selectedTitle);
-
-              // Find the selected account title's data
-              const selectedAccount = listAccountTitles.find(title => title.AccountTitle === selectedTitle);
-
-              // Update account code and account type based on the selected account
-              if (selectedAccount) {
-                setAccountCode(selectedAccount.AccountCode);
-                setAccountType(selectedAccount.AccountType);
-
-              } else {
-                setAccountCode('');
-                setAccountType('');
-              }
-            }}
-            className="mt-1 block w-2/4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">Select Account Title</option>
-            {listAccountTitles.map((title) => (
-              <option key={title.id} value={title.AccountTitle}>
-                {title.AccountTitle}
-              </option>
-            ))}
-          </select>
-
-
-        </div>
-
-        <div className='pt-2 px-4'>
-          <label className="block text-sm font-medium text-gray-700">Account Code</label>
-          <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
-            <p>{accountCode || ''}</p> {/* Display selected Account Code */}
+      {/*MODAL*/}
+      <Modal isVisible={showModal}>
+        <div className="bg-white w-[600px] h-[420px] rounded py-2 px-4">
+          <div className="flex justify-between">
+            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
+              Add Account
+            </h1>
+            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+              ×
+            </button>
           </div>
 
-        </div>
+          <hr className="border-t border-[#7694D4] my-3" />
 
-        <div className='pt-6 px-4'>
-          <label className="block text-sm font-medium text-gray-700">Account Type</label>
-          <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
-            <p>{accountType || ''}</p> {/* Display selected Account Type */}
+          <div className="py-4 px-4">
+            <label className="block text-sm font-medium text-gray-700">Account Title</label>
+            <select
+              value={selectedAccountTitle}
+              onChange={(e) => {
+                const selectedTitle = e.target.value;
+                setSelectedAccountTitle(selectedTitle);
+
+                // Find the selected account title's data
+                const selectedAccount = listAccountTitles.find(title => title.AccountTitle === selectedTitle);
+
+                // Update account code and account type based on the selected account
+                if (selectedAccount) {
+                  setAccountCode(selectedAccount.AccountCode);
+                  setAccountType(selectedAccount.AccountType);
+
+                } else {
+                  setAccountCode('');
+                  setAccountType('');
+                }
+              }}
+              className="mt-1 block w-2/4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="">Select Account Title</option>
+              {listAccountTitles.map((title) => (
+                <option key={title.id} value={title.AccountTitle}>
+                  {title.AccountTitle}
+                </option>
+              ))}
+            </select>
+
+
+          </div>
+
+          <div className='pt-2 px-4'>
+            <label className="block text-sm font-medium text-gray-700">Account Code</label>
+            <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
+              <p>{accountCode || ''}</p> {/* Display selected Account Code */}
+            </div>
+
+          </div>
+
+          <div className='pt-6 px-4'>
+            <label className="block text-sm font-medium text-gray-700">Account Type</label>
+            <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
+              <p>{accountType || ''}</p> {/* Display selected Account Type */}
+            </div>
+          </div>
+
+
+          <div className="flex justify-end py-3 px-4">
+            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
+              onClick={handleAddAccount}
+            >ADD</button>
+
+            <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
+              onClick={() => navigate("/main/accounts")}
+            >EDIT ACCOUNT TITLES</button>
           </div>
         </div>
+      </Modal>
 
-
-        <div className="flex justify-end py-3 px-4">
-          <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
-            onClick={handleAddAccount}
-          >ADD</button>
-
-          <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
-            onClick={() => navigate("/main/accounts")}
-          >EDIT ACCOUNT TITLES</button>
-        </div>
-      </div>
-    </Modal>
-
-    {/* Right-click context modal */}
-    {showRightClickModal && (
-      <div
-        id="user-modal-overlay"
-        className="fixed inset-0 flex justify-center items-center"
-        onClick={closeModalOnOutsideClick}
-        onContextMenu={(event) => closeModalOnOutsideClick(event)}
-      >
+      {/* Right-click context modal */}
+      {showRightClickModal && (
         <div
-          style={{ top: modalPosition.y, left: modalPosition.x }}
-          className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+          id="user-modal-overlay"
+          className="fixed inset-0 flex justify-center items-center"
+          onClick={closeModalOnOutsideClick}
+          onContextMenu={(event) => closeModalOnOutsideClick(event)}
         >
-          <button
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            onClick={handleAddRowAbove}
+          <div
+            style={{ top: modalPosition.y, left: modalPosition.x }}
+            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
           >
-            Add Row Above
-          </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleAddRowAbove}
+            >
+              Add Row Above
+            </button>
 
 
-          <button
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            onClick={handleAddRowBelow}
-          >
-            Add Row Below
-          </button>
-          <button
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            onClick={handleDeleteRow}
-          >
-            Delete Row
-          </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleAddRowBelow}
+            >
+              Add Row Below
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleDeleteRow}
+            >
+              Delete Row
+            </button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/*Main Account Right-click context modal */}
-    {showMainAccountRightClick && (
-      <div
-        id="user-modal-overlay"
-        className="fixed inset-0 flex justify-center items-center"
-        onClick={closeModalOnOutsideClick}
-        onContextMenu={(event) => closeModalOnOutsideClick(event)}
-      >
+      {/*Main Account Right-click context modal */}
+      {showMainAccountRightClick && (
         <div
-          style={{ top: modalPosition.y, left: modalPosition.x }}
-          className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+          id="user-modal-overlay"
+          className="fixed inset-0 flex justify-center items-center"
+          onClick={closeModalOnOutsideClick}
+          onContextMenu={(event) => closeModalOnOutsideClick(event)}
         >
-          <button
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            onClick={handleAddEntry}
+          <div
+            style={{ top: modalPosition.y, left: modalPosition.x }}
+            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
           >
-            Add Row Below
-          </button>
-          <button
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            onClick={handleDeleteAccount}
-          >
-            Delete Account
-          </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleAddEntry}
+            >
+              Add Row Below
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={handleDeleteAccount}
+            >
+              Delete Account
+            </button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
 
 
 
 
-  </Fragment>
-);
+    </Fragment>
+  );
 }

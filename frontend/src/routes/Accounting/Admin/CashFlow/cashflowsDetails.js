@@ -1670,8 +1670,8 @@ export default function CashflowsDetails() {
                 </div>
             )}
 
-             {/**Breadcrumbs */}
-             <nav className="flex absolute top-[20px]" aria-label="Breadcrumb">
+            {/**Breadcrumbs */}
+            <nav class="flex absolute top-[20px] ml-2" aria-label="Breadcrumb">
                 <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                     <li className="inline-flex classNameitems-center">
                         <button onClick={() => navigate("/main/cashflowStatement/cashflows")} className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
@@ -1691,10 +1691,10 @@ export default function CashflowsDetails() {
             </nav>
             {/**Breadcrumbs */}
 
-            <div className="px-6">
+            <div className="px-2">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
-                        <h1 className="text-[25px] font-bold text-[#1E1E1E] font-poppins">{currentCashflow?.description || ""}</h1>
+                        <h1 className="text-[25px] font-semibold text-[#1E1E1E] font-poppins">{currentCashflow?.description || ""}</h1>
                         <div class="flex space-x-4">
                             <AddButton
                                 onClick={() => setShowModal(true)}
@@ -1713,11 +1713,12 @@ export default function CashflowsDetails() {
                     </div>
                 </div>
             </div>
-            <div className="px-6 py-8">
+
+            <div className="px-2 py-4">
                 <DndContext onDragEnd={handleDragEnd} modifiers={[snapToGrid]} collisionDetection={closestCorners} onDragStart={handleDragStart}>
-                    <div className="relative overflow-y-auto sm:rounded-lg bg-white">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-xs uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky top-0 z-10">
+                    <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                            <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky ">
                                 <tr>
                                     <th scope="col" className="py-4 px-6 text-start">Account Description</th>
                                     <th scope="col" className="py-4 ml-6 w-56 text-start">{currentCashflow?.year || ''}</th>
@@ -1726,39 +1727,41 @@ export default function CashflowsDetails() {
                                 </tr>
                             </thead>
                         </table>
-                    </div>
 
 
-                    <div className=' w-full bg-white overflow-y-scroll h-[calc(100vh-280px)]'>
-                        {isEmpty ? (
-                            <div className="w-full h-full flex flex-col justify-center items-center text-center space-y-4">
-                                <p className="text-lg font-poppins font-medium text-gray-800">
-                                    Would you like to generate a cashflow Template?
-                                </p>
-                                <div className="flex space-x-4">
-                                    <YesNoButton type="yes" label={"Yes"} onClick={handleYesClick} />
-                                    <YesNoButton type="no" label={"No"} onClick={handleNoClick} />
+
+                        <div className="w-full overflow-y-auto max-h-[calc(96vh-200px)]">
+                            {isEmpty ? (
+                                <div className="w-full h-full flex flex-col justify-center items-center text-center space-y-4">
+                                    <p className="text-lg font-poppins font-medium text-gray-800">
+                                        Would you like to generate a cashflow Template?
+                                    </p>
+                                    <div className="flex space-x-4">
+                                        <YesNoButton type="yes" label={"Yes"} onClick={handleYesClick} />
+                                        <YesNoButton type="no" label={"No"} onClick={handleNoClick} />
+                                    </div>
                                 </div>
-                            </div>
 
 
-                        ) : null}
-                        <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
-                            <tbody>
-                                <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
-                                    {visibleCategories.map((category) => (
-                                        <SortableRow
-                                            key={category.id}
-                                            category={category}
-                                            handleRightClick={handleRightClick}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </tbody>
-                        </table>
+                            ) : null}
+                            <table className='w-full text-sm text-left text-gray-800 overflow-x-visible'>
+                                <tbody>
+                                    <SortableContext items={visibleCategories} strategy={verticalListSortingStrategy}>
+                                        {visibleCategories.map((category) => (
+                                            <SortableRow
+                                                key={category.id}
+                                                category={category}
+                                                handleRightClick={handleRightClick}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </DndContext>
             </div>
+
 
 
 
