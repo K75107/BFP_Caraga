@@ -13,6 +13,7 @@ import { QuestionMarkCircleIcon } from '@heroicons/react/outline';
 import { IoIosSearch } from "react-icons/io";
 import AddButton from "../../../../components/addButton";
 import ExportButton from "../../../../components/exportButton";
+import SubmitButton from "../../../../components/submitButton";
 
 
 export default function BalanceSheet() {
@@ -1385,18 +1386,17 @@ export default function BalanceSheet() {
                             </select>
                         </form>
 
-                        <div className="flex justify-end py-3 px-4">
-                            <button
-                                className={`bg-blue-500 mt-10 -mr-4 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                        <div className="flex justify-end mt-8">
+                            <SubmitButton
                                 onClick={() => {
                                     setShowPeriodColumn(true);  // Show the period column
                                     setShowModal(false);
                                     setSelectedLedger("");
                                 }}
-                                disabled={!selectedLedger} // Disable when no ledger is selected
-                            >
-                                ADD
-                            </button>
+                                disabled={!selectedLedger}
+                                label={"Add Period"}
+                            />
+
                         </div>
                     </div>
                 </Modal>
@@ -1430,7 +1430,7 @@ export default function BalanceSheet() {
             {/* 1st Modal For Add Subcategory */}
             {firstSubcategoryModal && (
                 <Modal isVisible={firstSubcategoryModal}>
-                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4 overflow-y-auto ">
+                    <div className="bg-white w-[380px] h-auto rounded py-2 px-4 overflow-y-auto ">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Create Subcategory</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]"
@@ -1469,7 +1469,7 @@ export default function BalanceSheet() {
                             <div className="relative w-80">
                                 <select
                                     id="categoryselect"
-                                    className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                                     value={currentSelection}
                                     onChange={(e) => setCurrentSelection(e.target.value)}
                                 >
@@ -1490,9 +1490,7 @@ export default function BalanceSheet() {
                         </div>
 
                         <div className="flex justify-end py-3 px-4 flex-row">
-                            <button
-                                className={`bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors rounded-lg text-sm text-white font-poppins font-medium py-2.5 px-6 shadow-md hover:shadow-lg focus:outline-none 
-                                        ${subcategory.length === 0 || currentSelection === '' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            <SubmitButton
                                 disabled={subcategory.length === 0 || currentSelection === ''}
                                 onClick={() => {
                                     const subcategoryType = determineSubcategoryType(currentSelection);
@@ -1501,9 +1499,9 @@ export default function BalanceSheet() {
                                     setFirstSubcategoryModal(false);
                                     setSecondSubcategoryModal(true);
                                 }}
-                            >
-                                NEXT
-                            </button>
+                                label={"Next"}
+                            />
+
                         </div>
                     </div>
                 </Modal>

@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { PiListChecks, PiListChecksFill } from "react-icons/pi";
 import AddButton from "../../../../components/addButton";
+import SubmitButton from "../../../../components/submitButton";
 
 export default function TrialBalanceList() {
     const navigate = useNavigate();
@@ -219,7 +220,7 @@ export default function TrialBalanceList() {
             {/* 1ST MODAL */}
             {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                    <div className="bg-white w-[400px] h-56 rounded py-2 px-4">
                         {/* HEADER */}
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
@@ -250,9 +251,9 @@ export default function TrialBalanceList() {
                         </form>
 
                         {/* BUTTON */}
-                        <div className="flex justify-end py-3 px-4">
-                            <button
-                                className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5"
+                        <div className="flex justify-end py-4  mt-5">
+
+                            <SubmitButton
                                 onClick={() => {
                                     if (!selectedLedger) {
                                         alert("Please select a ledger.");
@@ -260,9 +261,10 @@ export default function TrialBalanceList() {
                                     }
                                     setCurrentModal(2);
                                 }}
-                            >
-                                NEXT
-                            </button>
+                                label={"Next"} 
+                                disabled={!selectedLedger}
+                                />
+
                         </div>
                     </div>
                 </Modal>
@@ -271,7 +273,7 @@ export default function TrialBalanceList() {
             {/* 2nd MODAL */}
             {showModal && currentModal === 2 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4">
+                    <div className="bg-white w-[370px] h-80 rounded py-2 px-4">
                         {/* HEADER */}
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
@@ -346,25 +348,24 @@ export default function TrialBalanceList() {
                         </div>
 
                         {/* BUTTONS */}
-                        <div className="flex justify-end py-3 px-4 flex-row">
-                            <button
-                                className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4"
-                                onClick={() => {
-                                    setCurrentModal(1);
-                                    setStartDate(null);
-                                    setEndDate(null);
-                                    setTrialBalanceDescription("");
-                                    setSelectedLedger("");
-                                }}
-                            >
-                                BACK
-                            </button>
-                            <button
-                                className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5"
-                                onClick={addNewTrialBalance}
-                            >
-                                GENERATE
-                            </button>
+                        <div className="flex justify-end py-4 px-2 flex-row mt-4 gap-4">
+                            <SubmitButton
+                            onClick={() => {
+                                setCurrentModal(1);
+                                setStartDate(null);
+                                setEndDate(null);
+                                setTrialBalanceDescription("");
+                                setSelectedLedger("");
+                            }}
+                            variant="outlined"
+                            label={"Back"}
+                            />
+                           <SubmitButton
+                           onClick={addNewTrialBalance}
+                           label={"Generate"}
+                           disabled ={!trialBalanceDescription}
+                           />
+                           
                         </div>
                     </div>
                 </Modal>

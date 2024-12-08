@@ -6,6 +6,8 @@ import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuc
 import { useNavigate } from "react-router-dom";
 import AddButton from "../../../../components/addButton";
 import { PiMoneyWavy, PiMoneyWavyFill } from "react-icons/pi";
+import SubmitButton from "../../../../components/submitButton";
+
 export default function Cashflows() {
     const navigate = useNavigate();
 
@@ -194,7 +196,7 @@ export default function Cashflows() {
             </div>
 
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                <div className="bg-white w-[380px] h-[300px] rounded py-2 px-4">
                     <div className="flex justify-between">
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add Cashflow Statement
@@ -204,7 +206,7 @@ export default function Cashflows() {
 
                     <hr className="border-t border-[#7694D4] my-3" />
 
-                    <div className="flex flex-row p-2.5 justify-between">
+                    <div className="flex p-2.5 justify-between flex-col gap-6">
                         <div className="relative">
                             <input
                                 type="text"
@@ -222,10 +224,10 @@ export default function Cashflows() {
                             </label>
                         </div>
 
-                        <div className="relative w-40">
+                        <div className="relative">
                             <select
                                 id="year-dropdown"
-                                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                                 value={cashflowYear}
                                 onChange={(e) => setCashflowYear(e.target.value)}
                             >
@@ -243,8 +245,13 @@ export default function Cashflows() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end py-3 px-4">
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" onClick={addNewCashflow}>ADD</button>
+                    <div className="flex justify-end py-4 px-4 mt-2">
+                        <SubmitButton
+                            onClick={addNewCashflow}
+                            label={"Add Cashflow"}
+                            disabled={!cashflowDescription}
+                        />
+
                     </div>
                 </div>
             </Modal>

@@ -8,6 +8,7 @@ import { collection, addDoc, deleteDoc, doc, getDocs, getDoc, query, where } fro
 import SuccessUnsuccessfulAlert from "../../../../components/Alerts/SuccessUnsuccessfulALert";
 import { PiBookOpenText, PiBookOpenTextFill } from "react-icons/pi";
 import AddButton from "../../../../components/addButton";
+import SubmitButton from "../../../../components/submitButton";
 
 export default function BalanceSheet() {
 
@@ -164,7 +165,7 @@ export default function BalanceSheet() {
                     </li>
                 </ol>
             </nav>
-            
+
             <div className="px-2">
                 <div className="bg-white h-30 py-6 px-8 rounded-lg">
                     <div className="flex justify-between w-full">
@@ -236,7 +237,7 @@ export default function BalanceSheet() {
             {/* 1ST MODAL */}
             {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                    <div className="bg-white w-[400px] h-56 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Ledger</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
@@ -260,14 +261,13 @@ export default function BalanceSheet() {
                             </select>
                         </form>
 
-                        <div className="flex justify-end py-3 px-4">
-                            <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                        <div className="flex justify-end py-4  mt-5">
+                            <SubmitButton
                                 onClick={() => selectedLedger && setCurrentModal(2)}
-                                disabled={!selectedLedger} // Disable when no ledger is selected
-                            >
-                                NEXT
-                            </button>
+                                disabled={!selectedLedger}
+                                label={"Next"}
+                            />
+
                         </div>
                     </div>
                 </Modal>
@@ -276,7 +276,7 @@ export default function BalanceSheet() {
             {/* 2ND MODAL */}
             {showModal && currentModal === 2 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4">
+                    <div className="bg-white w-[435px] h-80 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Generate Balance Sheet</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentModal(1)}>
@@ -291,7 +291,7 @@ export default function BalanceSheet() {
                                 <input
                                     type="text"
                                     id="description"
-                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
+                                    className="block px-2.5 pb-2.5 pt-4 w-96 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
                                     placeholder=" "
                                     value={balanceSheetDescription}
                                     onChange={(e) => setBalanceSheetDescription(e.target.value)}
@@ -334,23 +334,20 @@ export default function BalanceSheet() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end py-3 px-4 flex-row">
-                            <button
-                                className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4"
+                        <div className="flex justify-end py-4 px-2 flex-row mt-4 gap-4">
+                            <SubmitButton
                                 onClick={() => setCurrentModal(1)}
-                            >
-                                BACK
-                            </button>
-
-                            <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 ${(!balanceSheetDescription || !startDate || !endDate) && "opacity-50 cursor-not-allowed"}`}
-                                onClick={async () => {
-                                    await addNewBalanceSheet(); // Create the balance sheet and navigate to the details page
-                                }}
-                                disabled={!balanceSheetDescription || !startDate || !endDate} // Disable when description, start date, or end date is missing
-                            >
-                                GENERATE
-                            </button>
+                                label={"Back"}
+                                variant="Outlined"
+                            />
+                            <SubmitButton
+                             onClick={async () => {
+                                await addNewBalanceSheet(); // Create the balance sheet and navigate to the details page
+                            }}
+                            disabled={!balanceSheetDescription || !startDate || !endDate}
+                            label={"Generate"}
+                            />
+                        
                         </div>
                     </div>
                 </Modal>

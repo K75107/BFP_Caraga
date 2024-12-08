@@ -4,6 +4,7 @@ import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from 'firebase
 import Modal from "../../../../components/Modal";
 import AddButton from '../../../../components/addButton';
 import SearchBar from '../../../../components/searchBar';
+import SubmitButton from '../../../../components/submitButton';
 
 export default function Accounts() {
     const [accountsData, setAccountsData] = useState([]);
@@ -283,7 +284,7 @@ export default function Accounts() {
 
             {/*MODAL*/}
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[400px] h-[400px] rounded py-2 px-4">
+                <div className="bg-white w-[360px] h-[410px] rounded py-2 px-4">
                     <div className="flex justify-between">
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add New Account
@@ -301,7 +302,7 @@ export default function Accounts() {
                     {/* Input Fields */}
 
                     {/* Account Title */}
-                    <div className="relative m-5">
+                    <div className="relative my-8">
                         <input
                             type="text"
                             id="default_outlined1"
@@ -319,7 +320,7 @@ export default function Accounts() {
                     </div>
 
                     {/* Account Code */}
-                    <div className="relative m-5">
+                    <div className="relative my-8">
                         <input
                             type="text"
                             id="default_outlined1"
@@ -339,7 +340,7 @@ export default function Accounts() {
 
 
                     {/* Account Type */}
-                    <div className="relative w-80 m-5">
+                    <div className="relative w-80 my-8">
                         <select
                             id="account-type"
                             className="block px-6.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
@@ -365,13 +366,9 @@ export default function Accounts() {
 
 
                     {/* Add Button */}
-                    <div className="flex justify-end py-3 px-4">
-                        <button
-                            onClick={handleAddAccount}
-                            className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 "
-                        >
-                            ADD
-                        </button>
+                    <div className="flex justify-end py-2 px-4">
+                        <SubmitButton onClick={handleAddAccount} label={"Add Account"}/>
+                    
                     </div>
                 </div>
             </Modal>

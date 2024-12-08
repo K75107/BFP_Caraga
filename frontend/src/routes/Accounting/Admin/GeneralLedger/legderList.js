@@ -8,7 +8,7 @@ import { RiBook2Line, RiBook2Fill } from "react-icons/ri";
 import { IoMdAdd } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import AddButton from "../../../../components/addButton";
-
+import SubmitButton from "../../../../components/submitButton";
 
 export default function LedgerList() {
     const [showModal, setShowModal] = useState(false);
@@ -280,8 +280,11 @@ export default function LedgerList() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end py-3 px-4">
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" onClick={addNewLedger}>ADD</button>
+                    <div className="flex justify-end py-4 px-4 mt-2">
+                        <SubmitButton onClick={addNewLedger} 
+                        label={"Add Ledger"}
+                        disabled = {!ledgerDescription}/>
+                       
                     </div>
                 </div>
             </Modal>

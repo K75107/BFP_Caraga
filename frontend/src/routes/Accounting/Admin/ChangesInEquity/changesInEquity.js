@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { setYear } from "date-fns";
 import AddButton from "../../../../components/addButton";
 import { PiEqualizer, PiEqualizerFill } from "react-icons/pi";
+import SubmitButton from "../../../../components/submitButton";
 
 
 export default function ChangesInEquity() {
@@ -218,7 +219,7 @@ export default function ChangesInEquity() {
             </div>
 
             <Modal isVisible={showModal}>
-                <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                <div className="bg-white w-[380px] h-[400px] rounded py-2 px-4">
                     <div className="flex justify-between">
                         <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
                             Add Changes in Equity
@@ -228,7 +229,7 @@ export default function ChangesInEquity() {
 
                     <hr className="border-t border-[#7694D4] my-3" />
 
-                    <div className="flex flex-row p-2.5 justify-between">
+                    <div className="flex p-2.5 justify-between flex-col gap-6">
                         <div className="relative">
                             <input
                                 type="text"
@@ -246,10 +247,10 @@ export default function ChangesInEquity() {
                             </label>
                         </div>
 
-                        <div className="relative w-40">
+                        <div className="relative w-40 ">
                             <select
                                 id="year-dropdown"
-                                className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                                className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                                 value={cEquityYear}
                                 onChange={(e) => setcEquityYear(e.target.value)}
                             >
@@ -265,13 +266,13 @@ export default function ChangesInEquity() {
                                 Year
                             </label>
                         </div>
-                    </div>
 
-                    <div className="flex justify-between py-3 px-4">
-                        <form className="max-w-sm mt-5">
+
+
+                        <form className="relative">
                             <select
                                 id="incomeStatementSelect"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                                 value={selectedIncomeStatement}
                                 onChange={(e) => setSelectedIncomeStatement(e.target.value)}
                             >
@@ -283,8 +284,16 @@ export default function ChangesInEquity() {
                                 ))}
                             </select>
                         </form>
-                        <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4" onClick={addNewcEquity}>ADD</button>
                     </div>
+                    <div className="mt-4 flex justify-end mr-4">
+                        <SubmitButton
+                            onClick={addNewcEquity}
+                            label={"Add Changes in Equity"}
+                            disabled={!selectedIncomeStatement || !cEquityYear || !cEquityDescription}
+                        />
+                    </div>
+
+
                 </div>
             </Modal>
 

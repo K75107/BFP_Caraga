@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { RiFileAddLine, RiFileAddFill } from "react-icons/ri";
 import AddButton from "../../../../components/addButton";
+import SubmitButton from "../../../../components/submitButton";
 
 export default function IncomeStatementList() {
     const navigate = useNavigate();
@@ -237,7 +238,7 @@ export default function IncomeStatementList() {
             {/* MODALS */}
             {showModal && currentModal === 1 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-60 rounded py-2 px-4">
+                    <div className="bg-white w-[400px] h-56 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Select a Ledger</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>×</button>
@@ -261,14 +262,14 @@ export default function IncomeStatementList() {
                             </select>
                         </form>
 
-                        <div className="flex justify-end py-3 px-4">
-                            <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedLedger && "opacity-50 cursor-not-allowed"}`}
+                        <div className="flex justify-end py-4  mt-5">
+
+                            <SubmitButton
                                 onClick={() => selectedLedger && setCurrentModal(2)}
                                 disabled={!selectedLedger}
-                            >
-                                NEXT
-                            </button>
+                                label={"Next"}
+                            />
+
                         </div>
                     </div>
                 </Modal>
@@ -276,7 +277,7 @@ export default function IncomeStatementList() {
 
             {showModal && currentModal === 2 && (
                 <Modal isVisible={showModal}>
-                    <div className="bg-white w-[600px] h-auto rounded py-2 px-4">
+                    <div className="bg-white w-[435px] h-80 rounded py-2 px-4">
                         <div className="flex justify-between">
                             <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Generate Income Statement</h1>
                             <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setCurrentModal(1)}>
@@ -291,7 +292,7 @@ export default function IncomeStatementList() {
                                 <input
                                     type="text"
                                     id="description"
-                                    className="block px-2.5 pb-2.5 pt-4 w-80 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
+                                    className="block px-2.5 pb-2.5 pt-4 w-96 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300"
                                     placeholder=" "
                                     value={incomeStatementDescription}
                                     onChange={(e) => setIncomeStatementDescription(e.target.value)}
@@ -334,23 +335,21 @@ export default function IncomeStatementList() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end py-3 px-4 flex-row">
-                            <button
-                                className="bg-white border border-[#D32F2F] rounded text-[11px] text-[#D32F2F] font-poppins font-medium py-2.5 px-7 mt-4"
+                        <div className="flex justify-end py-4 px-2 flex-row mt-4 gap-4">
+                            <SubmitButton
                                 onClick={() => setCurrentModal(1)}
-                            >
-                                BACK
-                            </button>
+                                label={"Back"}
+                                variant="outlined"
+                            />
 
-                            <button
-                                className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-4 ml-5 ${(!incomeStatementDescription || !startDate || !endDate) && "opacity-50 cursor-not-allowed"}`}
+                            <SubmitButton
                                 onClick={async () => {
                                     await addNewIncomeStatement();
                                 }}
-                                disabled={!incomeStatementDescription || !startDate || !endDate} // Disable when description, start date, or end date is missing
-                            >
-                                GENERATE
-                            </button>
+                                label={"Generate"}
+                                disabled ={!incomeStatementDescription || !startDate || !endDate}
+                            />
+                           
                         </div>
                     </div>
                 </Modal>

@@ -17,6 +17,7 @@ import AddButton from '../../../../components/addButton';
 import { CiFilter } from "react-icons/ci";
 import ExportButton from "../../../../components/exportButton";
 import ExcelJS from 'exceljs';
+import SubmitButton from '../../../../components/submitButton';
 
 export default function LedgerDetails() {
 
@@ -1237,148 +1238,164 @@ export default function LedgerDetails() {
 
       {/*MODAL*/}
       <Modal isVisible={showModal}>
-        <div className="bg-white w-[600px] h-[420px] rounded py-2 px-4">
+        <div className="bg-white w-[400px] h-[460px] rounded py-2 px-4">
           <div className="flex justify-between">
-            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">
-              Add Account
-            </h1>
-            <button className="font-poppins text-[27px] text-[#1E1E1E]" onClick={() => setShowModal(false)}>
+            <h1 className="font-poppins font-bold text-[27px] text-[#1E1E1E]">Add Account</h1>
+            <button
+              className="font-poppins text-[27px] text-[#1E1E1E]"
+              onClick={() => setShowModal(false)}
+              aria-label="Close modal"
+            >
               ×
             </button>
           </div>
 
           <hr className="border-t border-[#7694D4] my-3" />
 
-          <div className="py-4 px-4">
-            <label className="block text-sm font-medium text-gray-700">Account Title</label>
-            <select
-              value={selectedAccountTitle}
-              onChange={(e) => {
-                const selectedTitle = e.target.value;
-                setSelectedAccountTitle(selectedTitle);
+          <div className="flex flex-col items-left justify-start mt-6">
+            <div className="w-full px-2">
+              <label htmlFor="account-title" className="block text-sm font-medium text-gray-700 my-2">
+                Account Title
+              </label>
+              <select
+                id="account-title"
+                value={selectedAccountTitle}
+                onChange={(e) => {
+                  const selectedTitle = e.target.value;
+                  setSelectedAccountTitle(selectedTitle);
 
-                // Find the selected account title's data
-                const selectedAccount = listAccountTitles.find(title => title.AccountTitle === selectedTitle);
+                  const selectedAccount = listAccountTitles.find(
+                    (title) => title.AccountTitle === selectedTitle
+                  );
 
-                // Update account code and account type based on the selected account
-                if (selectedAccount) {
-                  setAccountCode(selectedAccount.AccountCode);
-                  setAccountType(selectedAccount.AccountType);
-
-                } else {
-                  setAccountCode('');
-                  setAccountType('');
-                }
-              }}
-              className="mt-1 block w-2/4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">Select Account Title</option>
-              {listAccountTitles.map((title) => (
-                <option key={title.id} value={title.AccountTitle}>
-                  {title.AccountTitle}
-                </option>
-              ))}
-            </select>
-
-
-          </div>
-
-          <div className='pt-2 px-4'>
-            <label className="block text-sm font-medium text-gray-700">Account Code</label>
-            <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
-              <p>{accountCode || ''}</p> {/* Display selected Account Code */}
+                  if (selectedAccount) {
+                    setAccountCode(selectedAccount.AccountCode);
+                    setAccountType(selectedAccount.AccountType);
+                  } else {
+                    setAccountCode('');
+                    setAccountType('');
+                  }
+                }}
+                className="mt-1 block w-full max-w-[360px] mx-auto border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select Account Title</option>
+                {listAccountTitles.map((title) => (
+                  <option key={title.id} value={title.AccountTitle}>
+                    {title.AccountTitle}
+                  </option>
+                ))}
+              </select>
             </div>
 
-          </div>
+            <div className="w-full px-2 mt-4">
+              <label htmlFor="account-code" className="block text-sm font-medium text-gray-700 my-2">
+                Account Code
+              </label>
+              <div
+                id="account-code"
+                className="w-full max-w-[360px] mx-auto border border-gray-300 rounded-md shadow-sm p-2 text-left"
+                style={{ height: '2.5rem' }} // Fixed height for consistent sizing
+              >
+                <p className="truncate">{accountCode || ''}</p>
+              </div>
+            </div>
 
-          <div className='pt-6 px-4'>
-            <label className="block text-sm font-medium text-gray-700">Account Type</label>
-            <div className='w-2/4 border border-gray-300 rounded-md shadow-sm p-2'>
-              <p>{accountType || ''}</p> {/* Display selected Account Type */}
+            <div className="w-full px-2 mt-4">
+              <label htmlFor="account-type" className="block text-sm font-medium text-gray-700 my-2">
+                Account Type
+              </label>
+              <div
+                id="account-type"
+                className="w-full max-w-[360px] mx-auto border border-gray-300 rounded-md shadow-sm p-2 text-left"
+                style={{ height: '2.5rem' }} // Fixed height for consistent sizing
+              >
+                <p className="truncate">{accountType || ''}</p>
+              </div>
+
             </div>
           </div>
 
-
-          <div className="flex justify-end py-3 px-4">
-            <button className="bg-[#2196F3] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4"
-              onClick={handleAddAccount}
-            >ADD</button>
-
-            <button className="bg-[#4CAF50] rounded text-[11px] text-white font-poppins font-md py-2.5 px-4 mt-4 ml-3"
-              onClick={() => navigate("/main/accounts")}
-            >EDIT ACCOUNT TITLES</button>
+          <div className="flex justify-end gap-3 mt-10 mr-2">
+            <SubmitButton onClick={handleAddAccount} label={"Add Account"}/>
+            <SubmitButton onClick={() => navigate('/main/accounts')} label={"Edit Account Titles"} variant='outlined'/>
+         
           </div>
         </div>
       </Modal>
 
+
       {/* Right-click context modal */}
-      {showRightClickModal && (
-        <div
-          id="user-modal-overlay"
-          className="fixed inset-0 flex justify-center items-center"
-          onClick={closeModalOnOutsideClick}
-          onContextMenu={(event) => closeModalOnOutsideClick(event)}
-        >
+      {
+        showRightClickModal && (
           <div
-            style={{ top: modalPosition.y, left: modalPosition.x }}
-            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+            id="user-modal-overlay"
+            className="fixed inset-0 flex justify-center items-center"
+            onClick={closeModalOnOutsideClick}
+            onContextMenu={(event) => closeModalOnOutsideClick(event)}
           >
-            <button
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={handleAddRowAbove}
+            <div
+              style={{ top: modalPosition.y, left: modalPosition.x }}
+              className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
             >
-              Add Row Above
-            </button>
+              <button
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={handleAddRowAbove}
+              >
+                Add Row Above
+              </button>
 
 
-            <button
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={handleAddRowBelow}
-            >
-              Add Row Below
-            </button>
-            <button
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={handleDeleteRow}
-            >
-              Delete Row
-            </button>
+              <button
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={handleAddRowBelow}
+              >
+                Add Row Below
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={handleDeleteRow}
+              >
+                Delete Row
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/*Main Account Right-click context modal */}
-      {showMainAccountRightClick && (
-        <div
-          id="user-modal-overlay"
-          className="fixed inset-0 flex justify-center items-center"
-          onClick={closeModalOnOutsideClick}
-          onContextMenu={(event) => closeModalOnOutsideClick(event)}
-        >
+      {
+        showMainAccountRightClick && (
           <div
-            style={{ top: modalPosition.y, left: modalPosition.x }}
-            className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
+            id="user-modal-overlay"
+            className="fixed inset-0 flex justify-center items-center"
+            onClick={closeModalOnOutsideClick}
+            onContextMenu={(event) => closeModalOnOutsideClick(event)}
           >
-            <button
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={handleAddEntry}
+            <div
+              style={{ top: modalPosition.y, left: modalPosition.x }}
+              className="absolute z-10 bg-white shadow-lg rounded-lg p-2"
             >
-              Add Row Below
-            </button>
-            <button
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={handleDeleteAccount}
-            >
-              Delete Account
-            </button>
+              <button
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={handleAddEntry}
+              >
+                Add Row Below
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={handleDeleteAccount}
+              >
+                Delete Account
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
 
 
 
 
-    </Fragment>
+    </Fragment >
   );
 }

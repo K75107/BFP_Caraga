@@ -1884,12 +1884,16 @@ export default function CashflowsDetails() {
                                 ))}
 
                             </select>
-                            <div className="flex justify-end py-3 px-4">
-                                <button
-                                    type="button"
-                                    onClick={handleAddPeriod}
-                                    className={`bg-[#2196F3] rounded text-[11px] text-white font-poppins font-medium py-2.5 px-4 mt-5 ${!selectedPeriodId && "opacity-50 cursor-not-allowed"}`}
-                                >Add Period</button>
+                            <div className="flex justify-end mt-8">
+
+
+                                <SubmitButton
+                                 onClick={handleAddPeriod}
+                                 label={"Add Period"}
+                                 disabled = {!selectedPeriodId}
+                                 />
+
+                    
                             </div>
                         </form>
 
