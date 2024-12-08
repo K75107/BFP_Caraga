@@ -109,38 +109,36 @@ export default function LedgerDetails() {
 
     // Fetch account titles and their subcollection accounts
     unsubscribeLedger = onSnapshot(
-      query(accountTitlesCollectionRef, orderBy('position', 'asc')), // Sort accountTitles by position ascending
+      query(accountTitlesCollectionRef, orderBy('position', 'asc')),
       async (snapshot) => {
-        if (snapshot.empty) {
-          console.log('No account titles found');
-          setAccountTitles([]); // Clear state if no titles
-          setLoading(false); // Stop loading after fetching data
-          return;
-        }
-
         const fetchedAccountTitles = [];
         const fetchedAccounts = {};
-
-        // Loop through each account title and fetch its accounts
+    
         for (const accountTitleDoc of snapshot.docs) {
           const accountTitleData = { id: accountTitleDoc.id, ...accountTitleDoc.data() };
           fetchedAccountTitles.push(accountTitleData);
-
-          // Fetch accounts for this account title
+    
           const accounts = await fetchAccounts(accountTitleDoc.id);
-          fetchedAccounts[accountTitleDoc.id] = accounts;
+    
+          // Merge optimistically added accounts with fetched accounts
+          const localAccounts = accountsData[accountTitleDoc.id] || [];
+          fetchedAccounts[accountTitleDoc.id] = [...accounts, ...localAccounts]
+            .filter((value, index, self) => 
+              index === self.findIndex((v) => v.id === value.id)
+            )
+            .sort((a, b) => a.position - b.position);
         }
-
-        // Set sorted account titles and accounts
+    
         setAccountTitles(fetchedAccountTitles);
         setSelectedAccountsData(fetchedAccounts);
-        setLoading(false); // Stop loading after fetching data
+        setLoading(false);
       },
       (error) => {
         console.error('Error fetching ledger data:', error);
-        setLoading(false); // Stop loading on error
+        setLoading(false);
       }
     );
+    
 
     // Fetch list of all account titles (assuming these are used elsewhere)
     const listAccountTitlesRef = collection(db, 'accountTitle');
