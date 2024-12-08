@@ -14,7 +14,8 @@ import { PiEqualizer, PiEqualizerFill } from "react-icons/pi";
 import { PiHandDeposit, PiHandDepositFill } from "react-icons/pi";
 import { PiStack, PiStackFill } from "react-icons/pi";
 import { BiSolidLabel, BiLabel } from "react-icons/bi";
-
+import { IoSettings } from "react-icons/io5";
+import { IoSettingsOutline } from "react-icons/io5";
 // Firebase
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -91,7 +92,8 @@ const Sidebar = () => {
         // Subcategories
         // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
-
+      { section: 'Settings' },
+      { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
     
     "regional-accountant":[
@@ -110,7 +112,8 @@ const Sidebar = () => {
         // Subcategories
         // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
-
+        { section: 'Settings' },
+        { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
 
     "chief-fmd":[
@@ -129,7 +132,8 @@ const Sidebar = () => {
         // Subcategories
         // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
-
+        { section: 'Settings' },
+        { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
 
     "disbursement-processor":[
@@ -148,7 +152,8 @@ const Sidebar = () => {
         // Subcategories
         // { path: '/main/deposits', icon: isActive('/main/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits', indent: true },
         // { path: '/main/reports/collectionsList', icon: isActive('/main/reports/collectionsList') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections', indent: true },
-
+        { section: 'Settings' },
+        { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
 
 
@@ -158,6 +163,8 @@ const Sidebar = () => {
       { path: '/main/firestation/deposits', icon: isActive('/main/firestation/deposits') ? <PiHandDepositFill size={18} /> : <PiHandDeposit size={18} />, label: 'Deposits' },
       { path: '/main/firestation/collections', icon: isActive('/main/firestation/collections') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections' },
       { path: '/main/firestation/officers', icon: isActive('/main/firestation/officers') ? <HiUsers size={18} /> : <HiUsers size={18} />, label: 'Officers' },
+      { section: 'Settings' },
+      { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
 
     "bookkeeper":[
@@ -166,11 +173,15 @@ const Sidebar = () => {
       { path: '/main/generalLedger', icon: isActive('/main/generalLedger') ? <RiBook2Fill size={18} /> : <RiBook2Line size={18} />, label: 'General Ledger' },
       { path: '/main/accounts', icon: isActive('/main/accounts') ? <BiSolidLabel size={18} /> : <BiLabel size={18} />, label: 'Account Titles' },
       { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
+      { section: 'Settings' },
+      { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
     "firecode-monitoring":[
       { path: '/main/firecodemonitoring/dashboard', icon: isActive('/main/firecodemonitoring/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
       { section: 'Reports' },
       { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+      { section: 'Settings' },
+      { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
     "firecode-revenue":[
       { path: '/main/firecoderevenue/dashboard', icon: isActive('/main/firecoderevenue/dashboard') ? <MdSpaceDashboard size={18} /> : <MdOutlineSpaceDashboard size={18} />, label: 'Dashboard' },
@@ -179,6 +190,8 @@ const Sidebar = () => {
       { path: '/main/TrialBalance', icon: isActive('/main/TrialBalance') ? <PiListChecksFill size={18} /> : <PiListChecks size={18} />, label: 'Trial Balance' },
       { section: 'Reports' },
       { path: '/main/reports/firestationReports', icon: isActive('/main/reports') ? <PiStackFill size={18} /> : <PiStack size={18} />, label: 'Collections & Deposits' },
+      { section: 'Settings' },
+      { path: '/main/AccountSettings', icon: isActive('/main/AccountSettings') ? <IoSettings size={18} /> : <IoSettingsOutline size={18} />, label: 'Account Settings' },
     ],
   };
 

@@ -80,6 +80,7 @@ const Main = () => {
       unsubscribeAuth();
     };
   }, [database]);
+  
   const closeModalOnOutsideClick = (e) => {
     if (e.target.id === "user-modal-overlay") {
       setShowUserModal(false);
@@ -134,7 +135,8 @@ const Main = () => {
 
               {/* BUTTON */}
               {/* Account Settings */}
-              <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
+              <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100"
+              onClick={() => navigate('AccountSettings')}>
                 <div className="flex items-center">
                   <div className="bg-gray-100 rounded-full p-2 mr-2">
                     <AiOutlineSetting className="text-gray-700" />
@@ -144,7 +146,7 @@ const Main = () => {
                 <MdArrowForwardIos />
               </label>
 
-              {/* Help & Support */}
+              {/* Help & Support
               <label className="mt-1.5 inline-flex items-center justify-between w-full p-1.5 text-gray-900 bg-white cursor-pointer hover:bg-gray-100">
                 <div className="flex items-center">
                   <div className="bg-gray-100 rounded-full p-2 mr-2">
@@ -153,7 +155,7 @@ const Main = () => {
                   <span className="text-sm font-semibold">Help & Support</span>
                 </div>
                 <MdArrowForwardIos />
-              </label>
+              </label> */}
 
               {/* Logout */}
               <button

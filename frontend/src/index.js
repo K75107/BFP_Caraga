@@ -76,6 +76,9 @@ import FirecodeMonitoringDashboard from './routes/Accounting/Firecode Monitoring
 //Firecode revenue and recon staff
 import FirecodeRevenueDashboard from './routes/Accounting/Firecode Revenue/firecoderevenueDashboard';
 
+//Account Settings
+import AccountSettings from './routes/accountSettings';
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -85,6 +88,10 @@ const router = createBrowserRouter([
     path: '/main',
     element: <Main />,
     children: [
+      {
+        path: 'AccountSettings',
+        element: <AccountSettings />,
+      },
       {
         path: 'AdminDashboard',
         element: <AdminDashboard />,
