@@ -11,7 +11,7 @@ import { BalanceSheetPeriodProvider } from './routes/Accounting/Admin/BalanceShe
 import { IncomeStatementPeriodProvider } from './routes/Accounting/Admin/IncomeStatement/incomeStatementContext';
 import store from './store';
 import { Navigate } from 'react-router-dom';
-
+import { getAuth } from 'firebase/auth';
 import Login from './routes/Authentication/login';
 import Main from './routes/main';
 import AdminDashboard from './routes/Accounting/Admin/dashboard';
@@ -79,6 +79,21 @@ import FirecodeRevenueDashboard from './routes/Accounting/Firecode Revenue/firec
 //Account Settings
 import AccountSettings from './routes/accountSettings';
 
+// AuthWrapper component
+const AuthWrapper = ({ children }) => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  // If not logged in, redirect to login page
+  if (!user) {
+    return <Navigate to="/" />;
+  }
+
+  // Render children if authenticated
+  return children;
+};
+
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -86,7 +101,11 @@ const router = createBrowserRouter([
   },
   {
     path: '/main',
-    element: <Main />,
+    element: (
+      <AuthWrapper>
+        <Main />
+      </AuthWrapper>
+    ),
     children: [
       {
         path: 'AccountSettings',
