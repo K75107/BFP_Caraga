@@ -79,7 +79,7 @@ export default function IncomeStatement() {
     const [firstSubcategoryModal, setFirstSubcategoryModal] = useState(false);
     const [secondSubcategoryModal, setSecondSubcategoryModal] = useState(false);
     const [thirdSubcategoryModal, setThirdSubcategoryModal] = useState(false);
-    const [selectParentCategory, setSelectParentCategory] = useState(["Revenue", "Expenses", "Subsidy"]);
+    const [selectParentCategory, setSelectParentCategory] = useState(["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"]);
     const [subcategory, setSubcategory] = useState([]);
     const [currentSelection, setCurrentSelection] = useState("");
 
@@ -300,7 +300,7 @@ export default function IncomeStatement() {
             });
             console.log("Total net revenues successfully updated in Firestore.");
         } catch (err) {
-            console.error("Error updating total subsidy:", err);
+            console.error("Error updating total deficit:", err);
         }
     };
     // -------------------------- Function to update totalSubsidy in the incomeStatement collection --------------------------
@@ -369,6 +369,7 @@ export default function IncomeStatement() {
                                     });
 
                                     titleData.difference = totalDebit - totalCredit;
+                                    titleData.differenceContra = totalCredit - totalDebit;
 
                                     accountTitlesData.push(titleData);
                                     accountsData.push(...titleAccounts);
@@ -381,23 +382,23 @@ export default function IncomeStatement() {
                             // Calculate totals
                             const Revenue = accountTitlesData
                                 .filter(accountTitle => accountTitle.accountType === "Revenue")
-                                .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+                                .reduce((total, accountTitle) => total + accountTitle.differenceContra, 0);
 
                             const Expenses = accountTitlesData
                                 .filter(accountTitle => accountTitle.accountType === "Expenses")
                                 .reduce((total, accountTitle) => total + accountTitle.difference, 0);
 
-                            const subsidy = accountTitlesData
+                            const Subsidy = accountTitlesData
                                 .filter(accountTitle => accountTitle.accountType === "Subsidy")
-                                .reduce((total, accountTitle) => total + accountTitle.difference, 0);
+                                .reduce((total, accountTitle) => total + accountTitle.differenceContra, 0);
 
                             const netRevenue = Revenue - Expenses;
-                            const finalSurplusDeficit = netRevenue + subsidy;
+                            const finalSurplusDeficit = netRevenue + Subsidy;
 
                             // Update states with calculated values
                             setTotalRevenues(Revenue);
                             setTotalExpenses(Expenses);
-                            setTotalSubsidy(subsidy);
+                            setTotalSubsidy(Subsidy);
                             setTotalNetSurplusDeficit(finalSurplusDeficit);
 
                             // Update Firestore with totalNetSurplusDeficit
@@ -477,7 +478,7 @@ export default function IncomeStatement() {
                             });
 
                             titleData.difference2 = totalDebit2 - totalCredit2;
-
+                            titleData.differenceContra2= totalCredit2 - totalDebit2;
                             accountTitlesData.push(titleData);
                             accountsData.push(...titleAccounts);
                         }
@@ -628,7 +629,7 @@ export default function IncomeStatement() {
     const totalRevenues2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Revenue")
         .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference2;
+            const amount = accountTitle.differenceContra2;
             return total + amount;
         }, 0);
     // Calculate total amount for Expenses
@@ -639,13 +640,12 @@ export default function IncomeStatement() {
             return total + amount;
         }, 0);
 
-    const totalSubsidy2 = fireAccountTitlesPeriod
+        const totalSubsidy2 = fireAccountTitlesPeriod
         .filter(accountTitle => accountTitle.accountType === "Subsidy")
         .reduce((total, accountTitle) => {
-            const amount = accountTitle.difference2;
+            const amount = accountTitle.differenceContra2;
             return total + amount;
         }, 0);
-
     // Calculate surplus/deficit as Revenue - Expenses
     let totalNetRevenues2 = totalRevenues2 - totalExpenses2;
     let totalNetSurplusDeficit2 = totalNetRevenues2 + totalSubsidy2;
@@ -686,8 +686,8 @@ export default function IncomeStatement() {
 
                 return {
                     name: accountTitle.accountTitle,
-                    amount: accountTitle.difference,
-                    amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                    amount: accountTitle.differenceContra,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
                 };
             });
     };
@@ -740,22 +740,19 @@ export default function IncomeStatement() {
         const getAllSubcategoryAccountTitles = (subcategories, parentCategory) => {
             let subcategoryAccountTitles = [];
 
-            // Recursively accumulate account titles for each subcategory
             subcategories
                 .filter(sub => sub.parentCategory === parentCategory)
                 .forEach(sub => {
-                    // Add current subcategory's account titles
                     if (sub.accountTitles) {
                         subcategoryAccountTitles.push(...sub.accountTitles);
                     }
-                    // Recursively add child subcategories' account titles
                     subcategoryAccountTitles.push(...getAllSubcategoryAccountTitles(subcategories, sub.subcategoryName));
                 });
 
             return subcategoryAccountTitles;
         };
 
-        // Get all account titles in the nested subcategories under "Subsidy"
+        // Get all account titles in the nested subcategories under Subsidy
         const subcategoryAccountNames = getAllSubcategoryAccountTitles(subcategories, "Subsidy");
 
         return accountTitles
@@ -771,8 +768,8 @@ export default function IncomeStatement() {
 
                 return {
                     name: accountTitle.accountTitle,
-                    amount: accountTitle.difference,
-                    amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                    amount: accountTitle.differenceContra,
+                    amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
                 };
             });
     };
@@ -798,17 +795,17 @@ export default function IncomeStatement() {
                 );
 
                 // Return structure based on accountType
-                if (accountTitle.accountType === "Expenses" || accountTitle.accountType === "Subsidy") {
+                if (accountTitle.accountType === "Expenses") {
                     return {
                         name: accountTitle.accountTitle,
                         amount: accountTitle.difference,
                         amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
                     };
-                } else if (accountTitle.accountType === "Revenue") {
+                } else if (accountTitle.accountType === "Revenue" || accountTitle.accountType === "Subsidy") {
                     return {
                         name: accountTitle.accountTitle,
-                        amount: accountTitle.difference,
-                        amount2: matchingPeriodAccount ? matchingPeriodAccount.difference2 : null
+                        amount: accountTitle.differenceContra,
+                        amount2: matchingPeriodAccount ? matchingPeriodAccount.differenceContra2 : null
                     };
                 }
             });
@@ -845,7 +842,7 @@ export default function IncomeStatement() {
 
     const deleteSubcategoryAndDescendants = async (subcategoryName, subcategories) => {
         // Prevent deletion of the main categories
-        if (["Revenue", "Expenses", "Subsidy"].includes(subcategoryName)) {
+        if (["Revenue", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs", "Expenses"].includes(subcategoryName)) {
             console.warn(`Deletion of Main Category "${subcategoryName}" is not allowed.`);
             return { removedSubcategoryNames: [], removedAccountTitles: [] };
         }
@@ -1004,7 +1001,7 @@ export default function IncomeStatement() {
         };
 
         // Check if the row is a parent row for "Revenue", "Expenses", or "Subsidy"
-        const isMainCategory = ["Revenue", "Expenses", "Subsidy"].includes(item.name);
+        const isMainCategory = ["Revenue", "Expenses", "Financial Assistance/Subsidy from NGAs, LGUs, GOCCs"].includes(item.name);
 
         return (
             <>
