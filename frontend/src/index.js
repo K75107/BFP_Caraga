@@ -79,17 +79,22 @@ import FirecodeRevenueDashboard from './routes/Accounting/Firecode Revenue/firec
 //Account Settings
 import AccountSettings from './routes/accountSettings';
 
+import { useAuth } from './routes/authProvider';
+import { AuthProvider } from './routes/authProvider';
+
 // AuthWrapper component
 const AuthWrapper = ({ children }) => {
-  const auth = getAuth();
-  const user = auth.currentUser;
+  const { user, loading } = useAuth();
 
-  // If not logged in, redirect to login page
+  if (loading) {
+    // Render a loading indicator while checking auth state
+    return <div>Loading...</div>;
+  }
+
   if (!user) {
     return <Navigate to="/" />;
   }
 
-  // Render children if authenticated
   return children;
 };
 
@@ -352,8 +357,10 @@ root.render(
 
   <Provider store={store}>
     <BalanceSheetPeriodProvider>
-    <IncomeStatementPeriodProvider>
-      <RouterProvider router={router} />
+      <IncomeStatementPeriodProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </IncomeStatementPeriodProvider>
     </BalanceSheetPeriodProvider>
   </Provider>
