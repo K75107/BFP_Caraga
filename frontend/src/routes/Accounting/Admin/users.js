@@ -245,7 +245,7 @@ export default function Users() {
             <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
               <thead className="text-xs  uppercase bg-gradient-to-r from-cyan-500 to-blue-700 text-white sticky">
                 <tr>
-                  <th scope="col" className="px-6 py-4 w-80 ">USER</th>
+                  <th scope="col" className="px-6 py-4 w-86 ">USER</th>
                   <th scope="col" className="px-6 py-4 w-72">LOCATION</th>
                   <th scope="col" className="px-6 py-4 w-72">EMAIL</th>
                   <th scope="col" className="px-6 py-4 w-72">USERTYPE</th>
@@ -266,7 +266,7 @@ export default function Users() {
                         className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${user.usertype === 'admin' ? 'cursor-default' : 'cursor-default'
                           }`}
                       >
-                        <td className="px-6 py-2 w-80 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
+                        <td className="px-6 py-2 w-86 font-medium text-gray-900 whitespace-nowrap dark:text-white flex items-center align-middle">
                           <div
                             className="w-8 h-8 rounded-full mr-3 flex items-center justify-center text-white font-bold"
                             style={{
