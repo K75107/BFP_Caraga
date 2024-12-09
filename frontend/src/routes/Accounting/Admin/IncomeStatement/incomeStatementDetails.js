@@ -534,6 +534,7 @@ export default function IncomeStatement() {
                     accountTitle: element.accountTitle,
                     accountType: element.accountType,
                     difference2: element.difference2,
+                    differenceContra2: element.differenceContra2,
                     position: element.position,
                 };
 
